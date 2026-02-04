@@ -1,6 +1,0 @@
-# SentinelNet - AWS CDK dependencies (scaffolding only)
-# Install with: pip install -r requirements.txt
-# This project does not deploy; these are for IDE support and future use.
-
-aws-cdk-lib>=2.100.0
-constructs>=10.0.0

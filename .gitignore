@@ -14,10 +14,14 @@ env/
 dist/
 build/
 
-# CDK
+# CDK / infra
 cdk.out/
 .cdk.staging/
 cdk.context.json
+
+# Node / frontend
+node_modules/
+frontend/dist/
 
 # IDE
 .idea/

@@ -1,0 +1,57 @@
+/* SentinelNet — black/dark colorway */
+
+:root {
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface-hover: #1a1a1a;
+  --border: #2a2a2a;
+  --text: #f0f0f0;
+  --text-muted: #888;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-bg: rgba(59, 130, 246, 0.15);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: var(--bg);
+  color: var(--text);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+/* Page content area */
+.page {
+  color: var(--text);
+}
+
+.page h1 {
+  color: var(--text);
+  margin-top: 0;
+}
+
+.page p {
+  color: var(--text-muted);
+}
+
+.page em {
+  color: var(--text-muted);
+  font-style: italic;
+}

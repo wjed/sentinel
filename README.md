@@ -7,9 +7,39 @@
 ## This repository does not deploy anything yet
 
 - **This is scaffolding only.** No AWS resources are created or deployed.
-- There is **no runnable `cdk deploy` configuration**; the app is not set up for deployment.
+- There is **no runnable `cdk deploy`**; the infra app is not set up for deployment.
 - The project is **safe to open and use without AWS credentials**.
-- Stacks are **intentionally empty** placeholder classes for structure and collaboration.
+
+---
+
+## What each folder is for
+
+| Folder | What it is | Where to work | How it fits in |
+|--------|------------|---------------|----------------|
+| **`frontend/`** | React + Vite dashboard UI (black theme). Pages: Dashboard, Incidents, Data, Settings, Login. | Add and edit pages in `frontend/src/pages/`, shared UI in `frontend/src/components/`. | Clients see this. It will call the backend API and show SOC data. |
+| **`backend/`** | API and business logic (Python or Node — your choice). No server runs yet. | Put HTTP routes in `backend/api/`, ingestion/correlation/escalation logic in `backend/services/`. | Sits between the frontend and data/infra. Handles auth, incidents, and data pipelines. |
+| **`infra/`** | AWS CDK app: empty stacks (Network, Identity, Data, Backend) and shared constants/constructs. | Edit stacks in `infra/stacks/`, shared stuff in `infra/shared/`. Run from `infra/` only. | Defines (when you’re ready) VPC, IAM, data stores, and compute in code. Not deployed yet. |
+| **`docs/`** | Design docs, architecture notes, and how things connect. | Add markdown files and diagrams here. | Single place for “how the system works” and team handoffs. |
+| **`expansion/`** | Placeholder for extra modules or experiments that don’t live in frontend/backend/infra yet. | Use when you need a new top-level area (e.g. tooling, scripts). | Keeps the main tree clean while you grow. |
+
+---
+
+## Where to do what
+
+- **UI / dashboard** → `frontend/` (see [frontend/README.md](frontend/README.md)).
+- **API and business logic** → `backend/` (see [backend/README.md](backend/README.md)).
+- **AWS resources (later)** → `infra/` (see [infra/README.md](infra/README.md)).
+- **Documentation** → `docs/` (see [docs/README.md](docs/README.md)).
+
+---
+
+## How it works (high level)
+
+1. **Frontend** — Users open the dashboard, see KPIs and incidents, use Data and Settings. The app talks to the **backend** over HTTP.
+2. **Backend** — Receives requests, runs **services** (ingestion, correlation, escalation), and may read/write data that **infra** will eventually provide (S3, queues, DBs).
+3. **Infra** — CDK stacks describe (but don’t yet deploy) network, identity, data stores, and compute. When you enable deployment, these become the real AWS footprint.
+
+Right now only the **frontend** runs (`npm start` in `frontend/`); backend and infra are structure-only.
 
 ---
 
@@ -17,56 +47,45 @@
 
 ```
 sentinel-net/
-├── app.py                 # CDK app entry; instantiates placeholder stacks only
-├── cdk.json               # CDK project config (no deployment context)
-├── requirements.txt       # Python dependencies for CDK
-├── stacks/                # Stack definitions by responsibility
-│   ├── network_stack.py   # Network team
-│   ├── identity_stack.py  # Identity team
-│   ├── data_stack.py      # Data team
-│   └── backend_stack.py   # Backend team
-├── shared/                # Shared module for all teams
-│   ├── constants.py       # Common constants and naming
-│   └── constructs.py      # Placeholder for reusable constructs
-├── docs/                  # Documentation and design notes
-└── README.md              # This file
+├── frontend/          # SOC dashboard UI (React + Vite, black theme)
+│   ├── src/
+│   │   ├── pages/     # Dashboard, Incidents, Data, Settings, Login
+│   │   └── components/
+│   ├── package.json
+│   └── README.md
+├── backend/           # API and services (scaffolding)
+│   ├── api/           # Routes, handlers
+│   ├── services/      # Business logic
+│   └── README.md
+├── infra/             # AWS CDK — stacks and shared (no deploy)
+│   ├── app.py
+│   ├── stacks/        # Network, Identity, Data, Backend
+│   ├── shared/
+│   └── README.md
+├── docs/              # Documentation
+├── expansion/         # Future modules
+└── README.md          # This file
 ```
 
 ---
 
-## Where each team will work
+## Getting started
 
-| Team      | Directory / stack           | Future focus (conceptual)                    |
-|-----------|-----------------------------|----------------------------------------------|
-| **Network**  | `stacks/network_stack.py`   | VPC, subnets, security groups, connectivity  |
-| **Identity** | `stacks/identity_stack.py`  | IAM roles, policies, authentication         |
-| **Data**     | `stacks/data_stack.py`      | Data ingestion, storage, pipelines          |
-| **Backend**  | `stacks/backend_stack.py`   | Compute, APIs, orchestration                 |
-
-All teams can use and extend **`shared/`** (constants and common constructs) and add design docs under **`docs/`**.
-
----
-
-## Getting started (read-only / no deploy)
-
-1. **Clone and open** the repo — no AWS account or credentials required.
-2. **Optional:** Create a virtual environment and install dependencies for IDE support:
+1. **Clone and open** — no AWS credentials required.
+2. **Run the frontend (optional):**
    ```bash
-   python -m venv .venv
-   source .venv/bin/activate   # Windows: .venv\Scripts\activate
-   pip install -r requirements.txt
+   cd frontend && npm install && npm start
    ```
-3. **Read the code:** Start with `app.py`, then the stack files in `stacks/` and `shared/`.
-4. **Do not run** `cdk deploy` — stacks are empty and the project is not configured for deployment.
+   Opens at http://localhost:3000 (black theme, placeholder pages).
+3. **Infra (optional, read-only):** From `infra/`, run `pip install -r requirements.txt` for IDE support. Do not run `cdk deploy`.
 
 ---
 
 ## For students new to CDK and AWS
 
-- Each stack is a **class** that inherits from `Stack`; later, resources will be added inside `__init__`.
-- **Stacks** group related AWS resources; **constructs** are reusable building blocks.
-- This repo focuses on **layout and ownership** so multiple teams can work in parallel without conflicts.
-- When the course allows, deployment will be introduced separately; until then, treat this as structure-only.
+- **Infra** holds CDK stacks; each stack is a class that will later define AWS resources. They are intentionally empty.
+- **Frontend** and **backend** are separate so UI and API teams can work in parallel.
+- When the course allows, deployment will be introduced separately.
 
 ---
 

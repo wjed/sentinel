@@ -6,10 +6,8 @@
       "README.md",
       "cdk*.json",
       "requirements*.txt",
-      "source.bat",
       "**/__pycache__",
-      "**/.git",
-      "**/docs/**"
+      "**/.git"
     ]
   },
   "context": {

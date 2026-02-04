@@ -6,8 +6,7 @@ This file defines the CDK app and instantiates placeholder stacks.
 NO DEPLOYMENT CONFIGURATION IS INCLUDED.
 The stacks are intentionally empty and define no AWS resources.
 
-Use this repository to understand structure and collaborate;
-do not run `cdk deploy` — no stacks are configured for deployment.
+Run from infra/:  cdk synth  (for synthesis only; do not deploy)
 """
 
 import aws_cdk as cdk
