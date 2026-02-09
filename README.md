@@ -1,5 +1,5 @@
 # SentinelNet
-
+## Nick Was Here
 **Cloud-native, B2B-style Security Operations Center (SOC) platform** — university project for simulating real-world SOC workflows: ingesting security data, processing and correlating it, escalating incidents, and exposing an executive dashboard to clients.
 
 ---
