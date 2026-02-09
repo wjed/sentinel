@@ -38,3 +38,6 @@ You can add a top-level `main.py` or `app.py` (or Node `index.js`) later to star
 - **Auth** (e.g. validate JWT or session) → Handle in `api/` middleware or a shared auth module used by routes.
 
 Language and framework (Python/Flask, Python/FastAPI, Node/Express, etc.) are up to your team; keep API and services separated so multiple people can work in parallel.
+
+
+Dylan was here
