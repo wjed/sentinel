@@ -2,6 +2,8 @@
 
 Infra is **AWS CDK in Python**. The **SentinelNet-Website** stack deploys the frontend to S3 and serves it via CloudFront.
 
+**Live site (current deployment):** https://d1zrndjozdwm01.cloudfront.net
+
 **Important:** Never commit AWS keys to the repo. If you shared your access key or secret anywhere (e.g. in chat), **rotate them now** in the AWS IAM console (create a new key, delete the old one).
 
 ---
@@ -61,11 +63,28 @@ cdk deploy SentinelNet-Website --require-approval never
 
 Or run `cdk deploy SentinelNet-Website` and approve the IAM changes when prompted.
 
-When it finishes, CDK will print the **CloudFront distribution URL** (e.g. `https://xxxxx.cloudfront.net`). Open that URL to see the site.
+When it finishes, CDK will print stack **outputs** including the CloudFront URL. Open that URL to see the site.
 
 ---
 
-## 5. Redeploy after frontend changes
+## 5. Get the website URL after deploy
+
+The stack exports two outputs:
+
+| Output | Description |
+|--------|-------------|
+| **WebsiteURL** | Full URL to open the dashboard (e.g. `https://d1zrndjozdwm01.cloudfront.net`) |
+| **DistributionDomainName** | CloudFront domain only (e.g. `d1zrndjozdwm01.cloudfront.net`) |
+
+**Where to find them:**
+
+- **Terminal** — Printed at the end of `cdk deploy SentinelNet-Website`.
+- **AWS Console** — CloudFormation → **SentinelNet-Website** → **Outputs** tab.
+- **CLI:** `aws cloudformation describe-stacks --stack-name SentinelNet-Website --query "Stacks[0].Outputs"`
+
+---
+
+## 6. Redeploy after frontend changes
 
 1. Build again: `cd frontend && npm run build && cd ..`
 2. From `infra/`: `cdk deploy SentinelNet-Website --require-approval never`
@@ -80,5 +99,8 @@ CloudFront will be invalidated so the new content is served.
 |------------------|-------------------|
 | Set credentials  | `export AWS_ACCESS_KEY_ID=...` and `AWS_SECRET_ACCESS_KEY=...` (or `aws configure`) |
 | Build frontend  | `cd frontend && npm run build` |
+| Bootstrap (once) | `cd infra && cdk bootstrap` |
 | Deploy website  | `cd infra && cdk deploy SentinelNet-Website` |
-| Get URL         | Shown in CDK output after deploy |
+| Get URL         | Stack outputs **WebsiteURL** / **DistributionDomainName** (terminal, CloudFormation Outputs tab, or CLI above) |
+
+**Live site (current):** https://d1zrndjozdwm01.cloudfront.net

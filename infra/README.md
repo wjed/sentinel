@@ -14,11 +14,14 @@ AWS CDK app written in **Python**: stacks and shared constructs. The **website s
 
 ## Deploying the website
 
+**Live site:** https://d1zrndjozdwm01.cloudfront.net
+
 The **SentinelNet-Website** stack hosts the React app on S3 and CloudFront. See **[DEPLOY.md](DEPLOY.md)** for:
 
 - Setting AWS credentials (never commit them)
 - Building the frontend (`npm run build` in `frontend/`)
 - First-time bootstrap and `cdk deploy SentinelNet-Website`
+- Stack outputs (WebsiteURL, DistributionDomainName) and how to get the URL after deploy
 
 ---
 
