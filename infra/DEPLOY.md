@@ -4,6 +4,8 @@ Infra is **AWS CDK in Python**. The **SentinelNet-Website** stack deploys the fr
 
 **Live site (current deployment):** https://d1zrndjozdwm01.cloudfront.net
 
+**Every time you deploy:** You must run `npm run build` in `frontend/` first (so `frontend/dist` is up to date), then run `cdk deploy SentinelNet-Website` from `infra/`. CDK uploads whatever is in `dist`—no build, no new code on CloudFront.
+
 **Important:** Never commit AWS keys to the repo. If you shared your access key or secret anywhere (e.g. in chat), **rotate them now** in the AWS IAM console (create a new key, delete the old one).
 
 ---

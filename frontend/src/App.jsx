@@ -1,23 +1,31 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import Layout from './components/Layout'
+import PublicLayout from './components/PublicLayout'
+import AppLayout from './components/AppLayout'
+import Home from './pages/Home'
+import Product from './pages/Product'
+import Pricing from './pages/Pricing'
+import About from './pages/About'
 import Dashboard from './pages/Dashboard'
 import Incidents from './pages/Incidents'
-import Data from './pages/Data'
-import Settings from './pages/Settings'
+import IncidentDetail from './pages/IncidentDetail'
 import Login from './pages/Login'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<PublicLayout />}>
+        <Route index element={<Home />} />
+        <Route path="product" element={<Product />} />
+        <Route path="pricing" element={<Pricing />} />
+        <Route path="about" element={<About />} />
+      </Route>
+      <Route path="/" element={<AppLayout />}>
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="incidents" element={<Incidents />} />
-        <Route path="data" element={<Data />} />
-        <Route path="settings" element={<Settings />} />
+        <Route path="incidents/:id" element={<IncidentDetail />} />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
