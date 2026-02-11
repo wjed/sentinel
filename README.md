@@ -18,7 +18,7 @@
 |--------|------------|---------------|----------------|
 | **`frontend/`** | React + Vite dashboard UI (black theme). Pages: Dashboard, Incidents, Data, Settings, Login. | Add and edit pages in `frontend/src/pages/`, shared UI in `frontend/src/components/`. | Clients see this. It will call the backend API and show SOC data. |
 | **`backend/`** | API and business logic (Python or Node — your choice). No server runs yet. | Put HTTP routes in `backend/api/`, ingestion/correlation/escalation logic in `backend/services/`. | Sits between the frontend and data/infra. Handles auth, incidents, and data pipelines. |
-| **`infra/`** | AWS CDK app: empty stacks (Network, Identity, Data, Backend) and shared constants/constructs. | Edit stacks in `infra/stacks/`, shared stuff in `infra/shared/`. Run from `infra/` only. | Defines (when you’re ready) VPC, IAM, data stores, and compute in code. Not deployed yet. |
+| **`infra/`** | **AWS CDK in Python**: stacks (Network, Identity, Data, Backend, Website) and shared constants/constructs. | Edit stacks in `infra/stacks/`, shared in `infra/shared/`. Run `cdk` from `infra/`. | Defines VPC, IAM, data, compute, and S3+CloudFront (website) in code. Website stack is deployable. |
 | **`docs/`** | Design docs, architecture notes, and how things connect. | Add markdown files and diagrams here. | Single place for “how the system works” and team handoffs. |
 | **`expansion/`** | Placeholder for extra modules or experiments that don’t live in frontend/backend/infra yet. | Use when you need a new top-level area (e.g. tooling, scripts). | Keeps the main tree clean while you grow. |
 
@@ -57,7 +57,7 @@ sentinel-net/
 │   ├── api/           # Routes, handlers
 │   ├── services/      # Business logic
 │   └── README.md
-├── infra/             # AWS CDK — stacks and shared (no deploy)
+├── infra/             # AWS CDK (Python) — stacks and shared; website stack deployable
 │   ├── app.py
 │   ├── stacks/        # Network, Identity, Data, Backend
 │   ├── shared/
