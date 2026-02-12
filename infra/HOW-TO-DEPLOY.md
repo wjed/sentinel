@@ -4,6 +4,15 @@ Use this when you need to put the latest website on CloudFront. Follow the steps
 
 ---
 
+## One account, one site — don’t delete anything
+
+We all deploy to **the same AWS account**. When you run the deploy steps below, you’re **updating** the shared SentinelNet site (new frontend build goes to S3 and CloudFront). You are **not** creating a separate site or your own stack.
+
+- **`cdk deploy SentinelNet-Website`** — Safe. This only updates the existing stack (uploads new files, refreshes the cache). Use this whenever you want to push the latest site.
+- **Do NOT run `cdk destroy`** or delete the stack in the AWS Console. That would remove the site for everyone. If you’re not sure, stick to the commands in this doc.
+
+---
+
 ## What you need before you start
 
 - **Git** — so you can clone the repo (you probably have it).
