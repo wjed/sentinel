@@ -16,6 +16,8 @@ AWS CDK app written in **Python**: stacks and shared constructs. The **website s
 
 **Live site:** https://d1zrndjozdwm01.cloudfront.net
 
+**Teammates deploying?** Use **[HOW-TO-DEPLOY.md](HOW-TO-DEPLOY.md)** — step-by-step, no assumptions.
+
 The **SentinelNet-Website** stack hosts the React app on S3 and CloudFront. See **[DEPLOY.md](DEPLOY.md)** for:
 
 - Setting AWS credentials (never commit them)
