@@ -79,11 +79,13 @@ sentinel-net/
    cd frontend && npm install && npm start
    ```
    Opens at http://localhost:3000 (black theme, placeholder pages).
-3. **Deploy the website (optional):** See [Deploying the website](#deploying-the-website) below. Full step-by-step guide: [infra/DEPLOY.md](infra/DEPLOY.md).
+3. **Deploy the website (optional):** See [Deploying the website](#deploying-the-website) below. **Teammates:** use the no-assumptions guide [infra/HOW-TO-DEPLOY.md](infra/HOW-TO-DEPLOY.md). Technical summary: [infra/DEPLOY.md](infra/DEPLOY.md).
 
 ---
 
 ## Deploying the website
+
+**New to this?** Use **[infra/HOW-TO-DEPLOY.md](infra/HOW-TO-DEPLOY.md)** — step-by-step for the whole team.
 
 Developers who want to deploy (or redeploy) the frontend to S3 + CloudFront need:
 
