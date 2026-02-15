@@ -1,32 +1,35 @@
 #!/usr/bin/env python3
 """
-SentinelNet - CDK Application Entry Point (Scaffolding Only).
+SentinelNet - CDK Application Entry Point.
 
-This file defines the CDK app and instantiates placeholder stacks.
-NO DEPLOYMENT CONFIGURATION IS INCLUDED.
-The stacks are intentionally empty and define no AWS resources.
-
-Run from infra/:  cdk synth  (for synthesis only; do not deploy)
+Defines all stacks. The website stack (S3 + CloudFront) is deployable;
+other stacks are placeholders. Use AWS credentials via env or aws configure.
 """
 
+import os
 import aws_cdk as cdk
 
 from stacks.network_stack import NetworkStack
 from stacks.identity_stack import IdentityStack
 from stacks.data_stack import DataStack
 from stacks.backend_stack import BackendStack
+from stacks.website_stack import WebsiteStack
 
 app = cdk.App()
 
-# ---------------------------------------------------------------------------
-# Placeholder stacks — intentionally empty, no resources defined.
-# Each stack is owned by a team and will be implemented in later phases.
-# ---------------------------------------------------------------------------
+# Use default account/region from environment (e.g. AWS_PROFILE or AWS_ACCESS_KEY_ID)
+env = cdk.Environment(
+    account=os.environ.get("CDK_DEFAULT_ACCOUNT"),
+    region=os.environ.get("CDK_DEFAULT_REGION"),
+)
 
-NetworkStack(app, "SentinelNet-Network")
-IdentityStack(app, "SentinelNet-Identity")
-DataStack(app, "SentinelNet-Data")
-BackendStack(app, "SentinelNet-Backend")
+# Placeholder stacks (empty)
+NetworkStack(app, "SentinelNet-Network", env=env)
+IdentityStack(app, "SentinelNet-Identity", env=env)
+DataStack(app, "SentinelNet-Data", env=env)
+BackendStack(app, "SentinelNet-Backend", env=env)
 
-# No environment, account, or region is set — this app is not meant to deploy.
+# Deployable: S3 + CloudFront for the frontend. Deploy with: cdk deploy SentinelNet-Website
+WebsiteStack(app, "SentinelNet-Website", env=env)
+
 app.synth()
