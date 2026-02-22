@@ -27,12 +27,33 @@ class NetworkStack(Stack):
             max_azs=2, 
             subnet_configuration=[
                 ec2.SubnetConfiguration(
-                    name="Public",
+                    name="Public-Ingress",
                     subnet_type=ec2.SubnetType.PUBLIC,
                     cidr_mask=24
+                ),
+                ec2.SubnetConfiguration(
+                    name="Private-App-Logic",
+                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
+                    cidr_mask=24
+                ),
+                ec2.SubnetConfiguration(
+                    name="Isolated-Data-Storage",
+                    subnet_type=ec2.SubnetType.PRIVATE_ISOLATED,
+                    cidr_mask=24
                 )
-            ]
+            ],
+            nat_gateways=1,
         )
 
 # example of the cost tagging stack. This is just a baseline code. You will have to update it.
         Tags.of(self).add("Project", "SentinelNet")
+        Tags.of(self).add("Layer", "Networking")
+        Tags.of(self).add("Tier", "VPC-Base")
+        Tags.of(self).add("Owner", "Andrew-Myshkevych")
+        Tags.of(self).add("Environment", "Dev")
+        Tags.of(self).add("CostCenter", "JMU-Cyber-Lab")
+        Tags.of(self).add("ManagedBy", "CDK-Python")
+        Tags.of(self).add("Application", "SIEM-Stack")
+        Tags.of(self).add("Name", "SentinelNet-Resource")
+        Tags.of(self).add("aws:createdBy", "Andrew-Myshkevych")
+        Tags.of(self).add("aws:createdWith", "CDK-Python")

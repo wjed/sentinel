@@ -17,6 +17,17 @@ class CostTagStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        Tags.of(self).add("CostCenter", "Engineering")
-        Tags.of(self).add("Environment", "Production")
-        Tags.of(self).add("ManagedBy", "CDK")
+        sentinel_tags = {
+            "Project": "SentinelNet",
+            "Owner": "Andrew-Myshkevych",
+            "Environment": "Dev",
+            "CostCenter": "JMU-Cyber-Lab",
+            "ManagedBy": "CDK-Python",
+            "Application": "SIEM-Stack",
+            "Name": "SentinelNet-Resource",
+            "aws:createdBy": "Andrew-Myshkevych",
+            "aws:createdWith": "CDK-Python"
+        }
+
+        for key, value in sentinel_tags.items():
+            Tags.of(scope).add(key, value)
