@@ -1,10 +1,3 @@
-"""
-Network Stack — SentinelNet (Scaffolding).
-
-Future purpose: VPCs, subnets, security groups, connectivity.
-This stack is INTENTIONALLY EMPTY. No AWS resources are defined.
-"""
-
 from aws_cdk import (
     Stack,
     aws_ec2 as ec2,
@@ -16,25 +9,31 @@ class NetworkStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # 1. Define the 3-Tier VPC Architecture
+        # 1. Define the 3-Tier VPC Architecture across 2 AZs
         self.vpc = ec2.Vpc(
             self, "SentinelNetVPC",
             ip_addresses=ec2.IpAddresses.cidr("10.0.0.0/16"),
-            max_azs=2, # Redundancy and High Availability
+            max_azs=2,  # Spreads subnets across 2 AZs for High Availability
+            
+            # NAT Gateway Configuration:
+            # - Use 1 NAT Gateway to save cost in Dev (shared across AZs)
+            # - Use 2 (one per AZ) for full Production redundancy
+            nat_gateways=1, 
+            
             subnet_configuration=[
-                # PUBLIC: Only for Load Balancers and Ingress
+                # PUBLIC: DMZ for Load Balancers, API Gateway, and NAT Gateway
                 ec2.SubnetConfiguration(
                     name="Public",
                     subnet_type=ec2.SubnetType.PUBLIC,
-                    cidr_mask=24
+                    cidr_mask=24 # 256 IPs per AZ
                 ),
-                # PRIVATE: Application logic (Wazuh, TheHive, Lambdas)
+                # PRIVATE: Logic tier for Wazuh Manager, TheHive, and Lambdas
                 ec2.SubnetConfiguration(
                     name="Private-App",
                     subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
                     cidr_mask=24
                 ),
-                # ISOLATED: Database storage (RDS MySQL, DynamoDB Endpoints)
+                # ISOLATED: Database tier for RDS MySQL and DynamoDB
                 ec2.SubnetConfiguration(
                     name="Isolated-Data",
                     subnet_type=ec2.SubnetType.PRIVATE_ISOLATED,
@@ -43,6 +42,6 @@ class NetworkStack(Stack):
             ]
         )
 
-        # 2. Enforcement of Global Tags for Cost Allocation
+        # 2. Project-Wide Cost Tagging
         Tags.of(self).add("Project", "SentinelNet")
         Tags.of(self).add("Environment", "Dev")
