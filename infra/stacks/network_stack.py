@@ -50,8 +50,6 @@ class NetworkStack(Stack):
                     cidr_mask=24
                 )
             ],
-            nat_gateways=1,
         )
-
         # 2. Project-Wide Cost Tagging
         Tags.of(self).add("Project", "SentinelNet")
