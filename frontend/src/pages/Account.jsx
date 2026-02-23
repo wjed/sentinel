@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from 'react-oidc-context'
-import { signOutRedirect } from '../auth/signOut'
+import { signOut } from '../auth/signOut'
 
 export default function Account() {
   const auth = useAuth()
@@ -64,7 +64,7 @@ export default function Account() {
               type="button"
               className="btn-secondary"
               style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-              onClick={() => signOutRedirect()}
+              onClick={() => signOut(auth)}
             >
               Sign out
             </button>

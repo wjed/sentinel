@@ -1,6 +1,6 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from 'react-oidc-context'
-import { signOutRedirect } from '../auth/signOut'
+import { signOut } from '../auth/signOut'
 
 const ShieldIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -85,7 +85,7 @@ export default function TopNav() {
               type="button"
               className="btn-secondary"
               style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}
-              onClick={() => signOutRedirect()}
+              onClick={() => signOut(auth)}
             >
               Sign out
             </button>

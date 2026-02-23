@@ -65,7 +65,7 @@ cd ..
 
 At the end you’ll see **WebsiteURL** (e.g. `https://xxxxx.cloudfront.net`). That’s the live site.
 
-**4. (Optional) See changes right away** — run once, using the **DistributionId** from the deploy output:
+**4. (Optional) Force refresh** — Each deploy automatically invalidates CloudFront (`/*`), so the site should update within a minute. If you need to clear cache immediately, run (using **DistributionId** from the output):
 
 ```bash
 aws cloudfront create-invalidation --distribution-id DISTRIBUTION_ID --paths "/*"
@@ -75,21 +75,9 @@ aws cloudfront create-invalidation --distribution-id DISTRIBUTION_ID --paths "/*
 
 ## Sign-in (Cognito)
 
-The app uses **Cognito** for sign-in. The URL people use is the **CloudFront URL** from the deploy output.
+**Cognito is created by the stack.** The stack creates a user pool, Hosted UI domain, and app client. It also writes `/config.json` to the site so the app uses the correct pool at runtime (no more hardcoded pool ID or 404).
 
-**In Cognito** (User pool → App client → Edit managed login pages configuration):
-
-- **Allowed callback URLs:** add your CloudFront URL with a trailing slash, e.g. `https://xxxxx.cloudfront.net/`
-- **Allowed sign-out URLs:** same
-- **OAuth 2.0 grant types:** **Authorization code grant**
-- **OpenID Connect scopes:** **OpenID**, **Email** (and **Phone** if you use it)
-
-**In `frontend/.env`** (optional, for a fixed production URL):
-
-- `VITE_REDIRECT_URI=https://xxxxx.cloudfront.net/`  
-  (use your real CloudFront URL)
-
-Then rebuild and redeploy so the app and Cognito use the same URL.
+After deploy, use **WebsiteURL** from the outputs. The callback URL is already set to that URL in the app client. Just open the site and click Sign in.
 
 ---
 
@@ -123,3 +111,4 @@ Only do this if you want to clean up those stacks. Don’t run `cdk destroy Sent
 - **“cdk: command not found”** — Run `npm install -g aws-cdk` and open a new terminal.
 - **Sign-in 404 or “user pool does not exist”** — Use the correct Cognito user pool in the app (see `frontend/.env.example` for `VITE_COGNITO_USER_POOL_ID` and `VITE_COGNITO_CLIENT_ID`). Clean build: `rm -rf frontend/dist` then `npm run build`, then deploy again.
 - **Sign-in “Something went wrong”** — Add the exact CloudFront URL (with trailing slash) to Cognito **Allowed callback URLs** and **Allowed sign-out URLs**.
+- **“disallowed MIME type” or “NS_ERROR_CORRUPTED_CONTENT” on `/assets/...`** — You’re loading an old `index.html` that points to an asset that’s no longer on S3. Always run `npm run build` in `frontend` before `cdk deploy`. After redeploying, do a hard refresh (Ctrl+Shift+R / Cmd+Shift+R) or wait a minute for the automatic CloudFront invalidation.
