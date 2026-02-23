@@ -67,7 +67,6 @@ class CostTagStack(Stack):
                 Tags.of(resource_scope).add("Service", "AmazonRDS")
                 Tags.of(resource_scope).add("Service", "AmazonCognito")
 
-
         @staticmethod
         def tag_public_resources(resource_scope: Construct):
                 """Apply tags used for public-facing / network resources.
@@ -78,4 +77,5 @@ class CostTagStack(Stack):
                 resources and their children.
                 """
                 Tags.of(resource_scope).add("Tier", "Public-Ingress")
-                Tags.of(resource_scope).add("Service", "Network-Gateway")
+                Tags.of(resource_scope).add("Service", "AmazonVPC")
+                Tags.of(resource_scope).add("Service", "AmazonS3")
