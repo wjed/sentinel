@@ -6,8 +6,12 @@ import Product from './pages/Product'
 import Pricing from './pages/Pricing'
 import About from './pages/About'
 import Dashboard from './pages/Dashboard'
+import Alerts from './pages/Alerts'
 import Incidents from './pages/Incidents'
 import IncidentDetail from './pages/IncidentDetail'
+import Assets from './pages/Assets'
+import Reports from './pages/Reports'
+import Settings from './pages/Settings'
 import Login from './pages/Login'
 
 export default function App() {
@@ -22,8 +26,12 @@ export default function App() {
       </Route>
       <Route path="/" element={<AppLayout />}>
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="alerts" element={<Alerts />} />
         <Route path="incidents" element={<Incidents />} />
         <Route path="incidents/:id" element={<IncidentDetail />} />
+        <Route path="assets" element={<Assets />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
