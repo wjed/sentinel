@@ -6,7 +6,7 @@ export default function PublicLayout() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <TopNav />
-      <main style={{ flex: 1 }}>
+      <main style={{ flex: 1, minHeight: 0 }}>
         <Outlet />
       </main>
       <Footer />

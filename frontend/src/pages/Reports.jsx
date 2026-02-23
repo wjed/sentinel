@@ -1,10 +1,13 @@
 export default function Reports() {
   return (
-    <div className="page">
-      <div style={{ marginBottom: '1rem' }}>
-        <h1 style={{ fontSize: '1.1rem', marginBottom: '0.1rem' }}>Reports</h1>
-        <p style={{ margin: 0, fontSize: '0.7rem' }}>Scheduled // on-demand security reports</p>
-      </div>
+    <div className="page-wrap">
+      <div className="page">
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h1>Reports</h1>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+            Scheduled and on-demand security reports
+          </p>
+        </div>
       <div className="panel">
         <div className="panel-header">Report Library</div>
         <div className="panel-body" style={{ minHeight: 300, flexDirection: 'column', gap: '0.5rem' }}>
@@ -18,6 +21,7 @@ export default function Reports() {
             Report engine standby
           </span>
         </div>
+      </div>
       </div>
     </div>
   )

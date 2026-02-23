@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import PublicLayout from './components/PublicLayout'
-import AppLayout from './components/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Product from './pages/Product'
@@ -25,23 +24,14 @@ export default function App() {
         <Route path="product" element={<Product />} />
         <Route path="pricing" element={<Pricing />} />
         <Route path="about" element={<About />} />
-      </Route>
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <AppLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="alerts" element={<Alerts />} />
-        <Route path="incidents" element={<Incidents />} />
-        <Route path="incidents/:id" element={<IncidentDetail />} />
-        <Route path="assets" element={<Assets />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="settings" element={<Settings />} />
-        <Route path="account" element={<Account />} />
+        <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
+        <Route path="incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
+        <Route path="incidents/:id" element={<ProtectedRoute><IncidentDetail /></ProtectedRoute>} />
+        <Route path="assets" element={<ProtectedRoute><Assets /></ProtectedRoute>} />
+        <Route path="reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

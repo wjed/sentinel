@@ -18,13 +18,19 @@ const publicNavLinks = [
 const appNavLinks = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/incidents', label: 'Incidents' },
+  { to: '/alerts', label: 'Alerts' },
+  { to: '/assets', label: 'Assets' },
+  { to: '/reports', label: 'Reports' },
   { to: '/account', label: 'Account' },
+  { to: '/settings', label: 'Settings' },
 ]
 
 export default function TopNav() {
   const auth = useAuth()
 
-  const navLinks = auth.isAuthenticated ? [...publicNavLinks, ...appNavLinks] : [...publicNavLinks, { to: '/dashboard', label: 'Dashboard' }]
+  const navLinks = auth.isAuthenticated
+    ? [...publicNavLinks, ...appNavLinks]
+    : [...publicNavLinks, { to: '/dashboard', label: 'Dashboard' }]
 
   return (
     <header
@@ -57,7 +63,7 @@ export default function TopNav() {
         <span style={{ color: 'var(--text)', opacity: 0.9 }}><ShieldIcon /></span>
         SentinelNet
       </Link>
-      <nav style={{ display: 'flex', alignItems: 'center', gap: '0.15rem' }}>
+      <nav style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         {navLinks.map(({ to, label }) => (
           <NavLink
             key={to}

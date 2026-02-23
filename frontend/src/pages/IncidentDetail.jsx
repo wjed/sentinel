@@ -4,7 +4,8 @@ export default function IncidentDetail() {
   const { id } = useParams()
 
   return (
-    <div className="page">
+    <div className="page-wrap">
+      <div className="page">
       <Link to="/incidents" style={{ display: 'inline-block', marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>← Back to Incidents</Link>
 
       {/* Case summary header */}
@@ -51,6 +52,7 @@ export default function IncidentDetail() {
             </div>
           </section>
         </div>
+      </div>
       </div>
     </div>
   )

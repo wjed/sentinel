@@ -27,16 +27,18 @@ export default function Footer() {
           <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Company</div>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.85rem' }}>
             <li><Link to="/about" style={{ color: 'var(--text-muted)' }}>About</Link></li>
-            <li><a href="#contact" style={{ color: 'var(--text-muted)' }}>Contact</a></li>
+            <li><a href="mailto:jedrzewj@dukes.jmu.edu" style={{ color: 'var(--text-muted)' }}>Contact</a></li>
           </ul>
         </div>
         <div>
           <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Contact</div>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>Placeholder: contact@sentinelnet.io</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
+            <a href="mailto:jedrzewj@dukes.jmu.edu" style={{ color: 'var(--text-muted)' }}>jedrzewj@dukes.jmu.edu</a>
+          </p>
         </div>
       </div>
       <div style={{ maxWidth: 1100, margin: '2rem auto 0', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-        © {new Date().getFullYear()} SentinelNet. Placeholder — university project.
+        © {new Date().getFullYear()} SentinelNet. JMU university project.
       </div>
     </footer>
   )

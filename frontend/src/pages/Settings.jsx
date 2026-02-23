@@ -1,10 +1,13 @@
 export default function Settings() {
   return (
-    <div className="page">
-      <div style={{ marginBottom: '1rem' }}>
-        <h1 style={{ fontSize: '1.1rem', marginBottom: '0.1rem' }}>Settings</h1>
-        <p style={{ margin: 0, fontSize: '0.7rem' }}>Platform // account configuration</p>
-      </div>
+    <div className="page-wrap">
+      <div className="page">
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h1>Settings</h1>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+            Platform and account configuration
+          </p>
+        </div>
       <div className="panel">
         <div className="panel-header">Configuration</div>
         <div className="panel-body" style={{ minHeight: 300, flexDirection: 'column', gap: '0.5rem' }}>
@@ -16,6 +19,7 @@ export default function Settings() {
             Configuration module loading
           </span>
         </div>
+      </div>
       </div>
     </div>
   )

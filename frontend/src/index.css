@@ -138,8 +138,17 @@ a:hover {
   cursor: pointer;
   transition: opacity 0.15s, background 0.15s;
 }
-.btn-primary:hover {
+.btn-primary:hover,
+.btn-primary:focus {
   opacity: 0.92;
+  color: var(--bg);
+  background: var(--primary);
+}
+/* Keep primary button text dark when used as a link (e.g. nav Sign in) so hover doesn’t turn it white */
+a.btn-primary,
+a.btn-primary:hover,
+a.btn-primary:focus {
+  color: var(--bg);
 }
 
 .btn-secondary {
@@ -224,7 +233,13 @@ a:hover {
   margin-top: 0.35rem;
 }
 
-/* ═══ Page base ═══ */
+/* ═══ Page base — shared container so logged-in and public pages look the same ═══ */
+.page-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
 .page {
   color: var(--text);
 }

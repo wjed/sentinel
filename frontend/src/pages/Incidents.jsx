@@ -9,10 +9,13 @@ const fakeIncidents = [
 
 export default function Incidents() {
   return (
-    <div className="page">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <h1 style={{ margin: 0 }}>Incidents</h1>
-        <span className="placeholder-label">Demo data — placeholder</span>
+    <div className="page-wrap">
+      <div className="page">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 style={{ margin: 0 }}>Incidents</h1>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>Demo data — placeholder</p>
+        </div>
       </div>
 
       {/* Filter UI (visual only) */}
@@ -31,7 +34,7 @@ export default function Incidents() {
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
           <thead>
-            <tr style={{ background: 'var(--surface-hover)' }}>
+            <tr style={{ background: 'var(--bg-hover)' }}>
               <th style={{ textAlign: 'left', padding: '0.75rem 1rem', fontWeight: 600 }}>ID</th>
               <th style={{ textAlign: 'left', padding: '0.75rem 1rem', fontWeight: 600 }}>Severity</th>
               <th style={{ textAlign: 'left', padding: '0.75rem 1rem', fontWeight: 600 }}>Asset</th>
@@ -59,6 +62,7 @@ export default function Incidents() {
             ))}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   )

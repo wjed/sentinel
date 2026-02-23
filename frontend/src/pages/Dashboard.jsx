@@ -117,24 +117,14 @@ function Legend({ items }) {
 
 export default function Dashboard() {
   return (
-    <div className="page">
-      {/* Page header */}
-      <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-        <div>
-          <h1 style={{ fontSize: '1.1rem', marginBottom: '0.1rem' }}>Executive Dashboard</h1>
-          <p style={{ margin: 0, fontSize: '0.7rem' }}>Honeypot attack analytics // last 24 hours</p>
+    <div className="page-wrap">
+      <div className="page">
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h1>Dashboard</h1>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+            Honeypot attack analytics — last 24 hours
+          </p>
         </div>
-        <div style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.55rem',
-          color: 'var(--text-dim)',
-          letterSpacing: '0.06em',
-          textAlign: 'right',
-        }}>
-          <div>LAST REFRESH: 00:04:32 AGO</div>
-          <div style={{ color: 'var(--text-muted)', marginTop: 2 }}>AUTO-REFRESH: ON</div>
-        </div>
-      </div>
 
       {/* Row 1 — KPI stat cards */}
       <div
@@ -344,6 +334,7 @@ export default function Dashboard() {
             </div>
           </div>
         </Panel>
+      </div>
       </div>
     </div>
   )

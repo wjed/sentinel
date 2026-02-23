@@ -8,10 +8,11 @@ export default function Account() {
   const email = profile.email ?? profile.sub ?? '—'
 
   return (
-    <div className="page">
+    <div className="page-wrap">
+      <div className="page">
       <div style={{ marginBottom: '1.5rem' }}>
-        <h1 style={{ fontSize: '1.1rem', marginBottom: '0.1rem' }}>Account</h1>
-        <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+        <h1>Account</h1>
+        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
           You're signed in. Manage your profile and access your dashboard.
         </p>
       </div>
@@ -70,6 +71,7 @@ export default function Account() {
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

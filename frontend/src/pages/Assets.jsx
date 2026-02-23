@@ -1,10 +1,13 @@
 export default function Assets() {
   return (
-    <div className="page">
-      <div style={{ marginBottom: '1rem' }}>
-        <h1 style={{ fontSize: '1.1rem', marginBottom: '0.1rem' }}>Assets</h1>
-        <p style={{ margin: 0, fontSize: '0.7rem' }}>Monitored hosts // endpoints // infrastructure</p>
-      </div>
+    <div className="page-wrap">
+      <div className="page">
+        <div style={{ marginBottom: '1.5rem' }}>
+          <h1>Assets</h1>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+            Monitored hosts, endpoints, and infrastructure
+          </p>
+        </div>
       <div className="panel">
         <div className="panel-header">Asset Inventory</div>
         <div className="panel-body" style={{ minHeight: 300, flexDirection: 'column', gap: '0.5rem' }}>
@@ -17,6 +20,7 @@ export default function Assets() {
             Asset discovery in progress
           </span>
         </div>
+      </div>
       </div>
     </div>
   )

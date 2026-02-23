@@ -1,15 +1,16 @@
 export default function Pricing() {
   const tiers = [
-    { name: 'Starter', price: '—', features: ['Placeholder feature', 'Placeholder feature'], cta: 'Contact sales' },
-    { name: 'Professional', price: '—', features: ['Placeholder feature', 'Placeholder feature', 'Placeholder feature'], cta: 'Contact sales', featured: true },
-    { name: 'Enterprise', price: '—', features: ['Placeholder feature', 'Placeholder feature', 'Placeholder feature', 'Placeholder feature'], cta: 'Contact sales' },
+    { name: 'Starter', price: 'Contact us', features: ['SIEM & log ingestion', 'Basic dashboards', 'Email support'], cta: 'Contact sales' },
+    { name: 'Professional', price: 'Contact us', features: ['Everything in Starter', 'Case management', 'Honeypot analytics', 'SLA & priority support'], cta: 'Contact sales', featured: true },
+    { name: 'Enterprise', price: 'Contact us', features: ['Everything in Professional', 'Custom integrations', 'Dedicated success manager', 'On-prem options'], cta: 'Contact sales' },
   ]
 
   return (
-    <div className="page" style={{ maxWidth: 960, margin: '0 auto', padding: '2.5rem 1.5rem' }}>
+    <div className="page-wrap">
+      <div className="page">
       <h1 style={{ marginBottom: '0.5rem' }}>Pricing</h1>
       <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '0.9rem' }}>
-        Placeholder pricing tiers. All values are for structure only.
+        Flexible tiers for teams and enterprises. Contact us for a quote.
       </p>
       <div className="pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
         {tiers.map((tier) => (
@@ -35,7 +36,10 @@ export default function Pricing() {
           </div>
         ))}
       </div>
-      <p className="placeholder-label" style={{ marginTop: '1.5rem' }}>Placeholder — no real pricing</p>
+      <p style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--text-dim)' }}>
+        Questions? Email <a href="mailto:jedrzewj@dukes.jmu.edu" style={{ color: 'var(--text-muted)' }}>jedrzewj@dukes.jmu.edu</a>.
+      </p>
+      </div>
     </div>
   )
 }
