@@ -23,7 +23,8 @@ class WebsiteStack(Stack):
 
         # Path to built frontend (must run `npm run build` in frontend/ first)
         repo_root = Path(__file__).resolve().parents[2]
-        frontend_dist = str(repo_root / "frontend" / "dist")
+        frontend_dist_path = repo_root / "frontend" / "dist"
+        frontend_dist = str(frontend_dist_path)
 
         bucket = s3.Bucket(
             self,
@@ -55,14 +56,25 @@ class WebsiteStack(Stack):
         )
 
         # Deploy frontend build to bucket. Run `npm run build` in frontend/ first.
-        s3_deploy.BucketDeployment(
-            self,
-            "DeployWebsite",
-            sources=[s3_deploy.Source.asset(frontend_dist)],
-            destination_bucket=bucket,
-            distribution=self.distribution,
-            distribution_paths=["/*"],
-        )
+        # Only deploy frontend assets if the build directory exists. This
+        # allows `cdk synth` to run even when the frontend hasn't been
+        # built locally (useful during development or CI checks).
+        if frontend_dist_path.exists():
+            s3_deploy.BucketDeployment(
+                self,
+                "DeployWebsite",
+                sources=[s3_deploy.Source.asset(frontend_dist)],
+                destination_bucket=bucket,
+                distribution=self.distribution,
+                distribution_paths=["/*"],
+            )
+        else:
+            CfnOutput(
+                self,
+                "WebsiteBuildMissing",
+                value=f"Frontend build not found at {frontend_dist}",
+                description="Run `npm run build` in frontend/ to enable deployment",
+            )
 
         # Outputs so the URL shows in CloudFormation and `cdk deploy` output
         CfnOutput(

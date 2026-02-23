@@ -83,5 +83,5 @@ class NetworkStack(Stack):
                 service=ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
                 # Optionally restrict which subnets the endpoint is placed in
                 subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
-                private_dns=True,
+                private_dns_enabled=True,
             )
