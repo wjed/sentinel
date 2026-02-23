@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import PublicLayout from './components/PublicLayout'
 import AppLayout from './components/AppLayout'
+import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Product from './pages/Product'
 import Pricing from './pages/Pricing'
@@ -24,7 +25,14 @@ export default function App() {
         <Route path="pricing" element={<Pricing />} />
         <Route path="about" element={<About />} />
       </Route>
-      <Route path="/" element={<AppLayout />}>
+      <Route
+        path="/"
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="alerts" element={<Alerts />} />
         <Route path="incidents" element={<Incidents />} />

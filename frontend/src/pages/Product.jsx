@@ -19,7 +19,7 @@ export default function Product() {
           <div
             style={{
               aspectRatio: '16/9',
-              background: 'var(--surface-card)',
+              background: 'var(--bg-card)',
               border: '1px dashed var(--border)',
               borderRadius: 'var(--radius)',
               display: 'flex',

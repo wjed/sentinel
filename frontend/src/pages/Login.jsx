@@ -1,7 +1,33 @@
-import { Link } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from 'react-oidc-context'
 import TopNav from '../components/TopNav'
 
 export default function Login() {
+  const auth = useAuth()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!auth.isLoading && auth.isAuthenticated) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [auth.isLoading, auth.isAuthenticated, navigate])
+
+  if (auth.isLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <TopNav />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+          Loading…
+        </div>
+      </div>
+    )
+  }
+
+  if (auth.isAuthenticated) {
+    return null
+  }
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <TopNav />
@@ -11,29 +37,25 @@ export default function Login() {
             width: '100%',
             maxWidth: 400,
             padding: '2rem',
-            background: 'var(--surface-card)',
+            background: 'var(--bg-card)',
             border: '1px solid var(--border)',
             borderRadius: 'var(--radius)',
           }}
         >
-          <h1 style={{ marginTop: 0, marginBottom: '0.5rem' }}>Request Access</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-            Placeholder: Contact your administrator or use the form below to request access to SentinelNet.
+          <h1 style={{ marginTop: 0, marginBottom: '0.5rem', color: 'var(--text-bright)', fontSize: '1.35rem' }}>Sign in</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+            Sign in with your SentinelNet account. You will be redirected to Cognito to authenticate.
           </p>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>Email (placeholder)</label>
-            <input type="email" placeholder="you@company.com" style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)' }} />
-          </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--text-muted)' }}>Organization (placeholder)</label>
-            <input type="text" placeholder="Your organization" style={{ width: '100%', padding: '0.5rem 0.75rem', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)' }} />
-          </div>
-          <button type="button" style={{ width: '100%', padding: '0.75rem', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', fontWeight: 600, cursor: 'pointer' }}>
-            Submit request (placeholder)
+          <button
+            type="button"
+            className="btn-primary"
+            style={{ width: '100%', padding: '0.7rem' }}
+            onClick={() => auth.signinRedirect()}
+          >
+            Sign in with Cognito
           </button>
-          <p className="placeholder-label" style={{ marginTop: '1rem' }}>Placeholder — no backend</p>
           <p style={{ marginTop: '1rem', fontSize: '0.875rem' }}>
-            <Link to="/dashboard" style={{ color: 'var(--accent)' }}>View Demo Dashboard →</Link>
+            <a href="/dashboard" style={{ color: 'var(--text-muted)' }}>View Demo Dashboard (requires sign-in) →</a>
           </p>
         </div>
       </div>

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
 
 const ShieldIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" />
   </svg>
 )
@@ -114,9 +114,9 @@ export default function AppLayout() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'rgba(0, 229, 255, 0.06)',
+            background: 'var(--primary-bg)',
             borderRadius: 'var(--radius-sm)',
-            border: '1px solid rgba(0, 229, 255, 0.1)',
+            border: '1px solid var(--border)',
             flexShrink: 0,
           }}>
             <ShieldIcon />
@@ -174,15 +174,15 @@ export default function AppLayout() {
                 padding: collapsed ? '0.5rem 0' : '0.45rem 0.6rem',
                 justifyContent: collapsed ? 'center' : 'flex-start',
                 borderRadius: 'var(--radius-sm)',
-                background: isActive ? 'rgba(0, 229, 255, 0.08)' : 'transparent',
-                color: isActive ? 'var(--primary)' : 'var(--text-muted)',
+                background: isActive ? 'var(--primary-bg)' : 'transparent',
+                color: isActive ? 'var(--text-bright)' : 'var(--text-muted)',
                 fontFamily: 'var(--font-mono)',
                 fontWeight: isActive ? 600 : 400,
                 fontSize: '0.7rem',
                 letterSpacing: '0.04em',
                 transition: 'background 0.15s, color 0.15s',
                 whiteSpace: 'nowrap',
-                borderLeft: isActive ? '2px solid var(--primary)' : '2px solid transparent',
+                borderLeft: isActive ? '2px solid var(--text-muted)' : '2px solid transparent',
                 textTransform: 'uppercase',
               })}
             >
@@ -205,8 +205,8 @@ export default function AppLayout() {
             gap: '0.3rem',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span className="live-dot" />
-              <span style={{ color: 'var(--success)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>SYSTEM ONLINE</span>
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--text-dim)' }} />
+              <span style={{ color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>SYSTEM ONLINE</span>
             </div>
             <div style={{ letterSpacing: '0.06em' }}>
               UPTIME: 99.97% | NODES: 12
@@ -235,7 +235,7 @@ export default function AppLayout() {
             textTransform: 'uppercase',
             transition: 'color 0.15s, border-color 0.15s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.2)' }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--text-dim)' }}
           onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-dim)'; e.currentTarget.style.borderColor = 'var(--border)' }}
         >
           {collapsed ? icons.expand : icons.collapse}
@@ -276,16 +276,16 @@ export default function AppLayout() {
               alignItems: 'center',
               gap: '0.35rem',
               padding: '0.15rem 0.5rem',
-              background: 'rgba(0, 255, 136, 0.06)',
-              border: '1px solid rgba(0, 255, 136, 0.15)',
+              background: 'var(--primary-bg)',
+              border: '1px solid var(--border)',
               borderRadius: 'var(--radius-sm)',
             }}>
-              <span className="live-dot" />
+              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--text-dim)' }} />
               <span style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.55rem',
                 fontWeight: 600,
-                color: 'var(--success)',
+                color: 'var(--text-muted)',
                 letterSpacing: '0.1em',
               }}>LIVE</span>
             </div>
@@ -298,16 +298,16 @@ export default function AppLayout() {
               alignItems: 'center',
               gap: '0.4rem',
               padding: '0.2rem 0.55rem',
-              background: 'rgba(255, 184, 0, 0.06)',
-              border: '1px solid rgba(255, 184, 0, 0.15)',
+              background: 'var(--primary-bg)',
+              border: '1px solid var(--border)',
               borderRadius: 'var(--radius-sm)',
             }}>
-              <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--warning)' }} />
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--text-muted)' }} />
               <span style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.55rem',
                 fontWeight: 600,
-                color: 'var(--warning)',
+                color: 'var(--text-muted)',
                 letterSpacing: '0.08em',
               }}>ELEVATED</span>
             </div>
@@ -333,14 +333,14 @@ export default function AppLayout() {
               height: 28,
               borderRadius: 'var(--radius-sm)',
               background: 'var(--primary-bg)',
-              border: '1px solid rgba(0, 229, 255, 0.15)',
+              border: '1px solid var(--border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontFamily: 'var(--font-mono)',
               fontSize: '0.6rem',
               fontWeight: 700,
-              color: 'var(--primary)',
+              color: 'var(--text-muted)',
               letterSpacing: '0.04em',
             }}>
               OP

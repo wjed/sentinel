@@ -17,18 +17,18 @@ export default function Incidents() {
 
       {/* Filter UI (visual only) */}
       <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <select style={{ padding: '0.5rem 0.75rem', background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)' }}>
+        <select style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)' }}>
           <option>Severity (placeholder)</option>
         </select>
-        <select style={{ padding: '0.5rem 0.75rem', background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)' }}>
+        <select style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)' }}>
           <option>Time range (placeholder)</option>
         </select>
-        <select style={{ padding: '0.5rem 0.75rem', background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)' }}>
+        <select style={{ padding: '0.5rem 0.75rem', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text)' }}>
           <option>Source (placeholder)</option>
         </select>
       </div>
 
-      <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
           <thead>
             <tr style={{ background: 'var(--surface-hover)' }}>
@@ -53,7 +53,7 @@ export default function Incidents() {
                 <td style={{ padding: '0.75rem 1rem' }}>{inc.status}</td>
                 <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)' }}>{inc.source}</td>
                 <td style={{ padding: '0.75rem 1rem' }}>
-                  <Link to={`/incidents/${inc.id}`} style={{ color: 'var(--accent)', fontSize: '0.875rem' }}>View</Link>
+                  <Link to={`/incidents/${inc.id}`} style={{ color: 'var(--text-bright)', fontSize: '0.875rem' }}>View</Link>
                 </td>
               </tr>
             ))}

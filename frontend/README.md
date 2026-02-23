@@ -34,6 +34,16 @@ React + Vite app for the SOC executive dashboard. **Black/dark theme.** Scaffold
 
 ---
 
+## Authentication (Cognito)
+
+Sign-in uses **AWS Cognito** (OIDC). Clicking **Sign in** redirects to your Cognito User Pool hosted UI; after login, users return to the app and can access **Dashboard**, **Incidents**, etc. Unauthenticated users who open those routes are redirected to Cognito to sign in.
+
+- Config: `src/auth/config.js` (User Pool ID, Client ID, redirect/logout URLs).
+- Optional env: copy `.env.example` to `.env` and set `VITE_REDIRECT_URI` and `VITE_COGNITO_DOMAIN` for production.
+- In Cognito, add your app URL(s) to the app client **Allowed callback URLs** and **Allowed sign-out URLs**.
+
+---
+
 ## Run locally
 
 ```bash

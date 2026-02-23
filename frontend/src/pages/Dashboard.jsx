@@ -1,8 +1,8 @@
-function KpiCard({ label, value, sub, color }) {
+function KpiCard({ label, value, sub }) {
   return (
     <div className="kpi-card">
       <div className="kpi-label">{label}</div>
-      <div className="kpi-value" style={color ? { color, textShadow: `0 0 20px ${color}33` } : undefined}>{value}</div>
+      <div className="kpi-value">{value}</div>
       {sub && <div className="kpi-sub">{sub}</div>}
     </div>
   )
@@ -19,9 +19,9 @@ function Panel({ title, height = 240, tag, children }) {
             fontSize: '0.5rem',
             padding: '0.1rem 0.4rem',
             background: 'var(--primary-bg)',
-            border: '1px solid rgba(0, 229, 255, 0.12)',
+            border: '1px solid var(--border)',
             borderRadius: 'var(--radius-sm)',
-            color: 'var(--primary)',
+            color: 'var(--text-muted)',
             letterSpacing: '0.08em',
           }}>{tag}</span>
         )}
@@ -73,7 +73,6 @@ function DonutChart({ segments, centerLabel, centerSub, size = 100 }) {
             strokeDasharray={`${seg.value} ${100 - seg.value}`}
             strokeDashoffset={`-${segments.slice(0, i).reduce((a, s) => a + s.value, 0)}`}
             strokeLinecap="round"
-            style={{ filter: `drop-shadow(0 0 3px ${seg.color}66)` }}
           />
         ))}
       </svg>
@@ -108,7 +107,6 @@ function Legend({ items }) {
             height: 6,
             borderRadius: 1,
             background: color,
-            boxShadow: `0 0 4px ${color}66`,
           }} />
           <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.03em' }}>{label}</span>
         </div>
@@ -134,7 +132,7 @@ export default function Dashboard() {
           textAlign: 'right',
         }}>
           <div>LAST REFRESH: 00:04:32 AGO</div>
-          <div style={{ color: 'var(--primary)', marginTop: 2 }}>AUTO-REFRESH: ON</div>
+          <div style={{ color: 'var(--text-muted)', marginTop: 2 }}>AUTO-REFRESH: ON</div>
         </div>
       </div>
 
@@ -144,8 +142,8 @@ export default function Dashboard() {
         style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '0.75rem' }}
       >
         <KpiCard label="Total Attacks" value="14,283" sub="+12.4% vs prev period" />
-        <KpiCard label="Unique Source IPs" value="2,847" sub="94 countries identified" color="var(--secondary)" />
-        <KpiCard label="Unique HASSHs" value="312" sub="SSH fingerprints captured" color="var(--warning)" />
+        <KpiCard label="Unique Source IPs" value="2,847" sub="94 countries identified" />
+        <KpiCard label="Unique HASSHs" value="312" sub="SSH fingerprints captured" />
       </div>
 
       {/* Row 2 — Attack timeline histogram */}
@@ -159,14 +157,9 @@ export default function Dashboard() {
                   style={{
                     flex: 1,
                     height: `${h}%`,
-                    background: h > 80
-                      ? 'var(--danger)'
-                      : h > 60
-                        ? 'var(--primary)'
-                        : 'rgba(0, 229, 255, 0.2)',
+                    background: h > 80 ? 'var(--text-bright)' : h > 60 ? 'var(--text-muted)' : 'var(--text-dim)',
                     borderRadius: '1px 1px 0 0',
                     transition: 'height 0.3s',
-                    boxShadow: h > 80 ? '0 0 8px rgba(255, 51, 102, 0.3)' : h > 60 ? '0 0 6px rgba(0, 229, 255, 0.2)' : 'none',
                   }}
                 />
               ))}
@@ -189,26 +182,26 @@ export default function Dashboard() {
         <Panel title="Dest Port" tag="TOP 5" height={200}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', width: '100%', padding: '0.75rem 1rem' }}>
             <BarMetric label="22 // SSH" pct={68} />
-            <BarMetric label="23 // TELNET" pct={18} color="var(--secondary)" />
-            <BarMetric label="2222" pct={8} color="var(--warning)" />
-            <BarMetric label="80 // HTTP" pct={4} color="var(--success)" />
-            <BarMetric label="OTHER" pct={2} color="var(--text-dim)" />
+            <BarMetric label="23 // TELNET" pct={18} />
+            <BarMetric label="2222" pct={8} />
+            <BarMetric label="80 // HTTP" pct={4} />
+            <BarMetric label="OTHER" pct={2} />
           </div>
         </Panel>
 
         <Panel title="Attacks by Country" tag="GEO" height={200}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', width: '100%', padding: '0.75rem 1rem' }}>
-            <BarMetric label="CN // CHINA" pct={34} color="var(--danger)" />
-            <BarMetric label="RU // RUSSIA" pct={22} color="var(--warning)" />
+            <BarMetric label="CN // CHINA" pct={34} />
+            <BarMetric label="RU // RUSSIA" pct={22} />
             <BarMetric label="US // UNITED STATES" pct={15} />
-            <BarMetric label="BR // BRAZIL" pct={11} color="var(--success)" />
-            <BarMetric label="OTHER" pct={18} color="var(--text-dim)" />
+            <BarMetric label="BR // BRAZIL" pct={11} />
+            <BarMetric label="OTHER" pct={18} />
           </div>
         </Panel>
 
         <Panel title="Attack Origin Map" tag="GEOIP" height={200}>
           <div style={{ textAlign: 'center', color: 'var(--text-dim)' }}>
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="0.7" style={{ marginBottom: '0.4rem', opacity: 0.3 }}>
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="0.7" style={{ marginBottom: '0.4rem', opacity: 0.5 }}>
               <circle cx="12" cy="12" r="10" />
               <line x1="2" y1="12" x2="22" y2="12" />
               <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
@@ -232,14 +225,14 @@ export default function Dashboard() {
               centerLabel="2,847"
               centerSub="IPs"
               segments={[
-                { value: 62, color: 'var(--danger)' },
-                { value: 28, color: 'var(--warning)' },
+                { value: 62, color: 'var(--text-bright)' },
+                { value: 28, color: 'var(--text-muted)' },
                 { value: 10, color: 'var(--text-dim)' },
               ]}
             />
             <Legend items={[
-              { color: 'var(--danger)', label: 'MALICIOUS — 62%' },
-              { color: 'var(--warning)', label: 'SUSPICIOUS — 28%' },
+              { color: 'var(--text-bright)', label: 'MALICIOUS — 62%' },
+              { color: 'var(--text-muted)', label: 'SUSPICIOUS — 28%' },
               { color: 'var(--text-dim)', label: 'UNKNOWN — 10%' },
             ]} />
           </div>
@@ -251,19 +244,19 @@ export default function Dashboard() {
               centerLabel="94"
               centerSub="GEO"
               segments={[
-                { value: 34, color: 'var(--danger)' },
-                { value: 22, color: 'var(--warning)' },
-                { value: 15, color: 'var(--primary)' },
-                { value: 11, color: 'var(--success)' },
-                { value: 18, color: 'var(--secondary)' },
+                { value: 34, color: 'var(--text-bright)' },
+                { value: 22, color: 'var(--text-muted)' },
+                { value: 15, color: 'var(--text)' },
+                { value: 11, color: 'var(--text-dim)' },
+                { value: 18, color: 'var(--border)' },
               ]}
             />
             <Legend items={[
-              { color: 'var(--danger)', label: 'CN — 34%' },
-              { color: 'var(--warning)', label: 'RU — 22%' },
-              { color: 'var(--primary)', label: 'US — 15%' },
-              { color: 'var(--success)', label: 'BR — 11%' },
-              { color: 'var(--secondary)', label: 'OTHER — 18%' },
+              { color: 'var(--text-bright)', label: 'CN — 34%' },
+              { color: 'var(--text-muted)', label: 'RU — 22%' },
+              { color: 'var(--text)', label: 'US — 15%' },
+              { color: 'var(--text-dim)', label: 'BR — 11%' },
+              { color: 'var(--border)', label: 'OTHER — 18%' },
             ]} />
           </div>
         </Panel>
@@ -279,14 +272,14 @@ export default function Dashboard() {
             <DonutChart
               centerLabel="PORTS"
               segments={[
-                { value: 68, color: 'var(--primary)' },
-                { value: 18, color: 'var(--warning)' },
+                { value: 68, color: 'var(--text-bright)' },
+                { value: 18, color: 'var(--text-muted)' },
                 { value: 14, color: 'var(--text-dim)' },
               ]}
             />
             <Legend items={[
-              { color: 'var(--primary)', label: 'PORT 22 — 68%' },
-              { color: 'var(--warning)', label: 'PORT 23 — 18%' },
+              { color: 'var(--text-bright)', label: 'PORT 22 — 68%' },
+              { color: 'var(--text-muted)', label: 'PORT 23 — 18%' },
               { color: 'var(--text-dim)', label: 'OTHER — 14%' },
             ]} />
           </div>
@@ -297,14 +290,14 @@ export default function Dashboard() {
             <DonutChart
               centerLabel="SSH"
               segments={[
-                { value: 45, color: 'var(--success)' },
-                { value: 35, color: 'var(--primary)' },
+                { value: 45, color: 'var(--text-bright)' },
+                { value: 35, color: 'var(--text-muted)' },
                 { value: 20, color: 'var(--text-dim)' },
               ]}
             />
             <Legend items={[
-              { color: 'var(--success)', label: 'SSH-2.0 — 45%' },
-              { color: 'var(--primary)', label: 'SSH-1.99 — 35%' },
+              { color: 'var(--text-bright)', label: 'SSH-2.0 — 45%' },
+              { color: 'var(--text-muted)', label: 'SSH-1.99 — 35%' },
               { color: 'var(--text-dim)', label: 'OTHER — 20%' },
             ]} />
           </div>
@@ -331,20 +324,20 @@ export default function Dashboard() {
                   letterSpacing: '0.06em',
                 }}>{country}</div>
                 <div style={{ display: 'flex', height: 10, borderRadius: 2, overflow: 'hidden', gap: 1 }}>
-                  <div style={{ width: `${ssh}%`, background: 'var(--primary)', transition: 'width 0.3s', boxShadow: '0 0 4px rgba(0, 229, 255, 0.2)' }} title={`SSH ${ssh}%`} />
-                  <div style={{ width: `${telnet}%`, background: 'var(--warning)', transition: 'width 0.3s' }} title={`Telnet ${telnet}%`} />
-                  <div style={{ width: `${http}%`, background: 'var(--success)', transition: 'width 0.3s' }} title={`HTTP ${http}%`} />
+                  <div style={{ width: `${ssh}%`, background: 'var(--text-bright)', transition: 'width 0.3s' }} title={`SSH ${ssh}%`} />
+                  <div style={{ width: `${telnet}%`, background: 'var(--text-muted)', transition: 'width 0.3s' }} title={`Telnet ${telnet}%`} />
+                  <div style={{ width: `${http}%`, background: 'var(--text-dim)', transition: 'width 0.3s' }} title={`HTTP ${http}%`} />
                 </div>
               </div>
             ))}
             <div style={{ display: 'flex', gap: '1.25rem', marginTop: '0.2rem' }}>
               {[
-                { color: 'var(--primary)', label: 'SSH' },
-                { color: 'var(--warning)', label: 'TELNET' },
-                { color: 'var(--success)', label: 'HTTP' },
+                { color: 'var(--text-bright)', label: 'SSH' },
+                { color: 'var(--text-muted)', label: 'TELNET' },
+                { color: 'var(--text-dim)', label: 'HTTP' },
               ].map(({ color, label }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <div style={{ width: 6, height: 6, borderRadius: 1, background: color, boxShadow: `0 0 4px ${color}44` }} />
+                  <div style={{ width: 6, height: 6, borderRadius: 1, background: color }} />
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--text-dim)', letterSpacing: '0.08em' }}>{label}</span>
                 </div>
               ))}
