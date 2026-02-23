@@ -13,7 +13,11 @@ from stacks.network_stack import NetworkStack
 from stacks.identity_stack import IdentityStack
 from stacks.data_stack import DataStack
 from stacks.backend_stack import BackendStack
-from stacks.website_stack import WebsiteStack
+# NOTE: WebsiteStack is intentionally not imported while the backend team
+# is iterating on infrastructure that does not depend on the built
+# frontend assets (frontend/dist). Re-enable this import when the
+# website deployment flow is ready again.
+# from stacks.website_stack import WebsiteStack
 
 app = cdk.App()
 
@@ -30,6 +34,6 @@ DataStack(app, "SentinelNet-Data", env=env)
 BackendStack(app, "SentinelNet-Backend", env=env)
 
 # Deployable: S3 + CloudFront for the frontend. Deploy with: cdk deploy SentinelNet-Website
-WebsiteStack(app, "SentinelNet-Website", env=env)
+# WebsiteStack(app, "SentinelNet-Website", env=env)
 
 app.synth()
