@@ -62,6 +62,7 @@ class CostTagStack(Stack):
                 Tags.of(resource_scope).add("Tier", "Internal-Private")
                 Tags.of(resource_scope).add("DataSensitivity", "High")
                 Tags.of(resource_scope).add("Service", "Database-Storage")
+                Tags.of(resource_scope).add("Service", "AWSLambda")
 
         @staticmethod
         def tag_public_resources(resource_scope: Construct):
