@@ -61,8 +61,12 @@ class CostTagStack(Stack):
                 """
                 Tags.of(resource_scope).add("Tier", "Internal-Private")
                 Tags.of(resource_scope).add("DataSensitivity", "High")
-                Tags.of(resource_scope).add("Service", "Database-Storage")
+                Tags.of(resource_scope).add("Service", "AmazonEC2")
+                Tags.of(resource_scope).add("Service", "AmazonDynamoDB")
                 Tags.of(resource_scope).add("Service", "AWSLambda")
+                Tags.of(resource_scope).add("Service", "AmazonRDS")
+                Tags.of(resource_scope).add("Service", "AmazonCognito")
+
 
         @staticmethod
         def tag_public_resources(resource_scope: Construct):
