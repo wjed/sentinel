@@ -11,11 +11,19 @@ const COGNITO_CLIENT_ID = '76agfktalked2qpjjvbfh380m5'
 /** OIDC issuer (authority) for your User Pool */
 export const authority = `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${COGNITO_USER_POOL_ID}`
 
+/** Normalize URL: no trailing slash so it matches Cognito allowed URLs exactly */
+function normalizeOrigin(url) {
+  if (typeof url !== 'string') return url
+  const u = url.trim()
+  return u.endsWith('/') ? u.slice(0, -1) : u
+}
+
 /** Callback URL after sign-in. Add this exact URL to Cognito App client "Allowed callback URLs" */
-export const redirectUri =
+const rawRedirect =
   typeof import.meta !== 'undefined' && import.meta.env?.VITE_REDIRECT_URI
     ? import.meta.env.VITE_REDIRECT_URI
     : (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')
+export const redirectUri = normalizeOrigin(rawRedirect)
 
 /** Sign-out redirect. Add this to Cognito "Allowed sign-out URLs" */
 export const logoutUri = redirectUri

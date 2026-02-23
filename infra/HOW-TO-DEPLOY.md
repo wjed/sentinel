@@ -171,6 +171,25 @@ You do **not** need to run `cdk bootstrap` again.
 
 ---
 
+## Sign-in: "Something went wrong" on the Cognito page
+
+If clicking **Sign in** takes you to a Cognito page that says *"Something went wrong / An error was encountered with the requested page"*, Cognito is rejecting the request because the **callback URL** isn't allowed.
+
+**Fix (in AWS Console):**
+
+1. Open **Amazon Cognito** → **User pools** → select the SentinelNet pool → **App integration**.
+2. Under **App client list**, open the **SentinelNet** app client.
+3. Under **Hosted UI**, find **Allowed callback URLs**.
+4. Add the **exact** URL your app runs on, with **no trailing slash**:
+   - Local: `http://localhost:3000`
+   - Production: your CloudFront URL from deploy outputs, e.g. `https://d1zrndjozdwm01.cloudfront.net`
+5. In **Allowed sign-out URLs**, add the same URL(s).
+6. Save.
+
+The app sends `redirect_uri` = that URL (no trailing slash). If the URL in Cognito doesn't match exactly, Cognito shows the generic error. For production builds, set `VITE_REDIRECT_URI` in `.env` to your CloudFront URL so it's fixed at build time.
+
+---
+
 ## If something goes wrong
 
 - **“npm: command not found”** — Install Node.js from https://nodejs.org and open a **new** terminal.
