@@ -18,6 +18,7 @@ const publicNavLinks = [
 const appNavLinks = [
   { to: '/dashboard', label: 'Dashboard' },
   { to: '/incidents', label: 'Incidents' },
+  { to: '/account', label: 'Account' },
 ]
 
 export default function TopNav() {
@@ -90,18 +91,18 @@ export default function TopNav() {
             </button>
           </div>
         ) : (
-          <button
-            type="button"
+          <NavLink
+            to="/login"
             className="btn-primary"
             style={{
               marginLeft: '0.5rem',
               padding: '0.5rem 1rem',
               fontSize: '0.875rem',
+              textDecoration: 'none',
             }}
-            onClick={() => auth.signinRedirect()}
           >
             Sign in
-          </button>
+          </NavLink>
         )}
       </nav>
     </header>

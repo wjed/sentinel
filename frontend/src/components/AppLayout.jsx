@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Outlet, NavLink } from 'react-router-dom'
+import { useAuth } from 'react-oidc-context'
 
 const ShieldIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -50,6 +51,12 @@ const icons = {
       <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
     </svg>
   ),
+  account: (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
   collapse: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="15 18 9 12 15 6" />
@@ -68,11 +75,15 @@ const sidebarLinks = [
   { to: '/incidents', label: 'Incidents', icon: 'incidents' },
   { to: '/assets', label: 'Assets', icon: 'assets' },
   { to: '/reports', label: 'Reports', icon: 'reports' },
+  { to: '/account', label: 'Account', icon: 'account' },
   { to: '/settings', label: 'Settings', icon: 'settings' },
 ]
 
 export default function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
+  const auth = useAuth()
+  const profile = auth.user?.profile ?? {}
+  const userInitials = (profile.email ?? profile.sub ?? '?').slice(0, 2).toUpperCase()
   const sidebarW = collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)'
 
   return (
@@ -328,22 +339,25 @@ export default function AppLayout() {
             </div>
 
             {/* User avatar */}
-            <div style={{
-              width: 28,
-              height: 28,
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--primary-bg)',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.6rem',
-              fontWeight: 700,
-              color: 'var(--text-muted)',
-              letterSpacing: '0.04em',
-            }}>
-              OP
+            <div
+              title={profile.email ?? 'Account'}
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--primary-bg)',
+                border: '1px solid var(--border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.6rem',
+                fontWeight: 700,
+                color: 'var(--text-muted)',
+                letterSpacing: '0.04em',
+              }}
+            >
+              {userInitials}
             </div>
           </div>
         </header>

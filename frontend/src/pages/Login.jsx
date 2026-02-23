@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from 'react-oidc-context'
 import TopNav from '../components/TopNav'
 
@@ -55,7 +55,7 @@ export default function Login() {
             Sign in with Cognito
           </button>
           <p style={{ marginTop: '1rem', fontSize: '0.875rem' }}>
-            <a href="/dashboard" style={{ color: 'var(--text-muted)' }}>View Demo Dashboard (requires sign-in) →</a>
+            <Link to="/dashboard" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Go to Dashboard (requires sign-in) →</Link>
           </p>
         </div>
       </div>

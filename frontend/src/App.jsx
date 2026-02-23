@@ -13,6 +13,7 @@ import IncidentDetail from './pages/IncidentDetail'
 import Assets from './pages/Assets'
 import Reports from './pages/Reports'
 import Settings from './pages/Settings'
+import Account from './pages/Account'
 import Login from './pages/Login'
 
 export default function App() {
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="assets" element={<Assets />} />
         <Route path="reports" element={<Reports />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="account" element={<Account />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

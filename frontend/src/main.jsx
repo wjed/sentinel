@@ -6,12 +6,11 @@ import App from './App'
 import { oidcConfig } from './auth/config'
 import './index.css'
 
+// StrictMode disabled: it can cause the OIDC callback to run twice and the token exchange to return 400.
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <AuthProvider {...oidcConfig}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </AuthProvider>
-  </React.StrictMode>
+  <AuthProvider {...oidcConfig}>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </AuthProvider>
 )

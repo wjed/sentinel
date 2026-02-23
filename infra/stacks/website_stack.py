@@ -55,16 +55,24 @@ class WebsiteStack(Stack):
         )
 
         # Deploy frontend build to bucket. Run `npm run build` in frontend/ first.
+        # We do not pass distribution/distribution_paths here: the CDK custom resource would wait for
+        # CloudFront invalidation to complete and often times out ("Waiter InvalidationCompleted failed").
+        # After deploy, run: aws cloudfront create-invalidation --distribution-id <DistributionId> --paths "/*"
         s3_deploy.BucketDeployment(
             self,
             "DeployWebsite",
             sources=[s3_deploy.Source.asset(frontend_dist)],
             destination_bucket=bucket,
-            distribution=self.distribution,
-            distribution_paths=["/*"],
         )
 
         # Outputs so the URL shows in CloudFormation and `cdk deploy` output
+        CfnOutput(
+            self,
+            "DistributionId",
+            value=self.distribution.distribution_id,
+            description="CloudFront distribution ID (use for create-invalidation after deploy)",
+            export_name="SentinelNetWebsiteDistributionId",
+        )
         CfnOutput(
             self,
             "DistributionDomainName",
