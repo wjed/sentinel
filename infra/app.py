@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """
 SentinelNet - CDK Application Entry Point.
-
-Defines all stacks. The website stack (S3 + CloudFront) is deployable;
-other stacks are placeholders. Use AWS credentials via env or aws configure.
 """
 
 import os
@@ -14,22 +11,33 @@ from stacks.identity_stack import IdentityStack
 from stacks.data_stack import DataStack
 from stacks.backend_stack import BackendStack
 from stacks.website_stack import WebsiteStack
+from stacks.cost_tag_stack import CostTagStack  # Import your tagging stack
 
 app = cdk.App()
 
-# Use default account/region from environment (e.g. AWS_PROFILE or AWS_ACCESS_KEY_ID)
 env = cdk.Environment(
     account=os.environ.get("CDK_DEFAULT_ACCOUNT"),
     region=os.environ.get("CDK_DEFAULT_REGION"),
 )
 
-# Placeholder stacks (empty)
-NetworkStack(app, "SentinelNet-Network", env=env)
-IdentityStack(app, "SentinelNet-Identity", env=env)
-DataStack(app, "SentinelNet-Data", env=env)
-BackendStack(app, "SentinelNet-Backend", env=env)
+# 1. Apply GLOBAL Tags to the entire App (Project-wide)
+# This ensures even if you forget to tag a specific stack, it's still labeled SentinelNet.
+CostTagStack(app, "SentinelNet-GlobalTags")
 
-# Deployable: S3 + CloudFront for the frontend. Deploy with: cdk deploy SentinelNet-Website
-WebsiteStack(app, "SentinelNet-Website", env=env)
+# 2. Instantiate Stacks
+network = NetworkStack(app, "SentinelNet-Network", env=env)
+identity = IdentityStack(app, "SentinelNet-Identity", env=env)
+data = DataStack(app, "SentinelNet-Data", env=env)
+backend = BackendStack(app, "SentinelNet-Backend", env=env)
+website = WebsiteStack(app, "SentinelNet-Website", env=env)
+
+# 3. Apply SPECIFIC Tier Tags
+# Tagging our internal infrastructure and data layer
+CostTagStack.tag_internal_resources(network)
+CostTagStack.tag_internal_resources(data)
+CostTagStack.tag_internal_resources(backend)
+
+# Tagging our public-facing website
+CostTagStack.tag_public_resources(website)
 
 app.synth()
