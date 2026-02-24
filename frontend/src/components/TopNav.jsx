@@ -81,9 +81,7 @@ export default function TopNav() {
             {label}
           </NavLink>
         ))}
-        {auth.isLoading ? (
-          <span style={{ marginLeft: '0.5rem', fontSize: '0.8rem', color: 'var(--text-dim)' }}>…</span>
-        ) : auth.isAuthenticated ? (
+        {!auth.isLoading && auth.isAuthenticated ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '0.5rem' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }} title={auth.user?.profile?.email}>
               {auth.user?.profile?.email ?? auth.user?.profile?.sub ?? 'Signed in'}
@@ -97,7 +95,7 @@ export default function TopNav() {
               Sign out
             </button>
           </div>
-        ) : (
+        ) : !auth.isLoading ? (
           <NavLink
             to="/login"
             className="btn-primary"
@@ -110,7 +108,7 @@ export default function TopNav() {
           >
             Sign in
           </NavLink>
-        )}
+        ) : null}
       </nav>
     </header>
   )

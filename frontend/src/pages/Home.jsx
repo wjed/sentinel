@@ -9,7 +9,7 @@ export default function Home() {
           SentinelNet is a managed SOC and threat monitoring platform. We ingest, triage, and escalate security events so your team gets clear, actionable intelligence.
         </p>
         <div className="hero-ctas">
-          <Link to="/dashboard" className="btn-primary">View Demo Dashboard</Link>
+          <Link to="/product" className="btn-primary">View product demo</Link>
           <Link to="/login" className="btn-secondary">Sign in</Link>
         </div>
       </section>
@@ -67,9 +67,9 @@ export default function Home() {
         <h2 className="section-title">Pricing</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem', maxWidth: 900, margin: '0 auto' }}>
           {[
-            { name: 'Starter', price: 'Contact us', desc: 'Small teams and pilot deployments' },
-            { name: 'Professional', price: 'Contact us', desc: 'Growing security programs' },
-            { name: 'Enterprise', price: 'Contact us', desc: 'Full SOC and custom requirements' },
+            { name: 'Starter', price: '$0', desc: 'Free for small teams — up to 5 users' },
+            { name: 'Professional', price: '$299/mo', desc: 'Growing teams — case management & honeypot' },
+            { name: 'Enterprise', price: 'Custom', desc: 'Full SOC, custom integrations & SLA' },
           ].map((tier) => (
             <div key={tier.name} className="feature-card" style={{ padding: '1.5rem' }}>
               <div style={{ fontWeight: 600, fontSize: '1.0625rem', marginBottom: '0.35rem', color: 'var(--text-bright)' }}>{tier.name}</div>

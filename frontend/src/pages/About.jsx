@@ -1,7 +1,6 @@
 export default function About() {
   const team = [
     'Will Jedrzejczak',
-    'Rich Amiri',
     'Josh Martino',
     'Dilpreet Gill',
     'Noah Reed',
@@ -11,7 +10,6 @@ export default function About() {
     'Andrew M',
     'Nick Crockett',
     'Cole W.',
-    'Jack Harper (TA)',
     'Jack Nelson',
   ]
 
