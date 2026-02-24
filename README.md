@@ -1,132 +1,107 @@
 # SentinelNet
 
-**Cloud-native, B2B-style Security Operations Center (SOC) platform** — university project for simulating real-world SOC workflows: ingesting security data, processing and correlating it, escalating incidents, and exposing an executive dashboard to clients.
+A small web app: marketing pages (Home, Product, Pricing) + a dashboard you sign into with Cognito. It runs on AWS (S3 + CloudFront). JMU university project.
 
 ---
 
-## Live site
+## What’s in this repo
 
-The dashboard is deployed on AWS (S3 + CloudFront):
+| Folder | What it is |
+|--------|------------|
+| **frontend/** | The website. React app. You edit code here. |
+| **infra/** | AWS deployment (CDK). One command deploys the site. |
 
-**https://d1zrndjozdwm01.cloudfront.net**
-
-Backend and other infra stacks are scaffolding only; the website stack is the one that deploys.
-
----
-
-## What each folder is for
-
-| Folder | What it is | Where to work | How it fits in |
-|--------|------------|---------------|----------------|
-| **`frontend/`** | React + Vite dashboard UI (black theme). Pages: Dashboard, Incidents, Data, Settings, Login. | Add and edit pages in `frontend/src/pages/`, shared UI in `frontend/src/components/`. | Clients see this. It will call the backend API and show SOC data. |
-| **`backend/`** | API and business logic (Python or Node — your choice). No server runs yet. | Put HTTP routes in `backend/api/`, ingestion/correlation/escalation logic in `backend/services/`. | Sits between the frontend and data/infra. Handles auth, incidents, and data pipelines. |
-| **`infra/`** | **AWS CDK in Python**: stacks (Network, Identity, Data, Backend, Website) and shared constants/constructs. | Edit stacks in `infra/stacks/`, shared in `infra/shared/`. Run `cdk` from `infra/`. | Defines VPC, IAM, data, compute, and S3+CloudFront (website) in code. Website stack is deployable. |
-| **`docs/`** | Design docs, architecture notes, and how things connect. | Add markdown files and diagrams here. | Single place for “how the system works” and team handoffs. |
-| **`expansion/`** | Placeholder for extra modules or experiments that don’t live in frontend/backend/infra yet. | Use when you need a new top-level area (e.g. tooling, scripts). | Keeps the main tree clean while you grow. |
+That’s it. No backend server. Sign-in is AWS Cognito.
 
 ---
 
-## Where to do what
+## Run the site on your computer
 
-- **UI / dashboard** → `frontend/` (see [frontend/README.md](frontend/README.md)).
-- **API and business logic** → `backend/` (see [backend/README.md](backend/README.md)).
-- **AWS resources (later)** → `infra/` (see [infra/README.md](infra/README.md)).
-- **Documentation** → `docs/` (see [docs/README.md](docs/README.md)).
+From the **repo root** (the folder that contains `frontend` and `infra`):
 
----
-
-## How it works (high level)
-
-1. **Frontend** — Users open the dashboard, see KPIs and incidents, use Data and Settings. The app talks to the **backend** over HTTP.
-2. **Backend** — Receives requests, runs **services** (ingestion, correlation, escalation), and may read/write data that **infra** will eventually provide (S3, queues, DBs).
-3. **Infra** — CDK stacks describe (but don’t yet deploy) network, identity, data stores, and compute. When you enable deployment, these become the real AWS footprint.
-
-The **frontend** is deployed to CloudFront (see live URL above). You can also run it locally with `npm start` in `frontend/`. Backend is structure-only for now.
-
----
-
-## Project structure
-
-```
-sentinel-net/
-├── frontend/          # SOC dashboard UI (React + Vite, black theme)
-│   ├── src/
-│   │   ├── pages/     # Dashboard, Incidents, Data, Settings, Login
-│   │   └── components/
-│   ├── package.json
-│   └── README.md
-├── backend/           # API and services (scaffolding)
-│   ├── api/           # Routes, handlers
-│   ├── services/      # Business logic
-│   └── README.md
-├── infra/             # AWS CDK (Python) — stacks and shared; website stack deployable
-│   ├── app.py
-│   ├── stacks/        # Network, Identity, Data, Backend
-│   ├── shared/
-│   └── README.md
-├── docs/              # Documentation
-├── expansion/         # Future modules
-└── README.md          # This file
+```bash
+cd frontend
+npm install
+npm run build
+npm run dev
 ```
 
----
-
-## Getting started
-
-1. **Clone and open** — no AWS credentials required to read or run the frontend locally.
-2. **Run the frontend locally (optional):**
-   ```bash
-   cd frontend && npm install && npm start
-   ```
-   Opens at http://localhost:3000 (black theme, placeholder pages).
-3. **Deploy the website (optional):** See [Deploying the website](#deploying-the-website) below. **Teammates:** use the no-assumptions guide [infra/HOW-TO-DEPLOY.md](infra/HOW-TO-DEPLOY.md). Technical summary: [infra/DEPLOY.md](infra/DEPLOY.md).
+Open **http://localhost:3000** in your browser. You’ll see the site. Sign-in will redirect to Cognito (only works after you deploy, or with Cognito set up).
 
 ---
 
-## Deploying the website
+## Put the site on the internet (deploy)
 
-**New to this?** Use **[infra/HOW-TO-DEPLOY.md](infra/HOW-TO-DEPLOY.md)** — step-by-step for the whole team.
+You need: **Node.js**, **npm**, **Python 3**, and **AWS credentials** (access key + secret).
 
-Developers who want to deploy (or redeploy) the frontend to S3 + CloudFront need:
+### First time only (once per computer)
 
-- **AWS credentials** — Set via environment variables or `aws configure`. Never commit keys to the repo. See [infra/DEPLOY.md](infra/DEPLOY.md).
-- **Python CDK** — Infra is AWS CDK in Python; run all `cdk` commands from the `infra/` directory.
+Open a terminal at the **repo root**. Run:
 
-**Quick deploy (after first-time bootstrap):**
+```bash
+cd infra
+pip install -r requirements.txt
+cdk bootstrap
+cd ..
+```
 
-1. **Set credentials** (same terminal you’ll use for deploy):
-   ```bash
-   export AWS_ACCESS_KEY_ID=your_access_key_id
-   export AWS_SECRET_ACCESS_KEY=your_secret_access_key
-   export AWS_DEFAULT_REGION=us-east-1
-   ```
-2. **Build the frontend:**
-   ```bash
-   cd frontend && npm install && npm run build && cd ..
-   ```
-3. **Deploy the website stack:**
-   ```bash
-   cd infra
-   pip install -r requirements.txt   # first time or when deps change
-   cdk deploy SentinelNet-Website --require-approval never
-   ```
+(If `cdk` says “command not found”, run: `npm install -g aws-cdk` and open a new terminal.)
 
-**First time only:** run `cdk bootstrap` from `infra/` before the first `cdk deploy`.
+### Every time you want to deploy
 
-After deploy, the **CloudFront URL** is in the terminal output and in **AWS Console → CloudFormation → SentinelNet-Website → Outputs** (e.g. `WebsiteURL`). To redeploy after frontend changes: build again (`npm run build` in `frontend/`), then run `cdk deploy SentinelNet-Website` again from `infra/`.
+**Step 1 — Set AWS credentials** (same terminal you’ll use for the next steps).
 
-Full details, troubleshooting, and how to get the URL from the stack: **[infra/DEPLOY.md](infra/DEPLOY.md)**.
+Windows PowerShell:
+
+```powershell
+$env:AWS_ACCESS_KEY_ID="YOUR_ACCESS_KEY"
+$env:AWS_SECRET_ACCESS_KEY="YOUR_SECRET_KEY"
+$env:AWS_DEFAULT_REGION="us-east-1"
+```
+
+Mac / Linux / Git Bash:
+
+```bash
+export AWS_ACCESS_KEY_ID=YOUR_ACCESS_KEY
+export AWS_SECRET_ACCESS_KEY=YOUR_SECRET_KEY
+export AWS_DEFAULT_REGION=us-east-1
+```
+
+**Step 2 — Build the site**
+
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
+```
+
+**Step 3 — Deploy**
+
+```bash
+cd infra
+cdk deploy SentinelNet-Website --require-approval never
+cd ..
+```
+
+When it finishes, the terminal prints **WebsiteURL** (e.g. `https://xxxxx.cloudfront.net`). That’s your live site. Share that link. Sign-in works because the stack creates Cognito and wires it to that URL.
 
 ---
 
-## For students new to CDK and AWS
+## Checklist (so you don’t forget a step)
 
-- **Infra** holds CDK stacks; each stack is a class that will later define AWS resources. They are intentionally empty.
-- **Frontend** and **backend** are separate so UI and API teams can work in parallel.
-- When the course allows, deployment will be introduced separately.
+- [ ] AWS credentials are set in the terminal
+- [ ] You ran `cd frontend` → `npm install` → `npm run build` → `cd ..`
+- [ ] First time only: you ran `cd infra` → `pip install -r requirements.txt` → `cdk bootstrap`
+- [ ] You ran `cd infra` → `cdk deploy SentinelNet-Website --require-approval never`
+- [ ] You copied **WebsiteURL** from the output
 
 ---
 
-## License and course
+## Something broke?
 
-Used for the SentinelNet university project. See your course materials for licensing and submission details.
+- **“security token invalid”** → Set the AWS credentials again (Step 1).
+- **“No such file or directory: frontend/dist”** → You didn’t run `npm run build` in `frontend`. Do Step 2.
+- **“cdk: command not found”** → Run `npm install -g aws-cdk`, then open a new terminal.
+
+More detail and other issues: **infra/HOW-TO-DEPLOY.md**.
