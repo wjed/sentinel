@@ -81,12 +81,39 @@ After deploy, use **WebsiteURL** from the outputs. The callback URL is already s
 
 ---
 
+## User profiles (DynamoDB + S3 + profile API)
+
+A second stack **SentinelNet-UserData** adds:
+
+- **DynamoDB table** — One row per user, partition key `userId` (Cognito `sub`). Stores `displayName`, `profilePictureKey`, etc.
+- **S3 bucket** — For profile picture uploads.
+
+The **Website** stack includes a **profile API** (Lambda + HTTP API) when User Data is deployed. It exposes:
+
+- `GET /profile` — Load profile (display name, avatar icon, job function, bio)
+- `PATCH /profile` — Update profile fields
+
+**Order:** For a fresh deploy, User Data first then Website. If you get **"Cannot delete export ... in use by SentinelNet-Website"** (e.g. after removing the profile API’s use of the S3 bucket), deploy **Website only** with `--exclusively` so CDK doesn’t try to update User Data first, then deploy User Data:
+
+```bash
+cd frontend && npm run build && cd ..
+cd infra
+# Fix export conflict: deploy Website only (no dependency stacks), then User Data
+cdk deploy SentinelNet-Website --require-approval never --exclusively
+cdk deploy SentinelNet-UserData --require-approval never
+```
+
+After that, the **Account** page lets signed-in users pick an avatar icon, set display name, job/function, and bio (all stored in DynamoDB).
+
+---
+
 ## Quick checklist
 
 - [ ] AWS credentials set
 - [ ] `cd frontend` → `npm install` → `npm run build` → `cd ..`
 - [ ] First time only: `cd infra` → `pip install -r requirements.txt` → `cdk bootstrap` → `cd ..`
 - [ ] `cd infra` → `cdk deploy SentinelNet-Website --require-approval never`
+- [ ] (Optional) `cdk deploy SentinelNet-UserData --require-approval never` for profiles table + S3
 - [ ] Use **WebsiteURL** from the output; add that URL (with `/`) to Cognito callback and sign-out URLs
 
 ---

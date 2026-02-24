@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
-SentinelNet — one stack: website on CloudFront.
+SentinelNet — stacks: website (CloudFront + Cognito) and user data (DynamoDB + S3).
 
-Deploy with: cdk deploy SentinelNet-Website
+Deploy:
+  cdk deploy SentinelNet-Website
+  cdk deploy SentinelNet-UserData
+
 Use AWS credentials via env or aws configure.
 """
 
@@ -10,6 +13,7 @@ import os
 import aws_cdk as cdk
 
 from stacks.website_stack import WebsiteStack
+from stacks.user_data_stack import UserDataStack
 
 app = cdk.App()
 
@@ -18,6 +22,7 @@ env = cdk.Environment(
     region=os.environ.get("CDK_DEFAULT_REGION"),
 )
 
-WebsiteStack(app, "SentinelNet-Website", env=env)
+user_data_stack = UserDataStack(app, "SentinelNet-UserData", env=env)
+WebsiteStack(app, "SentinelNet-Website", env=env, user_data_stack=user_data_stack)
 
 app.synth()

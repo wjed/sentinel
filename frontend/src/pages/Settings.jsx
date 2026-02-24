@@ -1,3 +1,5 @@
+import DevAdvice from '../components/DevAdvice'
+
 export default function Settings() {
   return (
     <div className="page-wrap">
@@ -20,6 +22,15 @@ export default function Settings() {
           </span>
         </div>
       </div>
+
+        <DevAdvice
+          title="How to build this"
+          items={[
+            'Storage: key-value or JSON per user/org (DB row, Redis, or config service); keep secrets (API keys, webhooks) in a vault or env, not in the same store as non-secret prefs.',
+            'API: GET /settings and PATCH /settings (or scoped by section), with auth so each tenant only sees their own; validate and apply defaults on read.',
+            'UI: form per section (notifications, integrations, feature flags); save triggers PATCH; optional “test connection” or webhook ping for integrations.',
+          ]}
+        />
       </div>
     </div>
   )

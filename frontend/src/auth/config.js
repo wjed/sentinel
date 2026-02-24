@@ -53,6 +53,12 @@ export function getLogoutUri() {
   return getRedirectUri()
 }
 
+/** Profile API base URL (from config.json when profile API is deployed). */
+export function getProfileApiUrl() {
+  const c = getResolvedConfig()
+  return c?.profileApiUrl ?? ''
+}
+
 export function getOidcConfig() {
   return {
     authority: getAuthority(),

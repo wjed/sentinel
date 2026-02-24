@@ -1,3 +1,5 @@
+import DevAdvice from '../components/DevAdvice'
+
 export default function Assets() {
   return (
     <div className="page-wrap">
@@ -21,6 +23,16 @@ export default function Assets() {
           </span>
         </div>
       </div>
+
+        <DevAdvice
+          title="How to build this"
+          items={[
+            'Inventory: keep a registry of hosts/endpoints (DB table or API-backed list) with hostname, IP, type, tags, last_seen; update via manual entry, import (CSV), or discovery.',
+            'Discovery: optional—run a scanner (e.g. nmap), use cloud APIs (EC2, asset APIs), or deploy a light agent that phones home; normalize and upsert into your inventory.',
+            'API: list (with search/filter), get by id, create/update/delete; consider soft-delete and audit log for who changed what.',
+            'Frontend: table or card list; link to asset detail if you add it; use last_seen to show “stale” or “offline” state.',
+          ]}
+        />
       </div>
     </div>
   )

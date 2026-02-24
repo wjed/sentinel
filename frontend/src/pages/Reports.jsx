@@ -1,3 +1,5 @@
+import DevAdvice from '../components/DevAdvice'
+
 export default function Reports() {
   return (
     <div className="page-wrap">
@@ -22,6 +24,16 @@ export default function Reports() {
           </span>
         </div>
       </div>
+
+        <DevAdvice
+          title="How to build this"
+          items={[
+            'Generation: run a job (scheduled or on-demand) that pulls data from your existing APIs/DB, builds a PDF or CSV (e.g. with a template lib or Pandas), and stores the file (S3, GCS, or your app’s file store).',
+            'Metadata: track report runs (id, type, schedule, created_at, status, file link) in a DB; list them in the UI and expose a download link (signed URL or authenticated redirect).',
+            'Scheduling: use a cron (system cron, Cloud Scheduler, or workflow tool) to trigger the job; optionally email the link (SendGrid, SES) or post to Slack when done.',
+            'API: GET /reports (list), GET /reports/:id (metadata + download URL), POST /reports (trigger on-demand run).',
+          ]}
+        />
       </div>
     </div>
   )

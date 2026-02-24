@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import DevAdvice from '../components/DevAdvice'
 
 const fakeIncidents = [
   { id: 'INC-001', severity: 'Critical', asset: 'Placeholder host', timestamp: '—', status: 'Open', source: 'SIEM' },
@@ -63,6 +64,16 @@ export default function Incidents() {
           </tbody>
         </table>
       </div>
+
+        <DevAdvice
+          title="How to build this"
+          items={[
+            'Data: store incidents in a DB that supports filtering and sorting (e.g. Postgres/RDS with indexes on severity, created_at, status); or use a search engine (OpenSearch, Elasticsearch) if you need full-text and complex filters.',
+            'API: REST or GraphQL for list (with query params for filters) and for single incident fetch/update; return paginated results and allow PATCH for status/assignment.',
+            'Ingest: if incidents come from SIEM/EDR, add a webhook or queue consumer that normalizes payloads and inserts into your DB; keep source and raw payload for audit.',
+            'Frontend: table with sortable columns and filter dropdowns; wire them to your list API; link each row to a detail view (e.g. /incidents/:id).',
+          ]}
+        />
       </div>
     </div>
   )

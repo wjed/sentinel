@@ -1,3 +1,5 @@
+import DevAdvice from '../components/DevAdvice'
+
 function KpiCard({ label, value, sub }) {
   return (
     <div className="kpi-card">
@@ -335,6 +337,16 @@ export default function Dashboard() {
           </div>
         </Panel>
       </div>
+
+        <DevAdvice
+          title="How to build this"
+          items={[
+            'Backend: time-series or analytics store (e.g. TimescaleDB, InfluxDB, or a data warehouse) for attack counts by time/port/country; or pre-aggregate in a cache (Redis) and refresh periodically.',
+            'Ingest: hook your honeypot/SSH logs into a pipeline (Kinesis, Kafka, or even S3 + batch job) so you can run aggregations on a schedule or in real time.',
+            'Charts: either query your API from the frontend (GET /dashboard/metrics) or embed a BI tool (Grafana, QuickSight) in an iframe with a read-only datasource.',
+            'Geo: use a GeoIP library or service (MaxMind, IPinfo) when processing logs to get country codes; store by country for the breakdown and map.',
+          ]}
+        />
       </div>
     </div>
   )

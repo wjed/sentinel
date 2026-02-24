@@ -3,28 +3,43 @@ Website Stack — S3 + CloudFront + Cognito for SentinelNet.
 
 Deploys the built React app to S3/CloudFront and creates a Cognito user pool
 with Hosted UI. Writes config.json so the app uses the correct Cognito IDs at runtime.
+
+If user_data_stack is passed, also creates a profile API (Lambda + HTTP API) and
+adds apiBaseUrl to config so the frontend can load/save user profiles.
 """
 
 import json
 from pathlib import Path
+from typing import Optional
 
 from aws_cdk import CfnOutput, Stack, RemovalPolicy
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_s3_deployment as s3_deploy
 from aws_cdk import aws_cloudfront as cloudfront
 from aws_cdk import aws_cognito as cognito
+from aws_cdk import aws_apigatewayv2 as apigwv2
+from aws_cdk.aws_apigatewayv2_integrations import HttpLambdaIntegration
+from aws_cdk.aws_apigatewayv2_authorizers import HttpJwtAuthorizer
 from aws_cdk.aws_cloudfront_origins import S3BucketOrigin
+from aws_cdk import aws_lambda as lambda_
 from constructs import Construct
 
 
 class WebsiteStack(Stack):
-    """S3 + CloudFront + Cognito. One deploy: site + sign-in."""
+    """S3 + CloudFront + Cognito. Optionally profile API when user_data_stack is provided."""
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(
+        self,
+        scope: Construct,
+        construct_id: str,
+        user_data_stack: Optional[Stack] = None,
+        **kwargs,
+    ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
         repo_root = Path(__file__).resolve().parents[2]
         frontend_dist = str(repo_root / "frontend" / "dist")
+        profile_lambda_dir = str(repo_root / "infra" / "lambda" / "profile_api_py")
 
         # --- S3 + CloudFront (order: need distribution URL for Cognito callback) ---
         bucket = s3.Bucket(
@@ -116,6 +131,49 @@ function handler(event) {
         region = self.region
         cognito_domain_url = f"https://sentinelnet.auth.{region}.amazoncognito.com"
 
+        # Optional: profile API (Lambda + HTTP API) when UserData stack is provided
+        api_base_url = None
+        if user_data_stack is not None and hasattr(user_data_stack, "profiles_table"):
+            profile_fn = lambda_.Function(
+                self,
+                "ProfileApi",
+                runtime=lambda_.Runtime.PYTHON_3_12,
+                handler="handler.handler",
+                code=lambda_.Code.from_asset(profile_lambda_dir),
+                environment={
+                    "TABLE_NAME": user_data_stack.profiles_table.table_name,
+                },
+            )
+            user_data_stack.profiles_table.grant_read_write_data(profile_fn)
+
+            issuer_url = f"https://cognito-idp.{region}.amazonaws.com/{user_pool.user_pool_id}"
+            authorizer = HttpJwtAuthorizer(
+                "CognitoAuthorizer",
+                issuer_url,
+                jwt_audience=[app_client.user_pool_client_id],
+            )
+            http_api = apigwv2.HttpApi(
+                self,
+                "ProfileHttpApi",
+                cors_preflight=apigwv2.CorsPreflightOptions(
+                    allow_origins=["*"],
+                    allow_methods=[apigwv2.CorsHttpMethod.GET, apigwv2.CorsHttpMethod.PATCH, apigwv2.CorsHttpMethod.OPTIONS],
+                    allow_headers=["Authorization", "Content-Type"],
+                ),
+                default_authorizer=authorizer,
+            )
+            integration = HttpLambdaIntegration("ProfileIntegration", profile_fn)
+            http_api.add_routes(path="/profile", methods=[apigwv2.HttpMethod.GET, apigwv2.HttpMethod.PATCH], integration=integration)
+            api_base_url = http_api.api_endpoint
+
+            CfnOutput(
+                self,
+                "ProfileApiUrl",
+                value=api_base_url,
+                description="Profile API base URL (for frontend config).",
+                export_name="SentinelNetProfileApiUrl",
+            )
+
         # Runtime config for the frontend (so it uses this pool, not a hardcoded one)
         runtime_config = {
             "authority": f"https://cognito-idp.{region}.amazonaws.com/{user_pool.user_pool_id}",
@@ -125,6 +183,8 @@ function handler(event) {
             "cognitoDomain": cognito_domain_url,
             "scope": "openid email phone",
         }
+        if api_base_url:
+            runtime_config["profileApiUrl"] = api_base_url.rstrip("/")
 
         config_json = json.dumps(runtime_config, indent=2)
 

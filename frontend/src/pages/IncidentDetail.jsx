@@ -1,4 +1,5 @@
 import { useParams, Link } from 'react-router-dom'
+import DevAdvice from '../components/DevAdvice'
 
 export default function IncidentDetail() {
   const { id } = useParams()
@@ -53,6 +54,16 @@ export default function IncidentDetail() {
           </section>
         </div>
       </div>
+
+        <DevAdvice
+          title="How to build this"
+          items={[
+            'Detail API: GET /incidents/:id returning the full incident plus related data (timeline, notes, affected assets). Use your existing incidents store and join or secondary queries as needed.',
+            'Timeline: append-only list of events (status changes, notes, assignments). Store in the same DB—e.g. incident_events table with incident_id + timestamp—and append via API when user adds a note or updates status.',
+            'Notes & remediation: either JSON/list on the incident row or a separate table; PATCH /incidents/:id (or POST /incidents/:id/notes) to add content; consider markdown and author/timestamp.',
+            'Affected assets: many-to-many (incident_id, asset_id); resolve asset names/details from your assets API or DB when rendering the sidebar.',
+          ]}
+        />
       </div>
     </div>
   )

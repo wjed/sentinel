@@ -445,6 +445,54 @@ a.btn-primary:focus {
   color: var(--accent);
   font-weight: 600;
 }
+.top-nav-account-trigger:hover {
+  background: var(--bg-hover);
+  border-color: var(--border);
+}
+.top-nav [data-nav-dropdown] a:hover,
+.top-nav [data-nav-dropdown] button:hover {
+  background: var(--bg-hover);
+  color: var(--text-bright);
+}
+
+.account-signout:hover {
+  color: var(--text);
+}
+
+/* ═══ Dev advice (in-page implementation notes) ═══ */
+.dev-advice {
+  margin-top: var(--space-block);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.dev-advice-header {
+  padding: 0.5rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border);
+}
+.dev-advice-body {
+  padding: 1rem 1.25rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+.dev-advice-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+.dev-advice-list li {
+  margin-bottom: 0.4rem;
+}
+.dev-advice-list li:last-child {
+  margin-bottom: 0;
+}
 
 /* ═══ Responsive ═══ */
 @media (max-width: 900px) {

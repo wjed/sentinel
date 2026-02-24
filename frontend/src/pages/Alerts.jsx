@@ -1,3 +1,5 @@
+import DevAdvice from '../components/DevAdvice'
+
 export default function Alerts() {
   return (
     <div className="page-wrap">
@@ -20,6 +22,16 @@ export default function Alerts() {
           </span>
         </div>
       </div>
+
+        <DevAdvice
+          title="How to build this"
+          items={[
+            'Rules engine: store alert rules (thresholds, conditions, recipients) in a DB or config store; evaluate against incoming events (from your SIEM, logs, or app) in a worker or serverless function.',
+            'Notifications: send email (e.g. SendGrid, SES), Slack webhooks, or PagerDuty/Opsgenie for critical alerts; store user preferences for channel and frequency in your backend.',
+            'Feed: persist triggered alerts (e.g. in Postgres or a log store) with created_at, rule_id, summary; expose GET /alerts (paginated) for the UI; optional WebSocket or short polling for “live” updates.',
+            'If you already use a monitoring stack (Datadog, PagerDuty), consider an integration that creates alerts there and optionally syncs back a read-only feed here.',
+          ]}
+        />
       </div>
     </div>
   )
