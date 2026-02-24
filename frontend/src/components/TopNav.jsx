@@ -30,7 +30,7 @@ export default function TopNav() {
 
   const navLinks = auth.isAuthenticated
     ? [...publicNavLinks, ...appNavLinks]
-    : [...publicNavLinks, { to: '/dashboard', label: 'Dashboard' }]
+    : publicNavLinks
 
   return (
     <header
@@ -68,13 +68,14 @@ export default function TopNav() {
           <NavLink
             key={to}
             to={to}
+            className={({ isActive }) => isActive ? 'nav-active' : ''}
             style={({ isActive }) => ({
-              padding: '0.5rem 0.75rem',
+              padding: '0.5rem 0.85rem',
               borderRadius: 'var(--radius-sm)',
-              color: isActive ? 'var(--text-bright)' : 'var(--text-muted)',
-              fontWeight: isActive ? 600 : 400,
-              fontSize: '0.875rem',
-              transition: 'color 0.15s',
+              color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+              fontWeight: isActive ? 600 : 500,
+              fontSize: '0.9rem',
+              transition: 'color 0.2s',
             })}
           >
             {label}
