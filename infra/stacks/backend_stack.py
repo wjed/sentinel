@@ -12,88 +12,72 @@ from aws_cdk import aws_ec2 as ec2, aws_ecs as ecs, aws_elasticloadbalancingv2 a
 from constructs import Construct
 
 class BackendStack(Stack):
-    def __init__(self, scope: Construct, construct_id: str, vpc: ec2.Vpc, private_subnet_ids: list, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, vpc: ec2.Vpc, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # ECS Cluster
-        cluster = ecs.Cluster(self, "BackendCluster", vpc=vpc)
-
-        # Fargate Task Definition for Grafana
-        task_def = ecs.FargateTaskDefinition(self, "GrafanaTaskDef")
-        task_def.add_container(
-            "GrafanaContainer",
-            image=ecs.ContainerImage.from_registry("grafana/grafana"),
-            port_mappings=[ecs.PortMapping(container_port=3000)],
+        # Wrap the internal subnet IDs into a SubnetSelection CDK can use
+        internal_subnets = ec2.SubnetSelection(
+            subnets=[
+                ec2.Subnet.from_subnet_id(self, f"InternalSubnet{i}", subnet_id)
+                for i, subnet_id in enumerate(internal_subnet_ids)
+            ]
         )
 
-        # Fargate Service in private subnet
-        service = ecs.FargateService(
-            self,
-            "GrafanaService",
-            cluster=cluster,
-            task_definition=task_def,
-            vpc_subnets=ec2.SubnetSelection(subnet_ids=private_subnet_ids),
-            assign_public_ip=False,
+        # ─────────────────────────────────────────────
+        # DynamoDB — Telemetry Storage (Isolated Data Subnet)
+        # Fully Managed | No VPC placement required
+        # ─────────────────────────────────────────────
+        telemetry_table = dynamodb.Table(
+            self, "TelemetryTable",
+            table_name="sentinel-telemetry",
+            partition_key=dynamodb.Attribute(
+                name="id",
+                type=dynamodb.AttributeType.STRING,
+            ),
+            sort_key=dynamodb.Attribute(
+                name="timestamp",
+                type=dynamodb.AttributeType.STRING,
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,  # No capacity planning needed
+            removal_policy=RemovalPolicy.DESTROY,  # Change to RETAIN for production
         )
 
-        # Application Load Balancer in private subnet
-        lb = elbv2.ApplicationLoadBalancer(
-            self,
-            "GrafanaLB",
+        # ─────────────────────────────────────────────
+        # RDS MySQL — Relational Data (Isolated Data Subnet)
+        # Fully Managed
+        # ─────────────────────────────────────────────
+
+        # Security group — no inbound by default (isolated)
+        rds_sg = ec2.SecurityGroup(
+            self, "RDSSecurityGroup",
             vpc=vpc,
-            internet_facing=False,
-            vpc_subnets=ec2.SubnetSelection(subnet_ids=private_subnet_ids),
-        )
-        listener = lb.add_listener("GrafanaListener", port=80)
-        listener.add_targets(
-            "GrafanaTarget",
-            port=3000,
-            targets=[service],
+            description="Security group for RDS MySQL (isolated data subnet)",
+            allow_all_outbound=False,
         )
 
-        # Output the Load Balancer DNS
-        from aws_cdk import CfnOutput
-        CfnOutput(
-            self,
-            "GrafanaEndpoint",
-            value=lb.load_balancer_dns_name,
-            description="Grafana ALB endpoint (private)",
-        )
-        
-        thehive_sg = ec2.SecurityGroup(
-            self, "TheHiveSecurityGroup",
+        rds_instance = rds.DatabaseInstance(
+            self, "SentinelMySQL",
+            engine=rds.DatabaseInstanceEngine.mysql(
+                version=rds.MysqlEngineVersion.VER_8_0
+            ),
+            instance_type=ec2.InstanceType.of(
+                ec2.InstanceClass.T3, ec2.InstanceSize.MICRO
+            ),
             vpc=vpc,
-            description="Allow SSH and Web access for TheHive",
-            allow_all_outbound=True
-        )
-        thehive_sg.add_ingress_rule(
-            ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "Allow SSH"
-        )
-        thehive_sg.add_ingress_rule(
-            ec2.Peer.any_ipv4(), ec2.Port.tcp(9000), "Allow TheHive web UI"
-        )
-
-        machine_image = ec2.MachineImage.from_ssm_parameter(
-            "/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id",
-            os=ec2.OperatingSystemType.LINUX
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_ISOLATED),
+            security_groups=[rds_sg],
+            database_name="sentineldb",
+            instance_identifier="sentinel-mysql",
+            multi_az=False,              # Set True for production HA
+            allocated_storage=20,        # GB
+            max_allocated_storage=100,   # Auto-scaling cap in GB
+            backup_retention=Duration.days(7),
+            deletion_protection=False,   # Set True for production
+            removal_policy=RemovalPolicy.DESTROY,  # Change to RETAIN for production
         )
 
-        thehive_instance = ec2.Instance(
-            self, "TheHiveInstance",
-            instance_type=ec2.InstanceType("t3.medium"),
-            machine_image=machine_image,
-            vpc=vpc,
-            vpc_subnets=ec2.SubnetSelection(subnet_ids=private_subnet_ids),
-            security_group=thehive_sg,
-        )
-
-        thehive_instance.role.add_managed_policy(
-            iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore")
-        )
-
-        CfnOutput(
-            self, "TheHivePrivateIP",
-            value=thehive_instance.instance_private_ip,
-            description="The private IP address of TheHive EC2 instance",
-            export_name="TheHiveInstancePrivateIP"
-        )
+        # ─────────────────────────────────────────────
+        # Expose resources for cross-stack references
+        # ─────────────────────────────────────────────
+        self.telemetry_table = telemetry_table
+        self.rds_instance = rds_instance
