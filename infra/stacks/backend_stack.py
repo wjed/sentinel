@@ -136,3 +136,41 @@ class BackendStack(Stack):
             value=wazuh_instance.instance_private_ip,
             description="Wazuh Manager private IP",
         )
+        
+        thehive_sg = ec2.SecurityGroup(
+            self, "TheHiveSecurityGroup",
+            vpc=vpc,
+            description="Allow SSH and Web access for TheHive",
+            allow_all_outbound=True
+        )
+        thehive_sg.add_ingress_rule(
+            ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "Allow SSH"
+        )
+        thehive_sg.add_ingress_rule(
+            ec2.Peer.any_ipv4(), ec2.Port.tcp(9000), "Allow TheHive web UI"
+        )
+
+        machine_image = ec2.MachineImage.from_ssm_parameter(
+            "/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id",
+            os=ec2.OperatingSystemType.LINUX
+        )
+
+        thehive_instance = ec2.Instance(
+            self, "TheHiveInstance",
+            instance_type=ec2.InstanceType("t3.medium"),
+            machine_image=machine_image,
+            vpc=vpc,
+            vpc_subnets=ec2.SubnetSelection(subnet_ids=private_subnet_ids),
+            security_group=thehive_sg,
+        )
+
+        thehive_instance.role.add_managed_policy(
+            iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore")
+        )
+
+        CfnOutput(
+            self, "TheHivePrivateIP",
+            value=thehive_instance.instance_private_ip,
+            description="The private IP address of TheHive EC2 instance",
+            export_name="TheHiveInstancePrivateIP"
+        )
