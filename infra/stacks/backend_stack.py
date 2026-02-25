@@ -81,3 +81,62 @@ class BackendStack(Stack):
         # ─────────────────────────────────────────────
         self.telemetry_table = telemetry_table
         self.rds_instance = rds_instance
+        # --- Wazuh Manager EC2 (in private subnet) ---
+        # Security group for Wazuh manager (allow agent traffic from inside VPC)
+        wazuh_sg = ec2.SecurityGroup(
+            self,
+            "WazuhManagerSG",
+            vpc=vpc,
+            description="Allow Wazuh agent traffic from VPC and SSM",
+            allow_all_outbound=True,
+        )
+        # Wazuh manager default ports: 1514 (tcp/udp) for agent data, 1515 (tcp) for registration
+        wazuh_sg.add_ingress_rule(ec2.Peer.ipv4(vpc.vpc_cidr_block), ec2.Port.tcp(1514), "Wazuh agent TCP from VPC")
+        wazuh_sg.add_ingress_rule(ec2.Peer.ipv4(vpc.vpc_cidr_block), ec2.Port.udp(1514), "Wazuh agent UDP from VPC")
+        wazuh_sg.add_ingress_rule(ec2.Peer.ipv4(vpc.vpc_cidr_block), ec2.Port.tcp(1515), "Wazuh registration TCP from VPC")
+
+        # IAM role so the instance can use SSM (no SSH key required by default)
+        wazuh_role = iam.Role(
+            self,
+            "WazuhInstanceRole",
+            assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore"),
+            ],
+        )
+
+        # Minimal user-data to install Wazuh manager (placeholder; adapt for chosen distro/version)
+        user_data = ec2.UserData.for_linux()
+        user_data.add_commands(
+            "yum update -y",
+            "yum install -y curl",
+            "# TODO: add Wazuh repository and install steps for the chosen OS",
+            "# Example (RHEL/CentOS/AmazonLinux compatible):",
+            "# curl -sO https://packages.wazuh.com/4.x/yum/wazuh-repo-4.x.rpm || true",
+            "# rpm -ivh wazuh-repo-4.x.rpm || true",
+            "# yum install -y wazuh-manager || true",
+            "# systemctl enable --now wazuh-manager || true",
+        )
+
+        # Launch the EC2 instance in the provided private subnets
+        wazuh_instance = ec2.Instance(
+            self,
+            "WazuhManagerInstance",
+            instance_type=ec2.InstanceType("t3.medium"),
+            machine_image=ec2.MachineImage.latest_amazon_linux(
+                generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2
+            ),
+            vpc=vpc,
+            vpc_subnets=ec2.SubnetSelection(subnet_ids=private_subnet_ids),
+            security_group=wazuh_sg,
+            role=wazuh_role,
+            user_data=user_data,
+        )
+
+        # Output the Wazuh manager private IP for reference
+        CfnOutput(
+            self,
+            "WazuhManagerPrivateIp",
+            value=wazuh_instance.instance_private_ip,
+            description="Wazuh Manager private IP",
+        )
