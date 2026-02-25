@@ -8,7 +8,7 @@ Each file here is a **CDK stack** — a class that will eventually define a set 
 
 | File | Stack | Purpose (when implemented) | Typical owner |
 |------|--------|----------------------------|----------------|
-| **`network_stack.py`** | **NetworkStack** | VPC, subnets, security groups, NAT, network connectivity. | Network team |
+| **`network_stack.py`** | **NetworkStack** | VPC, public/private subnets, NAT. Deploy: `cdk deploy SentinelNet-Network`. Outputs: VpcId, PrivateSubnetIds, PublicSubnetIds (exported for other stacks). | Center team |
 | **`identity_stack.py`** | **IdentityStack** | IAM roles, policies, identity providers, auth boundaries. | Identity team |
 | **`data_stack.py`** | **DataStack** | Data ingestion and storage: S3, Kinesis, SQS, Glue, etc. | Data team |
 | **`backend_stack.py`** | **BackendStack** | Compute and API: Lambda, API Gateway, ECS, etc. | Backend team |
@@ -21,4 +21,4 @@ Each file here is a **CDK stack** — a class that will eventually define a set 
 - **Reference another stack** → Pass the other stack (or its outputs) as a prop when instantiating the stack in `app.py`, then use it inside the stack (e.g. Backend stack might need the VPC from Network stack).
 - **New stack** → Add a new file (e.g. `monitoring_stack.py`), define a class that extends `Stack`, then in `app.py` add e.g. `MonitoringStack(app, "SentinelNet-Monitoring")`.
 
-Stacks are **intentionally empty** in this scaffold; don’t add real resources until the project allows deployment.
+**Implemented:** `website_stack.py`, `user_data_stack.py`, `network_stack.py`. Others are placeholders.
