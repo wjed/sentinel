@@ -20,8 +20,8 @@ That’s it. No backend server. Sign-in is AWS Cognito.
 ## Team workflow (Git & deploy)
 
 - **Push only to your branch.** Do not push directly to `main`. Create a branch, push your branch, then open a **pull request (PR)** to get your changes into `main`.
-- **How to make a PR:** Create a branch (`git checkout -b your-name/feature-name`), commit and push it, then on GitHub open a PR from your branch into `main`. Get a review if your team requires it, then merge the PR. Do not merge `main` into your branch and then push — keep `main` as the source of truth and merge your branch into `main` via the PR.
-- **Never merge or push to `main` directly.** All changes to `main` should go through a PR.
+- **How to make a PR:** Create a branch (`git checkout -b your-name/feature-name`), commit and push it, then on GitHub open a PR from your branch into `main`. **Your entire team must review your PR before it is merged.** Do not merge the PR yourself — all approvals and merges go through **Will**. Will will move the PR in after the team has reviewed and approved. Do not merge `main` into your branch and then push; keep `main` as the source of truth and merge your branch into `main` via the PR.
+- **Never merge or push to `main` directly.** All changes to `main` should go through a PR, with full team review and approval from Will.
 - **Do not run `cdk deploy` unless you have approval.** Deploying changes the live site and AWS resources. Get approval from whoever owns deployment before you run the deploy steps below.
 
 ---
