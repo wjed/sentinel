@@ -30,13 +30,17 @@ Open **http://localhost:3000** in your browser. You’ll see the site. Sign-in w
 
 ---
 
-## Put the site on the internet (deploy)
+## Deploying to AWS (CDK)
 
-You need: **Node.js**, **npm**, **Python 3**, and **AWS credentials** (access key + secret).
+**We deploy this project with AWS CDK.** There is no separate “deploy script” or CI job — someone runs `cdk deploy` from their machine (see below). If you’ve never deployed before, follow every step in order.
+
+You need: **Node.js**, **npm**, **Python 3**, and **AWS credentials** (access key + secret for an IAM user that can deploy CloudFormation, or use `aws configure` if you already have credentials saved).
+
+---
 
 ### First time only (once per computer)
 
-Open a terminal at the **repo root**. Run:
+From the **repo root**:
 
 ```bash
 cd infra
@@ -45,11 +49,17 @@ cdk bootstrap
 cd ..
 ```
 
-(If `cdk` says “command not found”, run: `npm install -g aws-cdk` and open a new terminal.)
+If the terminal says **“cdk: command not found”**, run `npm install -g aws-cdk` and open a new terminal, then run the commands above again.
 
-### Every time you want to deploy
+---
 
-**Step 1 — Set AWS credentials** (same terminal you’ll use for the next steps).
+### Every time you deploy
+
+Do these in the same terminal, in order.
+
+**Step 1 — Log in to AWS**
+
+Set credentials in the terminal you’ll use for the rest of the steps.
 
 Windows PowerShell:
 
@@ -67,7 +77,11 @@ export AWS_SECRET_ACCESS_KEY=YOUR_SECRET_KEY
 export AWS_DEFAULT_REGION=us-east-1
 ```
 
-**Step 2 — Build the site**
+(Or run `aws configure` once and use that profile; then you can skip this step next time.)
+
+**Step 2 — Build the frontend**
+
+From the **repo root**:
 
 ```bash
 cd frontend
@@ -76,32 +90,41 @@ npm run build
 cd ..
 ```
 
-**Step 3 — Deploy**
+**Step 3 — Deploy with CDK**
+
+From the **repo root**:
 
 ```bash
 cd infra
-cdk deploy SentinelNet-Website --require-approval never
+cdk deploy SentinelNet-Network --require-approval never
+cdk deploy SentinelNet-UserData --require-approval never
+cdk deploy SentinelNet-Website --require-approval never --exclusively
 cd ..
 ```
 
-When it finishes, the terminal prints **WebsiteURL** (e.g. `https://xxxxx.cloudfront.net`). That’s your live site. Share that link. Sign-in works because the stack creates Cognito and wires it to that URL.
+- **SentinelNet-Network** — VPC and subnets (center team). Deploy first or whenever it changes.
+- **SentinelNet-UserData** — DynamoDB (profiles) and S3. Deploy second or whenever it changes.
+- **SentinelNet-Website** — The actual site (S3 + CloudFront + Cognito + profile API). We use `--exclusively` so CDK only updates this stack and doesn’t touch UserData (avoids a CloudFormation export error). Deploy last.
+
+When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https://xxxxx.cloudfront.net`). That’s the live site. Sign-in works because the stack creates Cognito and points it at that URL.
 
 ---
 
-## Checklist (so you don’t forget a step)
+### Deploy checklist
 
-- [ ] AWS credentials are set in the terminal
-- [ ] You ran `cd frontend` → `npm install` → `npm run build` → `cd ..`
-- [ ] First time only: you ran `cd infra` → `pip install -r requirements.txt` → `cdk bootstrap`
-- [ ] You ran `cd infra` → `cdk deploy SentinelNet-Website --require-approval never`
-- [ ] You copied **WebsiteURL** from the output
+- [ ] AWS credentials set (Step 1) or already configured
+- [ ] `cd frontend` → `npm install` → `npm run build` → `cd ..`
+- [ ] First time only: `cd infra` → `pip install -r requirements.txt` → `cdk bootstrap`
+- [ ] `cd infra` → deploy **Network**, then **UserData**, then **Website** (with `--exclusively` on Website)
+- [ ] Copy **WebsiteURL** from the output
 
 ---
 
-## Something broke?
+### When something breaks
 
-- **“security token invalid”** → Set the AWS credentials again (Step 1).
-- **“No such file or directory: frontend/dist”** → You didn’t run `npm run build` in `frontend`. Do Step 2.
+- **“security token invalid” / “credentials could not be used”** → Set AWS credentials again (Step 1).
+- **“No such file or directory: frontend/dist”** → Run Step 2 (`npm run build` in `frontend`) before deploying.
 - **“cdk: command not found”** → Run `npm install -g aws-cdk`, then open a new terminal.
+- **“Cannot delete export … in use by SentinelNet-Website”** → You must deploy the Website stack with `--exclusively` (see Step 3). Do not deploy UserData and Website together without that flag.
 
-More detail and other issues: **infra/HOW-TO-DEPLOY.md**.
+More detail: **infra/HOW-TO-DEPLOY.md**.
