@@ -1,57 +1,67 @@
 # SentinelNet — Frontend
 
-React + Vite app for the SOC executive dashboard. **Black/dark theme.** Scaffolding: main pages and layout only.
+React + Vite app. Dark theme. Marketing pages (Home, Product, Pricing, About) plus a dashboard you sign into with Cognito. **All client-side:** no backend in this folder; API calls go to the profile API (and later other backends) that the infra team deploys.
 
 ---
 
-## What this folder is for
+## What’s in this folder
 
-- **Dashboard UI** that clients see: KPIs, incidents, data views, settings, login.
-- All **client-side** code: components, pages, routing, and (later) API calls to the backend.
-- **Where to work:** Add or change pages in `src/pages/`, shared UI in `src/components/`, global styles in `src/index.css`.
+| Folder / file | What it is |
+|---------------|------------|
+| **`src/`** | All app source code. |
+| **`src/main.jsx`** | Entry point: loads `/config.json` (Cognito URLs from deploy), then mounts the app with React Router + auth. |
+| **`src/App.jsx`** | All routes. Defines which URL shows which page. |
+| **`src/index.css`** | Global styles and dark-theme CSS variables (`--bg`, `--accent`, etc.). Use these so the app looks consistent. |
+| **`src/pages/`** | One React component per screen. Home, Product, Pricing, About, Login, Dashboard, Incidents, Alerts, Assets, Reports, Settings, Account, etc. |
+| **`src/components/`** | Reusable UI: **TopNav** (logo + nav + Console dropdown + Account dropdown), **Footer**, **PublicLayout** (TopNav + page content + Footer), **ProtectedRoute** (redirects to login if not signed in), **DevAdvice** (the “How to build this” boxes on console pages). |
+| **`src/auth/`** | Cognito sign-in: **config.js** (pool ID, client ID, redirect URLs — uses `config.json` when deployed), **resolvedConfig.js** (runtime config from `config.json`), **signOut.js**. |
+| **`src/api/`** | API clients. **profile.js** talks to the profile API (get profile, update profile — display name, avatar icon, job, bio). |
+| **`index.html`** | The one HTML file. Loads `main.jsx`. |
+| **`package.json`** | Dependencies and scripts. **Do not** delete or rename scripts; the deploy process runs `npm run build`. |
 
----
-
-## How it works
-
-1. **Entry:** `index.html` loads `src/main.jsx`, which mounts the app and wraps it in React Router.
-2. **Routing:** `src/App.jsx` defines routes: `/login` (standalone), then `/dashboard`, `/incidents`, `/data`, `/settings` inside a layout with a sidebar.
-3. **Layout:** `src/components/Layout.jsx` renders the sidebar (SentinelNet + nav links) and an `<Outlet />` where the current page goes.
-4. **Pages:** Each route points to a component in `src/pages/`. Those are placeholders; you’ll add real content and API calls here.
-5. **Theme:** `src/index.css` sets CSS variables for the black colorway (`--bg`, `--surface`, `--text`, `--accent`, etc.). Use these in new components to stay consistent.
-
----
-
-## Structure
-
-| Path | Purpose |
-|------|--------|
-| `src/main.jsx` | App entry: React root + `BrowserRouter`. |
-| `src/App.jsx` | Route definitions and which page loads where. |
-| `src/index.css` | Global styles and dark theme variables. |
-| `src/pages/` | One component per main screen (see [src/pages/README.md](src/pages/README.md)). |
-| `src/components/` | Reusable UI (e.g. Layout); add buttons, cards, tables here (see [src/components/README.md](src/components/README.md)). |
+There is **no** `Layout.jsx` with a sidebar. The layout is: **TopNav** at the top (with Console and Account dropdowns when you’re signed in), then the current page, then **Footer**. All of that is in **PublicLayout**, which wraps every route except `/login`.
 
 ---
 
-## Authentication (Cognito)
+## Routes (what lives where)
 
-Sign-in uses **AWS Cognito** (OIDC). Clicking **Sign in** redirects to your Cognito User Pool hosted UI; after login, users return to the app and can access **Dashboard**, **Incidents**, etc. Unauthenticated users who open those routes are redirected to Cognito to sign in.
+- **`/`** — Home  
+- **`/product`** — Product  
+- **`/pricing`** — Pricing  
+- **`/about`** — About  
+- **`/login`** — Sign-in page (redirects to Cognito Hosted UI)  
+- **`/dashboard`** — Dashboard (protected)  
+- **`/incidents`** — Incidents list (protected)  
+- **`/incidents/:id`** — Incident detail (protected)  
+- **`/alerts`** — Alerts (protected)  
+- **`/assets`** — Assets (protected)  
+- **`/reports`** — Reports (protected)  
+- **`/settings`** — Settings (protected)  
+- **`/account`** — Account / profile (protected; edit display name, icon, job, bio)
 
-- Config: `src/auth/config.js` (User Pool ID, Client ID, redirect/logout URLs).
-- Optional env: copy `.env.example` to `.env` and set `VITE_REDIRECT_URI` and `VITE_COGNITO_DOMAIN` for production.
-- In Cognito, add your app URL(s) to the app client **Allowed callback URLs** and **Allowed sign-out URLs**.
+Protected = you must be signed in; otherwise you’re sent to login.
+
+---
+
+## Auth (Cognito)
+
+Sign-in uses **AWS Cognito** (OIDC). **Sign in** in the nav sends users to the Cognito Hosted UI; after login they come back to the app. The app gets pool ID, client ID, and callback URL from **`/config.json`** when deployed (CDK writes that file). For local dev it can use fallbacks in `src/auth/config.js` or env vars.
+
+- **Config:** `src/auth/config.js` — authority, clientId, redirectUri, profile API URL, etc.  
+- **Runtime:** `main.jsx` fetches `/config.json` and calls `setResolvedConfig()`; `config.js` reads that so the app uses the right Cognito pool and profile API URL after deploy.
 
 ---
 
 ## Run locally
 
+From the **`frontend/`** directory (this folder):
+
 ```bash
 npm install
-npm start
+npm run dev
 ```
 
-(or `npm run dev`). Opens at **http://localhost:3000**.
+(or `npm start` — same thing). Opens at **http://localhost:3000**. Sign-in will only work if Cognito is set up and the callback URL includes `http://localhost:3000` (or whatever you’re using).
 
 ---
 
@@ -59,16 +69,23 @@ npm start
 
 | Command | What it does |
 |---------|----------------|
-| `npm start` | Start dev server (Vite). |
-| `npm run dev` | Same as `npm start`. |
-| `npm run build` | Production build → `dist/`. |
-| `npm run preview` | Serve the production build locally. |
+| `npm install` | Install dependencies. Run this first. |
+| `npm run dev` or `npm start` | Start the Vite dev server. |
+| `npm run build` | Production build → **`dist/`**. **You must run this before someone deploys** (see main repo README). |
+| `npm run preview` | Serve the `dist/` build locally so you can test the production build. |
 
 ---
 
-## Where to do what
+## Where to change things
 
-- **New page** → Add a file in `src/pages/` and a `<Route>` in `src/App.jsx`, plus a link in `Layout.jsx` if it should be in the sidebar.
-- **New shared UI** → Add in `src/components/` and import where needed.
-- **Change colors/fonts** → Edit `:root` in `src/index.css`.
-- **Change nav items** → Edit the `nav` array in `src/components/Layout.jsx`.
+- **Add a new page** — Create a file in `src/pages/` (e.g. `MyPage.jsx`). In `src/App.jsx`, add a `<Route>` and, if it should be behind login, wrap it in `<ProtectedRoute>`. If it should be in the Console menu, add it to the `consoleNavLinks` array in `src/components/TopNav.jsx`.
+- **Add or change nav links** — Edit `src/components/TopNav.jsx`: `publicNavLinks` (Home, Product, etc.), `consoleNavLinks` (Dashboard, Incidents, etc.), or `accountNavLinks` (Account, Settings).
+- **Add reusable UI** — Put it in `src/components/` and import it where needed.
+- **Change colors / fonts** — Edit `:root` and other rules in `src/index.css`.
+- **Call a new API** — Add a client in `src/api/` (like `profile.js`) and use it from the page or component that needs it.
+
+---
+
+## “How to build this” boxes
+
+Console pages (Dashboard, Incidents, Alerts, Assets, Reports, Settings, Incident detail) each have a **DevAdvice** section at the bottom with tips for the team (e.g. “use this table, this API”). The component is `src/components/DevAdvice.jsx`; each page passes an `items` array of strings. Edit those arrays in the page files to change the advice.
