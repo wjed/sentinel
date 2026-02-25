@@ -13,6 +13,17 @@ A small web app: marketing pages (Home, Product, Pricing) + a dashboard you sign
 
 That’s it. No backend server. Sign-in is AWS Cognito.
 
+**Live site:** [https://d7lsgn7zae54e.cloudfront.net/](https://d7lsgn7zae54e.cloudfront.net/) (CloudFront). Sign-in and the dashboard work there.
+
+---
+
+## Team workflow (Git & deploy)
+
+- **Push only to your branch.** Do not push directly to `main`. Create a branch, push your branch, then open a **pull request (PR)** to get your changes into `main`.
+- **How to make a PR:** Create a branch (`git checkout -b your-name/feature-name`), commit and push it, then on GitHub open a PR from your branch into `main`. Get a review if your team requires it, then merge the PR. Do not merge `main` into your branch and then push — keep `main` as the source of truth and merge your branch into `main` via the PR.
+- **Never merge or push to `main` directly.** All changes to `main` should go through a PR.
+- **Do not run `cdk deploy` unless you have approval.** Deploying changes the live site and AWS resources. Get approval from whoever owns deployment before you run the deploy steps below.
+
 ---
 
 ## Run the site on your computer
@@ -32,7 +43,9 @@ Open **http://localhost:3000** in your browser. You’ll see the site. Sign-in w
 
 ## Deploying to AWS (CDK)
 
-**We deploy this project with AWS CDK.** There is no separate “deploy script” or CI job — someone runs `cdk deploy` from their machine (see below). If you’ve never deployed before, follow every step in order.
+**Do not run `cdk deploy` without approval.** Deploying updates the live site and AWS; get approval first (see “Team workflow” above).
+
+We deploy this project with AWS CDK. There is no separate “deploy script” or CI job — someone runs `cdk deploy` from their machine (see below). If you’ve been approved to deploy and have never done it before, follow every step in order.
 
 You need: **Node.js**, **npm**, **Python 3**, and **AWS credentials** (access key + secret for an IAM user that can deploy CloudFormation, or use `aws configure` if you already have credentials saved).
 
