@@ -84,7 +84,8 @@ class NetworkStack(Stack):
 
         # Public route table -> IGW
         public_rt = ec2.CfnRouteTable(
-            self, "PublicRouteTable", vpc_id=self.vpc.vpc_id
+            self, "PublicRouteTable", vpc_id=self.vpc.vpc_id,
+            tags=[{"key": "Name", "value": "sentinel-public-rt"}]
         )
         ec2.CfnRoute(
             self,
@@ -114,7 +115,8 @@ class NetworkStack(Stack):
 
         # Private route table -> NAT
         private_rt = ec2.CfnRouteTable(
-            self, "PrivateRouteTable", vpc_id=self.vpc.vpc_id
+            self, "PrivateRouteTable", vpc_id=self.vpc.vpc_id,
+            tags=[{"key": "Name", "value": "sentinel-private-rt"}]
         )
         ec2.CfnRoute(
             self,
@@ -135,7 +137,8 @@ class NetworkStack(Stack):
 
         # Internal route table (no internet egress)
         internal_rt = ec2.CfnRouteTable(
-            self, "InternalRouteTable", vpc_id=self.vpc.vpc_id
+            self, "InternalRouteTable", vpc_id=self.vpc.vpc_id,
+            tags=[{"key": "Name", "value": "sentinel-internal-rt"}]
         )
         for idx, internal in enumerate(internal_subnets):
             ec2.CfnSubnetRouteTableAssociation(
