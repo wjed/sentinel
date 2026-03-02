@@ -356,10 +356,6 @@ class BackendStack(Stack):
             allow_all_outbound=False,
         )
 
-<<<<<<< HEAD
-        self.rds_instance = rds.DatabaseInstance(
-            self, "SentinelMySQL",
-=======
         rds_instance = rds.DatabaseInstance(
             description="Allow Wazuh agent traffic from VPC and SSM",
             allow_all_outbound=True,
@@ -426,7 +422,6 @@ class BackendStack(Stack):
         CfnOutput(
             self,
             "SentinelMySQL",
->>>>>>> 0581904 (I added a secure buffered pipeline from Wazuh to DynamoDB using SQS and Lambda. I hardened the table with KMS encryption, PITR, and TTL. I implemented defensive parsing and partial-failure handling so one bad event doesn’t break the batch. I locked IAM to least privilege and added outputs plus docs so integration is easy. Then I deployed and verified live by sending a test alert and confirming it landed in DynamoDB)
             engine=rds.DatabaseInstanceEngine.mysql(
                 version=rds.MysqlEngineVersion.VER_8_0
             ),
