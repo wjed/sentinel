@@ -171,10 +171,18 @@ function ProductTourSidebar({ onClose, sectionRefs, step: controlledStep, onStep
   )
 }
 
+import { Link, Navigate } from 'react-router-dom'
+import { useAuth } from 'react-oidc-context'
+
 export default function Product() {
+  const auth = useAuth()
   const [tourOpen, setTourOpen] = useState(false)
   const [tourStep, setTourStep] = useState(0)
   const sectionRefs = [useRef(null), useRef(null), useRef(null), useRef(null)]
+
+  if (auth.isAuthenticated) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   const startTour = () => {
     setTourStep(0)

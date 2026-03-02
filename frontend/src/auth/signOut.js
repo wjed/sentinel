@@ -6,10 +6,13 @@ import { getCognitoDomain, getLogoutUri, getClientId } from './config'
  * Pass the auth object from useAuth() so we can clear the user.
  */
 export async function signOut(auth) {
-  if (auth?.removeUser) {
-    await auth.removeUser()
-  }
   const url = `${getCognitoDomain()}/logout?client_id=${getClientId()}&logout_uri=${encodeURIComponent(getLogoutUri())}`
+
+  if (auth?.removeUser) {
+    // Fire and forget so we don't block the redirect or trigger re-renders that cancel it
+    auth.removeUser().catch(console.error)
+  }
+
   window.location.href = url
 }
 

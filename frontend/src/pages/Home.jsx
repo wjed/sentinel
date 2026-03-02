@@ -1,6 +1,13 @@
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
+import { useAuth } from 'react-oidc-context'
 
 export default function Home() {
+  const auth = useAuth()
+
+  if (auth.isAuthenticated) {
+    return <Navigate to="/dashboard" replace />
+  }
+
   return (
     <div className="page">
       <section className="hero">

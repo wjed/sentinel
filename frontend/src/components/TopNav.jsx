@@ -6,7 +6,7 @@ import { getProfile } from '../api/profile'
 
 const ShieldIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+    <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
   </svg>
 )
 
@@ -134,7 +134,7 @@ export default function TopNav() {
         SentinelNet
       </Link>
       <nav style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        {publicNavLinks.map(({ to, label }) => (
+        {publicNavLinks.filter(link => !auth.isAuthenticated || link.to !== '/product').map(({ to, label }) => (
           <NavLink
             key={to}
             to={to}
