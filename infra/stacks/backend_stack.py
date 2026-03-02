@@ -83,33 +83,14 @@ class BackendStack(Stack):
             removal_policy=RemovalPolicy.DESTROY,
         )
 
-<<<<<<< HEAD
-        # ─────────────────────────────────────────────
-        # DynamoDB — installed to internal subnet
-        # (DynamoDB is fully serverless; subnet here is
-        #  a logical placement for IAM/VPC endpoint access)
-        # ─────────────────────────────────────────────
-        self.telemetry_table = dynamodb.Table(
-            self, "TelemetryTable",
-=======
         telemetry_table = dynamodb.Table(
             self,
             "TelemetryTable",
->>>>>>> 0581904 (I added a secure buffered pipeline from Wazuh to DynamoDB using SQS and Lambda. I hardened the table with KMS encryption, PITR, and TTL. I implemented defensive parsing and partial-failure handling so one bad event doesn’t break the batch. I locked IAM to least privilege and added outputs plus docs so integration is easy. Then I deployed and verified live by sending a test alert and confirming it landed in DynamoDB)
             table_name="sentinel-telemetry",
             partition_key=dynamodb.Attribute(
                 name="id",
                 type=dynamodb.AttributeType.STRING,
             ),
-<<<<<<< HEAD
-            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-            removal_policy=RemovalPolicy.DESTROY,
-        )
-
-        # ─────────────────────────────────────────────
-        # RDS MySQL — installed to internal subnet
-        # ─────────────────────────────────────────────
-=======
             sort_key=dynamodb.Attribute(
                 name="timestamp",
                 type=dynamodb.AttributeType.STRING,
@@ -319,7 +300,6 @@ class BackendStack(Stack):
         telemetry_kms_key.grant_encrypt_decrypt(wazuh_ingest_fn)
 
         # Security group - no inbound by default (isolated)
->>>>>>> 0581904 (I added a secure buffered pipeline from Wazuh to DynamoDB using SQS and Lambda. I hardened the table with KMS encryption, PITR, and TTL. I implemented defensive parsing and partial-failure handling so one bad event doesn’t break the batch. I locked IAM to least privilege and added outputs plus docs so integration is easy. Then I deployed and verified live by sending a test alert and confirming it landed in DynamoDB)
         rds_sg = ec2.SecurityGroup(
             "SentinelMySQL",
             engine=rds.DatabaseInstanceEngine.mysql(
@@ -429,20 +409,12 @@ class BackendStack(Stack):
                 ec2.InstanceClass.T3, ec2.InstanceSize.MICRO
             ),
             vpc=vpc,
-<<<<<<< HEAD
-            vpc_subnets=internal_subnets,
-=======
             vpc_subnets=ec2.SubnetSelection(subnets=internal_subnets),
->>>>>>> 0581904 (I added a secure buffered pipeline from Wazuh to DynamoDB using SQS and Lambda. I hardened the table with KMS encryption, PITR, and TTL. I implemented defensive parsing and partial-failure handling so one bad event doesn’t break the batch. I locked IAM to least privilege and added outputs plus docs so integration is easy. Then I deployed and verified live by sending a test alert and confirming it landed in DynamoDB)
             security_groups=[rds_sg],
             instance_identifier="sentinel-mysql",
-<<<<<<< HEAD
-            allocated_storage=20,
-=======
             multi_az=False,
             allocated_storage=20,
             max_allocated_storage=100,
->>>>>>> 0581904 (I added a secure buffered pipeline from Wazuh to DynamoDB using SQS and Lambda. I hardened the table with KMS encryption, PITR, and TTL. I implemented defensive parsing and partial-failure handling so one bad event doesn’t break the batch. I locked IAM to least privilege and added outputs plus docs so integration is easy. Then I deployed and verified live by sending a test alert and confirming it landed in DynamoDB)
             backup_retention=Duration.days(7),
             deletion_protection=False,
             removal_policy=RemovalPolicy.DESTROY,
