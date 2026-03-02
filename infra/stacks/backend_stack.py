@@ -287,3 +287,56 @@ class BackendStack(Stack):
             value=wazuh_instance.instance_private_ip,
             description="Wazuh Manager private IP",
         )
+
+        thehive_sg = ec2.SecurityGroup(
+            self,
+            "TheHiveSG",
+            vpc=vpc,
+            description="Allow TheHive traffic from VPC and SSM",
+            allow_all_outbound=True,
+        )
+        thehive_sg.add_ingress_rule(
+            ec2.Peer.ipv4(vpc.vpc_cidr_block),
+            ec2.Port.tcp(9000),
+            "TheHive web interface TCP from VPC",
+        )
+
+        thehive_role = iam.Role(
+            self,
+            "TheHiveInstanceRole",
+            assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "AmazonSSMManagedInstanceCore"
+                ),
+            ],
+        )
+
+        thehive_user_data = ec2.UserData.for_linux()
+        thehive_user_data.add_commands(
+            "yum update -y",
+            "# TODO: add TheHive repository and install steps",
+        )
+
+        thehive_instance = ec2.Instance(
+            self,
+            "TheHiveInstance",
+            instance_type=ec2.InstanceType("t3.medium"),
+            machine_image=ec2.MachineImage.latest_amazon_linux(
+                generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2
+            ),
+            vpc=vpc,
+            vpc_subnets=ec2.SubnetSelection(subnets=private_subnets),
+            security_group=thehive_sg,
+            role=thehive_role,
+            user_data=thehive_user_data,
+        )
+
+        self.thehive_instance = thehive_instance
+
+        CfnOutput(
+            self,
+            "TheHivePrivateIp",
+            value=thehive_instance.instance_private_ip,
+            description="TheHive private IP",
+        )
