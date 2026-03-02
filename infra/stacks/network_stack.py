@@ -148,10 +148,10 @@ class NetworkStack(Stack):
                 subnet_id=internal.subnet_id,
             )
 
-        # Expose lists for other stacks to reference (wrap L1 ids into higher-level structures)
-        # Create simple wrappers so other code expecting VPC subnets can still access ids
-        # Note: these are Cfn-level resources; their `.ref` yields the subnet id.
-        # expose subnet ids lists
+        # Expose subnet lists and IDs for other stacks
+        self.public_subnets = public_subnets
+        self.private_subnets = private_subnets
+        self.internal_subnets = internal_subnets
         self.public_subnet_ids = [s.subnet_id for s in public_subnets]
         self.private_subnet_ids = [s.subnet_id for s in private_subnets]
         self.internal_subnet_ids = [s.subnet_id for s in internal_subnets]

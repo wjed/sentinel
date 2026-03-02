@@ -105,19 +105,31 @@ cd ..
 
 **Step 3 — Deploy with CDK**
 
-From the **repo root**:
+From the **repo root** you can deploy everything in order:
 
 ```bash
 cd infra
-cdk deploy SentinelNet-Network --require-approval never
-cdk deploy SentinelNet-UserData --require-approval never
-cdk deploy SentinelNet-Website --require-approval never --exclusively
+./deploy-all.sh
 cd ..
 ```
 
-- **SentinelNet-Network** — VPC and subnets (center team). Deploy first or whenever it changes.
-- **SentinelNet-UserData** — DynamoDB (profiles) and S3. Deploy second or whenever it changes.
-- **SentinelNet-Website** — The actual site (S3 + CloudFront + Cognito + profile API). We use `--exclusively` so CDK only updates this stack and doesn’t touch UserData (avoids a CloudFormation export error). Deploy last.
+Or deploy step by step (from `infra/`):
+
+```bash
+cd infra
+cdk deploy SentinelNet-Network --require-approval never --exclusively
+cdk deploy SentinelNet-UserData --require-approval never
+cdk deploy SentinelNet-Website --require-approval never --exclusively
+cdk deploy SentinelNet-Backend --require-approval never
+cd ..
+```
+
+- **SentinelNet-Network** — VPC and subnets (center team). Deploy first.
+- **SentinelNet-UserData** — DynamoDB (profiles) and S3.
+- **SentinelNet-Website** — The site (S3 + CloudFront + Cognito + profile API). Use `--exclusively` to avoid export conflicts.
+- **SentinelNet-Backend** — ECS/Fargate (e.g. Grafana). Depends on Network; deploy after Network.
+
+**If Network fails** with “Cannot delete export … in use by SentinelNet-Backend”, run the one-time fix from `infra/`: `./fix-network-export-conflict.sh` (see **infra/HOW-TO-DEPLOY.md**).
 
 When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https://xxxxx.cloudfront.net`). That’s the live site. Sign-in works because the stack creates Cognito and points it at that URL.
 
@@ -138,6 +150,7 @@ When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https:/
 - **“security token invalid” / “credentials could not be used”** → Set AWS credentials again (Step 1).
 - **“No such file or directory: frontend/dist”** → Run Step 2 (`npm run build` in `frontend`) before deploying.
 - **“cdk: command not found”** → Run `npm install -g aws-cdk`, then open a new terminal.
-- **“Cannot delete export … in use by SentinelNet-Website”** → You must deploy the Website stack with `--exclusively` (see Step 3). Do not deploy UserData and Website together without that flag.
+- **“Cannot delete export … in use by SentinelNet-Website”** → Deploy Website with `--exclusively` (see Step 3).
+- **“Cannot delete export … in use by SentinelNet-Backend”** (when deploying Network) → Run the one-time fix: from `infra/`, run `./fix-network-export-conflict.sh`. Then deploy as usual.
 
 More detail: **infra/HOW-TO-DEPLOY.md**.

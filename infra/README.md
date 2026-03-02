@@ -8,7 +8,7 @@ This folder is the **AWS deployment** for SentinelNet. Everything that runs in A
 
 | Path | What it is |
 |------|------------|
-| **`app.py`** | The entry point. It creates all three stacks and passes the UserData stack to the Website stack so the profile API can use the DynamoDB table. **Don’t** rename the stack names in here (`SentinelNet-Website`, etc.) or deploys will get confused. |
+| **`app.py`** | The entry point. It creates all four stacks; Website gets UserData (profile API), Backend gets Network (VPC + subnets). **Don’t** rename stack names or deploys get confused. |
 | **`cdk.json`** | Tells the CDK CLI to run `app.py` when you run `cdk` commands. You usually don’t need to touch this. |
 | **`requirements.txt`** | Python packages needed for CDK. Run `pip install -r requirements.txt` from this directory before your first `cdk` command. |
 | **`stacks/`** | One Python file per stack. This is where you **edit** when you want to add or change AWS resources. |
@@ -20,17 +20,18 @@ You run **all** `cdk` commands from **this directory** (`infra/`). Not from the 
 
 ---
 
-## The three stacks (what each one does)
+## The four stacks (what each one does)
 
 | Stack name | File | What it creates in AWS |
 |------------|------|-------------------------|
-| **SentinelNet-Network** | `stacks/network_stack.py` | A **VPC** with public and private subnets (for the center/backend team). Outputs VPC ID and subnet IDs so other stuff can use them later. |
-| **SentinelNet-UserData** | `stacks/user_data_stack.py` | A **DynamoDB table** (user profiles: display name, avatar icon, job, bio) and an **S3 bucket** (for future use). No Lambda here — just storage. |
-| **SentinelNet-Website** | `stacks/website_stack.py` | The **live site**: S3 bucket for the built React app, **CloudFront** so people hit a URL like `https://xxxxx.cloudfront.net`, **Cognito** (user pool + app client) for sign-in, and a **profile API** (Lambda + API Gateway) that reads/writes the UserData table. Also writes **`config.json`** to the site so the frontend knows the Cognito pool and profile API URL. |
+| **SentinelNet-Network** | `stacks/network_stack.py` | **VPC** with public, private, and internal subnets. Outputs VPC ID and subnet IDs. Backend uses this VPC. |
+| **SentinelNet-UserData** | `stacks/user_data_stack.py` | **DynamoDB** (profiles) and **S3** bucket. No Lambda here — just storage. |
+| **SentinelNet-Website** | `stacks/website_stack.py` | **Live site**: S3 + CloudFront, **Cognito**, and **profile API** (Lambda + API Gateway) using the UserData table. Writes `config.json` for the frontend. |
+| **SentinelNet-Backend** | `stacks/backend_stack.py` | **ECS/Fargate** (e.g. Grafana) and an internal ALB. Uses Network’s VPC and private subnets. |
 
-**Dependency:** The Website stack uses the UserData stack (it needs the DynamoDB table for the profile API). So UserData has to exist before Website can use it. Network is independent.
+**Dependencies:** Website uses UserData (profile API). Backend uses Network (VPC + private subnets). **Backend does not deploy Network** — you deploy Network first, then Backend.
 
-**Deploy order** (when you have approval): Network → UserData → Website. And deploy Website with `--exclusively` so CDK doesn’t try to update UserData and hit an export error (see HOW-TO-DEPLOY.md).
+**Deploy order:** Network → UserData → Website (`--exclusively`) → Backend. Use `./deploy-all.sh` to run them in order. If Network fails with “export in use by SentinelNet-Backend”, run `./fix-network-export-conflict.sh` once (see HOW-TO-DEPLOY.md).
 
 ---
 
@@ -60,10 +61,11 @@ Don’t run `cdk deploy` without approval. The main repo README explains the wor
 
 ## Where to change what
 
-- **Add or change something in the VPC (subnets, etc.):** Edit `stacks/network_stack.py`.
-- **Add or change the DynamoDB table or S3 bucket for user data:** Edit `stacks/user_data_stack.py`.
-- **Add or change the site, CloudFront, Cognito, or the profile API:** Edit `stacks/website_stack.py`. The profile API Lambda code lives in `lambda/profile_api_py/handler.py` — change that file if you need to change what the profile API does (e.g. new fields, new endpoints).
-- **Add a whole new stack:** Create a new file in `stacks/` (e.g. `something_stack.py`), define a class that extends `Stack`, then in `app.py` import it and add e.g. `SomethingStack(app, "SentinelNet-Something", env=env)`.
+- **VPC / subnets:** Edit `stacks/network_stack.py`.
+- **DynamoDB / S3 for user data:** Edit `stacks/user_data_stack.py`.
+- **Site, CloudFront, Cognito, profile API:** Edit `stacks/website_stack.py`. Profile API Lambda: `lambda/profile_api_py/handler.py`.
+- **ECS/Fargate (Backend):** Edit `stacks/backend_stack.py`.
+- **New stack:** Add a new file in `stacks/`, extend `Stack`, then in `app.py` instantiate it (e.g. `SomethingStack(app, "SentinelNet-Something", env=env)`).
 
 ---
 
@@ -79,5 +81,6 @@ After a successful Website deploy, the output shows **WebsiteURL**. The current 
 - **“credentials could not be used” / “security token invalid”** → Set AWS credentials (see HOW-TO-DEPLOY.md or the main README).
 - **“Cannot delete export … in use by SentinelNet-Website”** → You must deploy the Website stack with `--exclusively`. Don’t deploy UserData and Website together without that flag. See HOW-TO-DEPLOY.md.
 - **“No such file or directory: frontend/dist”** → Someone needs to run `npm run build` in the `frontend/` folder before deploying the Website stack. The deploy uploads the contents of `frontend/dist/`.
+- **“Cannot delete export … in use by SentinelNet-Backend”** (when deploying Network) → Backend is using an export from Network. Run `cdk destroy SentinelNet-Backend --force`, then `cdk deploy SentinelNet-Network --exclusively`, then `cdk deploy SentinelNet-Backend`. See HOW-TO-DEPLOY.md.
 
 More detail: **HOW-TO-DEPLOY.md** and **DEPLOY.md**.

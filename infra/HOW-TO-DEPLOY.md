@@ -28,6 +28,15 @@ cd ..
 
 ## Deploy (every time you want to push an update)
 
+**Option A — Deploy everything with one script** (from repo root, after building frontend):
+
+```bash
+cd frontend && npm install && npm run build && cd ..
+./infra/deploy-all.sh
+```
+
+**Option B — Deploy step by step**
+
 **1. Set AWS credentials** (same terminal you’ll use below).
 
 Mac/Linux / Git Bash:
@@ -55,13 +64,18 @@ npm run build
 cd ..
 ```
 
-**3. Deploy the website stack**
+**3. Deploy the stacks** (from `infra/`). Order matters:
 
 ```bash
 cd infra
-cdk deploy SentinelNet-Website --require-approval never
+cdk deploy SentinelNet-Network --require-approval never --exclusively
+cdk deploy SentinelNet-UserData --require-approval never
+cdk deploy SentinelNet-Website --require-approval never --exclusively
+cdk deploy SentinelNet-Backend --require-approval never
 cd ..
 ```
+
+If **Network** fails with “Cannot delete export … in use by SentinelNet-Backend”, run the one-time fix first: `./fix-network-export-conflict.sh` (see section below).
 
 At the end you’ll see **WebsiteURL** (e.g. `https://xxxxx.cloudfront.net`). That’s the live site.
 
@@ -128,6 +142,42 @@ cdk destroy SentinelNet-Network SentinelNet-Identity SentinelNet-Data SentinelNe
 ```
 
 Only do this if you want to clean up those stacks. Don’t run `cdk destroy SentinelNet-Website` or you’ll remove the live site.
+
+---
+
+## How the stacks relate (Network vs Backend)
+
+**Backend does NOT deploy Network.** They are separate stacks. In code, Backend gets the VPC and private subnets from the Network stack (so it depends on Network), but you deploy them separately:
+
+1. Deploy **Network** first (creates VPC and subnets).
+2. Deploy **UserData** (DynamoDB, S3).
+3. Deploy **Website** with `--exclusively` (site + Cognito + profile API).
+4. Deploy **Backend** last (ECS/Fargate uses Network’s VPC and private subnets).
+
+If an **old** Backend stack was deployed in AWS (e.g. by the center team) and it imported exports from an older Network template, updating Network can fail: CloudFormation won’t delete or change an export that another stack still imports. You have to remove that dependency once, then redeploy.
+
+---
+
+## "Cannot delete export … in use by SentinelNet-Backend" (when deploying Network)
+
+If deploying **SentinelNet-Network** fails with that message, the **Backend** stack already in AWS is still importing a subnet export from Network. CloudFormation blocks the Network update.
+
+**One-time fix** — from repo root (or from `infra/`):
+
+```bash
+cd infra
+./fix-network-export-conflict.sh
+```
+
+Or run these by hand (from `infra/`):
+
+```bash
+cdk destroy SentinelNet-Backend --force
+cdk deploy SentinelNet-Network --require-approval never --exclusively
+cdk deploy SentinelNet-Backend --require-approval never
+```
+
+After that, normal deploy order works (e.g. use `./deploy-all.sh` or the steps in “Deploy (every time you deploy)”). Get approval before running `cdk destroy` on Backend.
 
 ---
 
