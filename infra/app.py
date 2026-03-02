@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """
-SentinelNet — stacks: website, user data, network (VPC).
+SentinelNet — CDK app: Network, UserData, Website, Backend.
 
-Deploy:
-  cdk deploy SentinelNet-Website
-  cdk deploy SentinelNet-UserData
-  cdk deploy SentinelNet-Network   # VPC for center/backend team
-
-Use AWS credentials via env or aws configure.
+Deploy order: Network -> UserData -> Website (--exclusively) -> Backend.
+Backend does not deploy Network; it depends on Network (VPC + private subnets).
+Use infra/deploy-all.sh to deploy all, or infra/fix-network-export-conflict.sh
+if Network fails with "export in use by SentinelNet-Backend".
 """
 
 import os
@@ -16,6 +14,7 @@ import aws_cdk as cdk
 from stacks.website_stack import WebsiteStack
 from stacks.user_data_stack import UserDataStack
 from stacks.network_stack import NetworkStack
+from stacks.backend_stack import BackendStack
 
 app = cdk.App()
 
@@ -26,6 +25,13 @@ env = cdk.Environment(
 
 user_data_stack = UserDataStack(app, "SentinelNet-UserData", env=env)
 WebsiteStack(app, "SentinelNet-Website", env=env, user_data_stack=user_data_stack)
-NetworkStack(app, "SentinelNet-Network", env=env)
+network_stack = NetworkStack(app, "SentinelNet-Network", env=env)
+BackendStack(
+    app,
+    "SentinelNet-Backend",
+    env=env,
+    vpc=network_stack.vpc,
+    subnets=network_stack.public_subnets,
+)
 
 app.synth()
