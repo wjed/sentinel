@@ -93,7 +93,6 @@ class NetworkStack(Stack):
             route_table_id=public_rt.ref,
             destination_cidr_block="0.0.0.0/0",
             gateway_id=igw.ref,
-            tags=[{"key": "Name", "value": "sentinel-public-default-route"}]
         )
 
         # Associate public subnets with public route table
@@ -125,7 +124,6 @@ class NetworkStack(Stack):
             route_table_id=private_rt.ref,
             destination_cidr_block="0.0.0.0/0",
             nat_gateway_id=nat_gw.ref,
-            tags=[{"key": "Name", "value": "sentinel-private-default-route"}]
         )
 
         # Associate private subnets with private route table
