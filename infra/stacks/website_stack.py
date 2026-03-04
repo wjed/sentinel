@@ -23,6 +23,9 @@ from aws_cdk.aws_apigatewayv2_authorizers import HttpJwtAuthorizer
 from aws_cdk.aws_cloudfront_origins import S3BucketOrigin
 from aws_cdk import aws_lambda as lambda_
 from constructs import Construct
+from aws_cdk import aws_route53 as route53
+from aws_cdk import aws_route53_targets as route53_targets
+from aws_cdk import aws_certificatemanager as acm
 
 
 class WebsiteStack(Stack):
@@ -36,7 +39,20 @@ class WebsiteStack(Stack):
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        # Route 53 hosted zone for sentinelnetsolutions.com
+        zone = route53.HostedZone.from_lookup(
+            self,
+            "BaseZone",
+            domain_name="sentinelnetsolutions.com",
+        )
 
+        # ACM certificate for sentinelnetsolutions.com (CloudFront HTTPS)
+        certificate = acm.Certificate(
+            self,
+            "SiteCertificate",
+            domain_name="sentinelnetsolutions.com",
+            validation=acm.CertificateValidation.from_dns(zone),
+        )
         repo_root = Path(__file__).resolve().parents[2]
         frontend_dist = str(repo_root / "frontend" / "dist")
         profile_lambda_dir = str(repo_root / "infra" / "lambda" / "profile_api_py")
@@ -87,9 +103,19 @@ function handler(event) {
                 ],
             ),
             default_root_object="index.html",
+            domain_names=["sentinelnetsolutions.com"],
+            certificate=certificate,
         )
-
-        website_url = f"https://{self.distribution.distribution_domain_name}"
+        route53.ARecord(
+            self,
+            "RootAliasRecord",
+            zone=zone,
+            record_name="",
+            target=route53.RecordTarget.from_alias(
+                route53_targets.CloudFrontTarget(self.distribution)
+            ),
+        )
+        website_url = "https://sentinelnetsolutions.com"
         callback_url = f"{website_url}/"
 
         # --- Cognito: user pool + Hosted UI + app client ---
