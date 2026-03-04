@@ -38,24 +38,78 @@ You can add a top-level `main.py` or `app.py` (or Node `index.js`) later to star
 - **Auth** (e.g. validate JWT or session) → Handle in `api/` middleware or a shared auth module used by routes.
 
 Language and framework (Python/Flask, Python/FastAPI, Node/Express, etc.) are up to your team; keep API and services separated so multiple people can work in parallel.
-# Wazuh Alert Queue Ingestion (MVP)
 
-BackendStack provisions an ingestion path:
+---
 
-`Wazuh Manager -> SQS (sentinel-wazuh-alerts) -> Lambda (sentinel-wazuh-ingest) -> DynamoDB (sentinel-telemetry)`
+## Wazuh Alert Queue Ingestion (MVP)
 
-The Wazuh EC2 instance role is granted `sqs:SendMessage` to the alerts queue.
+BackendStack provisions:
 
-Example producer command from the Wazuh host (or any principal with queue access):
+`Wazuh Manager -> SQS (wazuh-alerts-queue) -> Lambda (wazuh-ingest-handler) -> DynamoDB (sentinel-telemetry)`
+
+Message requirements:
+- Body must be one JSON object string per SQS message.
+- Normalized fields: `id`, `timestamp`, `severity`, `eventType`, `raw`, `expiresAt`.
+- `id` fallback: `agent.id` -> `agent.name` -> `unknown`.
+- `timestamp` fallback: `timestamp` or `@timestamp` -> current UTC ISO8601.
+- `severity` fallback: `rule.level` -> `0`.
+- `eventType` is always `wazuh_alert`.
+- Invalid JSON fails only that record (`batchItemFailures`) so SQS retries and eventually sends to DLQ.
+
+### Local offline test
+
+Run from repo root:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m unittest backend/lambda/wazuh_ingest/test_local.py
+```
+
+What it verifies:
+- Valid Wazuh-like message is normalized and batched for DynamoDB.
+- Invalid JSON returns a per-record failure and does not block valid records.
+
+### Integration test after deploy
+
+1. Fetch stack outputs and export shell vars:
+
+```bash
+aws cloudformation describe-stacks \
+  --stack-name SentinelNet-Backend \
+  --query "Stacks[0].Outputs[].[OutputKey,OutputValue]" \
+  --output table
+```
+
+```bash
+export WAZUH_ALERTS_QUEUE_URL="$(aws cloudformation describe-stacks --stack-name SentinelNet-Backend --query \"Stacks[0].Outputs[?OutputKey=='WazuhAlertsQueueUrl'].OutputValue\" --output text)"
+export TELEMETRY_TABLE_NAME="$(aws cloudformation describe-stacks --stack-name SentinelNet-Backend --query \"Stacks[0].Outputs[?OutputKey=='TelemetryTableName'].OutputValue\" --output text)"
+export WAZUH_INGEST_LAMBDA_NAME="$(aws cloudformation describe-stacks --stack-name SentinelNet-Backend --query \"Stacks[0].Outputs[?OutputKey=='WazuhIngestLambdaName'].OutputValue\" --output text)"
+```
+
+2. Send sample Wazuh alert JSON to SQS:
 
 ```bash
 aws sqs send-message \
   --queue-url "$WAZUH_ALERTS_QUEUE_URL" \
-  --message-body '{"agent":{"id":"001"},"timestamp":"2026-03-01T18:00:00Z","severity":7,"eventType":"wazuh.alert","rule":{"description":"test alert"}}'
+  --message-body '{"timestamp":"2026-03-02T18:30:00Z","agent":{"id":"001","name":"endpoint-001"},"manager":{"name":"wazuh-manager"},"rule":{"id":"5710","level":10,"description":"SSH brute force attempt"},"full_log":"Failed password for invalid user admin from 1.2.3.4 port 4242 ssh2"}'
 ```
 
-Message requirements:
-- Body must be a JSON object string.
-- One event per SQS message.
-- If `timestamp` is missing/invalid, Lambda uses current UTC time.
-- If ID fields are missing, Lambda falls back to `unknown-source`.
+3. Verify Lambda processed it (logs contain `id` and `timestamp`):
+
+```bash
+aws logs tail "/aws/lambda/$WAZUH_INGEST_LAMBDA_NAME" --since 10m --follow
+```
+
+Expected log line includes:
+- `Prepared Wazuh alert id=001 timestamp=2026-03-02T18:30:00Z severity=10`
+
+4. Verify item exists in DynamoDB:
+
+```bash
+aws dynamodb get-item \
+  --table-name "$TELEMETRY_TABLE_NAME" \
+  --key '{"id":{"S":"001"},"timestamp":{"S":"2026-03-02T18:30:00Z"}}' \
+  --consistent-read
+```
+
+Expected outcome:
+- `Item` is returned with `eventType` = `wazuh_alert`, `severity` = `10`, and `raw` containing the full original message body.
