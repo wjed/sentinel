@@ -4,14 +4,18 @@ import time
 from datetime import datetime, timezone
 from typing import Any
 
-import boto3
+try:
+    import boto3
+except ImportError:  # pragma: no cover - supports offline tests without boto3 installed
+    boto3 = None
 
 TABLE_NAME = os.environ["TABLE_NAME"]
 RETENTION_DAYS = int(os.environ.get("RETENTION_DAYS", "30"))
 MAX_BATCH_WRITE_SIZE = 25
 MAX_BATCH_WRITE_RETRIES = 5
+SECONDS_PER_DAY = 24 * 60 * 60
 
-DYNAMODB = boto3.client("dynamodb")
+DYNAMODB = boto3.client("dynamodb") if boto3 else None
 
 
 def handler(event: dict[str, Any], context: Any) -> dict[str, list[dict[str, str]]]:
@@ -26,14 +30,19 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, list[dict[str, str
         try:
             payload = json.loads(body)
             if not isinstance(payload, dict):
-                raise ValueError("Event payload must be a JSON object")
-
-            normalized = normalize_event(payload)
-            prepared_items.append((message_id, to_dynamodb_item(normalized)))
-        except Exception as err:
-            print(f"Failed to parse/normalize SQS message {message_id}: {err}")
+                raise ValueError("SQS message body must be a JSON object")
+        except Exception as err:  # noqa: BLE001 - keep record-level failure handling explicit
+            print(f"Failed to parse SQS message {message_id}: {err}")
             if message_id:
                 failed_message_ids.append(message_id)
+            continue
+
+        normalized = normalize_event(payload=payload, raw_body=body)
+        print(
+            f"Prepared Wazuh alert id={normalized['id']} "
+            f"timestamp={normalized['timestamp']} severity={normalized['severity']}"
+        )
+        prepared_items.append((message_id, to_dynamodb_item(normalized)))
 
     if prepared_items:
         failed_message_ids.extend(batch_write_with_retries(prepared_items))
@@ -41,73 +50,49 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, list[dict[str, str
     return {
         "batchItemFailures": [
             {"itemIdentifier": message_id}
-            for message_id in sorted(set(failed_message_ids))
+            for message_id in list(dict.fromkeys(failed_message_ids))
         ]
     }
 
 
-def normalize_event(payload: dict[str, Any]) -> dict[str, Any]:
-    event_time_iso, event_time_epoch = resolve_timestamp(payload)
-
+def normalize_event(payload: dict[str, Any], raw_body: str) -> dict[str, Any]:
     agent = payload.get("agent") if isinstance(payload.get("agent"), dict) else {}
-    derived_id = (
-        payload.get("id")
-        or payload.get("agentId")
-        or payload.get("agent_id")
-        or agent.get("id")
-        or payload.get("source")
-        or "unknown-source"
-    )
+
+    event_id = agent.get("id") or agent.get("name") or "unknown"
+    event_timestamp = resolve_timestamp(payload)
 
     rule = payload.get("rule") if isinstance(payload.get("rule"), dict) else {}
-    event_type = (
-        payload.get("eventType")
-        or payload.get("event_type")
-        or payload.get("type")
-        or rule.get("description")
-        or "wazuh.alert"
-    )
+    severity = coerce_int(rule.get("level"), default=0)
 
-    severity = payload.get("severity")
-    if severity is None:
-        severity = rule.get("level")
-
-    if severity is None:
-        severity = "0"
-
-    ttl_epoch = event_time_epoch + (RETENTION_DAYS * 24 * 60 * 60)
+    expires_at = int(time.time()) + (RETENTION_DAYS * SECONDS_PER_DAY)
 
     return {
-        "id": str(derived_id),
-        "timestamp": event_time_iso,
-        "eventType": str(event_type),
+        "id": str(event_id),
+        "timestamp": event_timestamp,
         "severity": severity,
-        "raw": json.dumps(payload, separators=(",", ":"), sort_keys=True, default=str),
-        "expiresAt": ttl_epoch,
+        "eventType": "wazuh_alert",
+        "raw": raw_body,
+        "expiresAt": expires_at,
     }
 
 
 def to_dynamodb_item(normalized: dict[str, Any]) -> dict[str, dict[str, str]]:
-    severity = normalized["severity"]
-    if isinstance(severity, (int, float)):
-        severity_attr = {"N": str(severity)}
-    else:
-        severity_text = str(severity)
-        severity_attr = {"N": severity_text} if severity_text.isdigit() else {"S": severity_text}
-
     return {
         "id": {"S": normalized["id"]},
         "timestamp": {"S": normalized["timestamp"]},
+        "severity": {"N": str(normalized["severity"])},
         "eventType": {"S": normalized["eventType"]},
-        "severity": severity_attr,
         "raw": {"S": normalized["raw"]},
-        "expiresAt": {"N": str(int(normalized["expiresAt"]))},
+        "expiresAt": {"N": str(normalized["expiresAt"])},
     }
 
 
 def batch_write_with_retries(
     prepared_items: list[tuple[str, dict[str, dict[str, str]]]]
 ) -> list[str]:
+    if DYNAMODB is None:
+        raise RuntimeError("DynamoDB client is not configured")
+
     failed_message_ids: list[str] = []
 
     for start in range(0, len(prepared_items), MAX_BATCH_WRITE_SIZE):
@@ -126,54 +111,66 @@ def batch_write_with_retries(
             response = DYNAMODB.batch_write_item(RequestItems={TABLE_NAME: unprocessed})
             unprocessed = response.get("UnprocessedItems", {}).get(TABLE_NAME, [])
             if unprocessed:
-                time.sleep(0.2 * (2 ** retries))
+                time.sleep(0.2 * (2**retries))
             retries += 1
 
         if unprocessed:
             for request in unprocessed:
                 item = request["PutRequest"]["Item"]
                 item_key = json.dumps(item, sort_keys=True)
-                remaining = id_lookup.get(item_key, [])
-                if remaining:
-                    failed_message_ids.append(remaining.pop(0))
+                remaining_ids = id_lookup.get(item_key, [])
+                if remaining_ids:
+                    failed_message_ids.append(remaining_ids.pop(0))
 
     return failed_message_ids
 
 
-def resolve_timestamp(payload: dict[str, Any]) -> tuple[str, int]:
-    candidate = payload.get("timestamp") or payload.get("@timestamp") or payload.get("time")
+def resolve_timestamp(payload: dict[str, Any]) -> str:
+    timestamp_value = payload.get("timestamp") or payload.get("@timestamp")
 
-    if isinstance(candidate, (int, float)):
-        dt = datetime.fromtimestamp(float(candidate), tz=timezone.utc)
-        dt = dt.replace(microsecond=0)
-        return dt.isoformat().replace("+00:00", "Z"), int(dt.timestamp())
-
-    if isinstance(candidate, str):
-        parsed = parse_iso_timestamp(candidate)
-        if parsed is not None:
+    if isinstance(timestamp_value, str):
+        parsed = parse_iso_timestamp(timestamp_value)
+        if parsed:
             return parsed
 
-    now = datetime.now(timezone.utc).replace(microsecond=0)
-    return now.isoformat().replace("+00:00", "Z"), int(now.timestamp())
+    if isinstance(timestamp_value, (int, float)):
+        dt = datetime.fromtimestamp(float(timestamp_value), tz=timezone.utc).replace(
+            microsecond=0
+        )
+        return dt.isoformat().replace("+00:00", "Z")
+
+    return utc_now_iso()
 
 
-def parse_iso_timestamp(value: str) -> tuple[str, int] | None:
-    text = value.strip()
-    if not text:
+def parse_iso_timestamp(value: str) -> str | None:
+    cleaned = value.strip()
+    if not cleaned:
         return None
 
-    if text.endswith("Z"):
-        text = f"{text[:-1]}+00:00"
+    if cleaned.endswith("Z"):
+        cleaned = f"{cleaned[:-1]}+00:00"
 
     try:
-        dt = datetime.fromisoformat(text)
+        parsed = datetime.fromisoformat(cleaned)
     except ValueError:
         return None
 
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
     else:
-        dt = dt.astimezone(timezone.utc)
+        parsed = parsed.astimezone(timezone.utc)
 
-    dt = dt.replace(microsecond=0)
-    return dt.isoformat().replace("+00:00", "Z"), int(dt.timestamp())
+    return parsed.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def coerce_int(value: Any, default: int) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
