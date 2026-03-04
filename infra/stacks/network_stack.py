@@ -6,7 +6,7 @@ Deploy with: cdk deploy SentinelNet-Network
 Other stacks can reference the VPC via exports or by taking this stack as a dependency.
 """
 
-from aws_cdk import CfnOutput, Stack
+from aws_cdk import CfnOutput, Stack, Tags
 from aws_cdk import aws_ec2 as ec2
 from constructs import Construct
 
@@ -16,6 +16,9 @@ class NetworkStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        # Tag so template changes and CloudFormation can reach UPDATE_COMPLETE after a rollback
+        Tags.of(self).add("SentinelNet", "Network")
 
         # Create a VPC with a fixed CIDR and no automatic subnets so we can
         # create subnets with explicit static CIDR ranges.
