@@ -6,7 +6,7 @@ Deploy with: cdk deploy SentinelNet-Network
 Other stacks can reference the VPC via exports or by taking this stack as a dependency.
 """
 
-from aws_cdk import CfnOutput, Stack, Tags
+from aws_cdk import CfnOutput, RemovalPolicy, Stack, Tags
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_rds as rds
 from constructs import Construct
