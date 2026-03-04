@@ -190,18 +190,22 @@ function handler(event) {
 
         # Deploy frontend + config.json. Invalidate CloudFront so clients get new index.html
         # and assets (avoids cached 404 / wrong MIME). Prune so old hashed assets are removed.
-        s3_deploy.BucketDeployment(
-            self,
-            "DeployWebsite",
-            sources=[
-                s3_deploy.Source.asset(frontend_dist),
-                s3_deploy.Source.data("config.json", config_json),
-            ],
-            destination_bucket=bucket,
-            distribution=self.distribution,
-            distribution_paths=["/*"],
-            prune=True,
-        )
+        # Guard: skip asset deployment during `cdk synth` if the frontend hasn't been built yet.
+        # Run `npm run build` inside frontend/ before `cdk deploy` to produce the dist folder.
+        import os as _os
+        if _os.path.isdir(frontend_dist):
+            s3_deploy.BucketDeployment(
+                self,
+                "DeployWebsite",
+                sources=[
+                    s3_deploy.Source.asset(frontend_dist),
+                    s3_deploy.Source.data("config.json", config_json),
+                ],
+                destination_bucket=bucket,
+                distribution=self.distribution,
+                distribution_paths=["/*"],
+                prune=True,
+            )
 
         # Outputs
         CfnOutput(
