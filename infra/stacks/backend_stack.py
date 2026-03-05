@@ -190,7 +190,7 @@ class BackendStack(Stack):
             self,
             "WazuhManagerSG",
             vpc=vpc,
-            description="Wazuh Manager — internal subnet only, no inbound by default",
+            description="Wazuh Manager internal subnet only, no inbound by default",
             allow_all_outbound=False,
         )
         wazuh_sg.add_ingress_rule(
