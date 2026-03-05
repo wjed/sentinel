@@ -31,7 +31,9 @@ BackendStack(
     "SentinelNet-Backend",
     env=env,
     vpc=network_stack.vpc,
-    subnets=network_stack.public_subnets,
+    private_subnet_ids=network_stack.private_subnet_ids,
+    internal_subnet_ids=network_stack.internal_subnet_ids,
+    public_subnet_ids=network_stack.public_subnet_ids,
 )
 
 app.synth()
