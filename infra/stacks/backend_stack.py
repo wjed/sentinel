@@ -17,6 +17,9 @@ from aws_cdk import (
 )
 from constructs import Construct
 
+from .constructs import HiveConstruct
+
+
 
 
 class BackendStack(Stack):
@@ -322,6 +325,22 @@ class BackendStack(Stack):
                 value=lb.load_balancer_dns_name,
                 description="Grafana ALB endpoint (private)",
             )
+
+        #TheHive 
+        hive = HiveConstruct(
+            self,
+            "TheHive",
+            vpc=vpc,
+            private_subnets=private_subnets,
+            wazuh_alert_queue=wazuh_alert_queue,
+        )
+
+        CfnOutput(
+            self,
+            "HiveEndpoint",
+            value=hive.lb_dns,
+            description="TheHive ALB endpoint (private)",
+        )
 
         CfnOutput(
             self,
