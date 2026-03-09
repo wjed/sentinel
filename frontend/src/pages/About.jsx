@@ -1,6 +1,6 @@
 export default function About() {
   const team = [
-    'Will Jedrzejczak',
+    'William Jedrzejczak',
     'Josh Martino',
     'Dilpreet Gill',
     'Noah Reed',
