@@ -20,6 +20,30 @@ class TelemetryConstruct(Construct):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # TODO: move KMS key + DynamoDB table here from BackendStack
-        self.kms_key: kms.Key = None  # type: ignore
-        self.table: dynamodb.Table = None  # type: ignore
+        self.kms_key = kms.Key(
+            self,
+            "TelemetryKey",
+            description="CMK for Sentinel telemetry DynamoDB table",
+            enable_key_rotation=True,
+            removal_policy=RemovalPolicy.DESTROY,
+        )
+
+        self.table = dynamodb.Table(
+            self,
+            "TelemetryTable",
+            table_name="sentinel-telemetry",
+            partition_key=dynamodb.Attribute(
+                name="agentId",
+                type=dynamodb.AttributeType.STRING,
+            ),
+            sort_key=dynamodb.Attribute(
+                name="timestamp",
+                type=dynamodb.AttributeType.STRING,
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            point_in_time_recovery=True,
+            encryption=dynamodb.TableEncryption.CUSTOMER_MANAGED,
+            encryption_key=self.kms_key,
+            time_to_live_attribute="expiresAt",
+            removal_policy=RemovalPolicy.DESTROY,
+        )
