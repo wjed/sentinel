@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import PublicLayout from './components/PublicLayout'
 import ProtectedRoute from './components/ProtectedRoute'
+import PublicOnlyRoute from './components/PublicOnlyRoute'
 import Home from './pages/Home'
 import Product from './pages/Product'
 import Pricing from './pages/Pricing'
@@ -20,10 +21,10 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<PublicLayout />}>
-        <Route index element={<Home />} />
-        <Route path="product" element={<Product />} />
-        <Route path="pricing" element={<Pricing />} />
-        <Route path="about" element={<About />} />
+        <Route index element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
+        <Route path="product" element={<PublicOnlyRoute><Product /></PublicOnlyRoute>} />
+        <Route path="pricing" element={<PublicOnlyRoute><Pricing /></PublicOnlyRoute>} />
+        <Route path="about" element={<PublicOnlyRoute><About /></PublicOnlyRoute>} />
         <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
         <Route path="incidents" element={<ProtectedRoute><Incidents /></ProtectedRoute>} />
