@@ -17,7 +17,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 
-from .constructs import HiveConstruct
+from .constructs import HiveConstruct, TelemetryConstruct, RdsConstruct
 
 
 
@@ -55,33 +55,10 @@ class BackendStack(Stack):
             for idx, subnet_id in enumerate(internal_subnet_ids)
         ]
 
-        telemetry_kms_key = kms.Key(
-            self,
-            "TelemetryTableKmsKey",
-            alias="alias/sentinel-telemetry-key",
-            enable_key_rotation=True,
-            removal_policy=RemovalPolicy.DESTROY,
-        )
-
-        telemetry_table = dynamodb.Table(
-            self,
-            "TelemetryTable",
-            table_name="sentinel-telemetry",
-            partition_key=dynamodb.Attribute(
-                name="id",
-                type=dynamodb.AttributeType.STRING,
-            ),
-            sort_key=dynamodb.Attribute(
-                name="timestamp",
-                type=dynamodb.AttributeType.STRING,
-            ),
-            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-            encryption=dynamodb.TableEncryption.CUSTOMER_MANAGED,
-            encryption_key=telemetry_kms_key,
-            point_in_time_recovery=True,
-            time_to_live_attribute="expiresAt",
-            removal_policy=RemovalPolicy.DESTROY,
-        )
+        # DynamoDB telemetry table + KMS key — owned by TelemetryConstruct.
+        telemetry = TelemetryConstruct(self, "Telemetry")
+        telemetry_table = telemetry.table
+        telemetry_kms_key = telemetry.kms_key
 
         wazuh_alert_dlq = sqs.Queue(
             self,
@@ -152,39 +129,18 @@ class BackendStack(Stack):
         )
         telemetry_kms_key.grant_encrypt_decrypt(wazuh_ingest_fn)
 
-        # Security group - no inbound by default (isolated)
-        rds_sg = ec2.SecurityGroup(
-            self,
-            "RDSSecurityGroup",
+        # RDS MySQL instance + security group — owned by RdsConstruct.
+        rds_construct = RdsConstruct(
+            self, "Rds",
             vpc=vpc,
-            description="Security group for RDS MySQL (isolated data subnet)",
-            allow_all_outbound=False,
+            internal_subnets=internal_subnets,
         )
+        rds_instance = rds_construct.instance
 
-        rds_instance = rds.DatabaseInstance(
-            self,
-            "SentinelMySQL",
-            engine=rds.DatabaseInstanceEngine.mysql(
-                version=rds.MysqlEngineVersion.VER_8_0
-            ),
-            instance_type=ec2.InstanceType.of(
-                ec2.InstanceClass.T3, ec2.InstanceSize.MICRO
-            ),
-            vpc=vpc,
-            vpc_subnets=ec2.SubnetSelection(subnets=internal_subnets),
-            security_groups=[rds_sg],
-            database_name="sentineldb",
-            instance_identifier="sentinel-mysql",
-            multi_az=False,
-            allocated_storage=20,
-            max_allocated_storage=100,
-            backup_retention=Duration.days(7),
-            deletion_protection=False,
-            removal_policy=RemovalPolicy.DESTROY,
-        )
-
-        self.telemetry_table = telemetry_table
-        self.rds_instance = rds_instance
+        self.telemetry_table = telemetry.table
+        self.telemetry_kms_key = telemetry.kms_key
+        self.rds_instance = rds_construct.instance
+        self.rds_sg = rds_construct.security_group
         self.wazuh_alert_queue = wazuh_alert_queue
         self.wazuh_alert_dlq = wazuh_alert_dlq
         self.wazuh_ingest_fn = wazuh_ingest_fn
