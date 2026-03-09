@@ -170,9 +170,7 @@ class WazuhConstruct(Construct):
             self,
             "WazuhManagerInstance",
             instance_type=ec2.InstanceType("t3.medium"),
-            machine_image=ec2.MachineImage.latest_amazon_linux(
-                generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2
-            ),
+            machine_image=ec2.MachineImage.latest_amazon_linux2(),
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(subnets=private_subnets),
             security_group=wazuh_sg,

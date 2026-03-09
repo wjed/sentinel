@@ -41,7 +41,9 @@ class TelemetryConstruct(Construct):
                 type=dynamodb.AttributeType.STRING,
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-            point_in_time_recovery=True,
+            point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
+                point_in_time_recovery_enabled=True,
+            ),
             encryption=dynamodb.TableEncryption.CUSTOMER_MANAGED,
             encryption_key=self.kms_key,
             time_to_live_attribute="expiresAt",

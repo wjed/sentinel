@@ -41,18 +41,27 @@ backend_stack = BackendStack(
 )
 
 # --- AWS AppRegistry Application ---
-# Groups all stacks under one application in AWS Console -> Systems Manager -> Application Manager.
-# Enables unified cost tracking, resource inventory, and operational dashboards.
-sentinel_app = appregistry.Application(
-    app,
+# CfnApplication is a CFn L1 resource and must live inside a Stack.
+# We use a small dedicated stack so the other stacks stay clean.
+appregistry_stack = cdk.Stack(app, "SentinelNet-AppRegistry", env=env)
+sentinel_cfn_app = appregistry.CfnApplication(
+    appregistry_stack,
     "SentinelNetApplication",
-    application_name="SentinelNet",
+    name="SentinelNet",
     description="SentinelNet Security Platform - network monitoring and SIEM",
 )
 
-sentinel_app.associate_stack(network_stack)
-sentinel_app.associate_stack(user_data_stack)
-sentinel_app.associate_stack(website_stack)
-sentinel_app.associate_stack(backend_stack)
+# Associate each member stack with the application.
+# CfnResourceAssociation is placed inside each member stack and references
+# the AppRegistry application by its logical name (plain string — no circular dep).
+_app_registry_stack_name = "SentinelNet-AppRegistry"
+for _stack in [network_stack, user_data_stack, website_stack, backend_stack]:
+    appregistry.CfnResourceAssociation(
+        _stack,
+        "AppRegistryAssociation",
+        application=_app_registry_stack_name,
+        resource_type="CFN_STACK",
+        resource=_stack.stack_name,
+    )
 
 app.synth()

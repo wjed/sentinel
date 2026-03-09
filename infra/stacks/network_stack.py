@@ -26,7 +26,7 @@ class NetworkStack(Stack):
         self.vpc = ec2.Vpc(
             self,
             "Vpc",
-            cidr="10.0.0.0/16",
+            ip_addresses=ec2.IpAddresses.cidr("10.0.0.0/16"),
             max_azs=2,
             nat_gateways=0,
             subnet_configuration=[],
