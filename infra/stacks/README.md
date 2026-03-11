@@ -22,3 +22,18 @@ Each file here is a **CDK stack** — a class that will eventually define a set 
 - **New stack** → Add a new file (e.g. `monitoring_stack.py`), define a class that extends `Stack`, then in `app.py` add e.g. `MonitoringStack(app, "SentinelNet-Monitoring")`.
 
 **Implemented:** `website_stack.py`, `user_data_stack.py`, `network_stack.py`. Others are placeholders.
+
+---
+
+## Constructs (`infra/stacks/constructs/`)
+
+Constructs are reusable infrastructure components that are instantiated within our main stacks (like `BackendStack`).
+
+### HiveConstruct (`hive_construct.py`)
+Deploys **TheHive** SOC case management platform on ECS Fargate.
+
+- **Architecture:** Runs `strangebee/thehive` with an Elasticsearch sidecar within the same Fargate task.
+- **Networking:** Deployed entirely in private subnets behind an internal Application Load Balancer (ALB). Not accessible from the public internet.
+- **Ports:** Port `9000` (TheHive UI / API) is exposed via the internal ALB. Port `9200` (Elasticsearch) remains strictly internal to the Fargate task.
+- **Integrations:** Optionally accepts a Wazuh SQS alert queue to grant TheHive read permissions, allowing it to correlate Wazuh alerts.
+- **Exposes:** The Fargate `service` and the internal ALB's DNS name (`lb_dns`).
