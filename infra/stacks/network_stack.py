@@ -238,16 +238,16 @@ class NetworkStack(Stack):
                 version=rds.MysqlEngineVersion.VER_8_0
             ),
             instance_type=ec2.InstanceType.of(
-                ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MEDIUM
+                ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MICRO
             ),
             vpc=self.vpc,
             subnet_group=rds_subnet_group,
             security_groups=[self.rds_sg],
-            multi_az=True,
+            multi_az=False,
             allocated_storage=20,          # GiB – increase for production
             storage_encrypted=True,
-            deletion_protection=True,
-            removal_policy=RemovalPolicy.RETAIN,
+            deletion_protection=False,
+            removal_policy=RemovalPolicy.DESTROY,
             database_name="sentinel",
             credentials=rds.Credentials.from_generated_secret(
                 "sentinel_rds_admin",
