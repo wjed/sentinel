@@ -27,19 +27,19 @@ class NetworkStack(Stack):
             self,
             "Vpc",
             ip_addresses=ec2.IpAddresses.cidr("10.0.0.0/16"),
-            max_azs=2,
+            max_azs=1,
             nat_gateways=0,
             subnet_configuration=[],
         )
 
         # Create explicit static subnets using L2 constructs.
-        # Use one public and one private subnet per AZ (two AZs total).
-        azs = self.availability_zones[:2]
+        # Use one public and one private subnet per AZ (one AZ total).
+        azs = self.availability_zones[:1]
 
-        # Public: 10.0.0.0/24, 10.0.2.0/24
-        # Private: 10.0.1.0/24, 10.0.3.0/24
-        public_cidrs = ["10.0.0.0/24", "10.0.2.0/24"]
-        private_cidrs = ["10.0.1.0/24", "10.0.3.0/24"]
+        # Public: 10.0.0.0/24
+        # Private: 10.0.1.0/24
+        public_cidrs = ["10.0.0.0/24"]
+        private_cidrs = ["10.0.1.0/24"]
 
         public_subnets = []
         private_subnets = []
@@ -65,7 +65,7 @@ class NetworkStack(Stack):
             private_subnets.append(priv)
 
         # Internal data subnets (isolated from internet). No default route to NAT/IGW.
-        internal_cidrs = ["10.0.4.0/24", "10.0.5.0/24"]
+        internal_cidrs = ["10.0.4.0/24"]
         internal_subnets = []
         for idx, az in enumerate(azs):
             internal = ec2.PrivateSubnet(
@@ -202,77 +202,4 @@ class NetworkStack(Stack):
             value=dynamo_endpoint.vpc_endpoint_id,
             description="DynamoDB Gateway VPC Endpoint ID (isolated data tier).",
             export_name="SentinelNetDynamoDbEndpointId",
-        )
-
-        # ── RDS MySQL (Isolated Data subnet tier) ─────────────────────────────
-        # Security group: only allow MySQL traffic (3306) from within the VPC.
-        self.rds_sg = ec2.SecurityGroup(
-            self,
-            "RdsMySqlSg",
-            vpc=self.vpc,
-            description="Allow MySQL (3306) inbound from within the VPC only.",
-            allow_all_outbound=False,
-        )
-        self.rds_sg.add_ingress_rule(
-            peer=ec2.Peer.ipv4(self.vpc.vpc_cidr_block),
-            connection=ec2.Port.tcp(3306),
-            description="MySQL from VPC CIDR",
-        )
-
-        # Subnet group: pin the RDS instance to the isolated internal subnets.
-        rds_subnet_group = rds.SubnetGroup(
-            self,
-            "RdsMySqlSubnetGroup",
-            description="Isolated data subnets for RDS MySQL.",
-            vpc=self.vpc,
-            vpc_subnets=ec2.SubnetSelection(subnets=internal_subnets),
-            removal_policy=RemovalPolicy.RETAIN,
-        )
-
-        # RDS MySQL 8.0 Multi-AZ instance.
-        # Credentials are auto-generated and stored in AWS Secrets Manager.
-        self.rds_instance = rds.DatabaseInstance(
-            self,
-            "RdsMySqlInstance",
-            engine=rds.DatabaseInstanceEngine.mysql(
-                version=rds.MysqlEngineVersion.VER_8_0
-            ),
-            instance_type=ec2.InstanceType.of(
-                ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MICRO
-            ),
-            vpc=self.vpc,
-            subnet_group=rds_subnet_group,
-            security_groups=[self.rds_sg],
-            multi_az=False,
-            allocated_storage=20,          # GiB – increase for production
-            storage_encrypted=True,
-            deletion_protection=False,
-            removal_policy=RemovalPolicy.DESTROY,
-            database_name="sentinel",
-            credentials=rds.Credentials.from_generated_secret(
-                "sentinel_rds_admin",
-                secret_name="sentinel/rds/mysql/admin",
-            ),
-        )
-
-        CfnOutput(
-            self,
-            "RdsMySqlEndpoint",
-            value=self.rds_instance.db_instance_endpoint_address,
-            description="RDS MySQL endpoint hostname.",
-            export_name="SentinelNetRdsMySqlEndpoint",
-        )
-        CfnOutput(
-            self,
-            "RdsMySqlPort",
-            value=self.rds_instance.db_instance_endpoint_port,
-            description="RDS MySQL port (3306).",
-            export_name="SentinelNetRdsMySqlPort",
-        )
-        CfnOutput(
-            self,
-            "RdsMySqlSecretArn",
-            value=self.rds_instance.secret.secret_arn,
-            description="Secrets Manager ARN for RDS MySQL admin credentials.",
-            export_name="SentinelNetRdsMySqlSecretArn",
         )

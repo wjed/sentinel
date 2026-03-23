@@ -39,13 +39,19 @@ class RdsConstruct(Construct):
             allow_all_outbound=False,
         )
 
+        self.security_group.add_ingress_rule(
+            peer=ec2.Peer.ipv4(vpc.vpc_cidr_block),
+            connection=ec2.Port.tcp(3306),
+            description="MySQL from VPC CIDR",
+        )
+
         subnet_group = rds.SubnetGroup(
             self,
             "RdsSubnetGroup",
             description="Isolated subnets for Sentinel RDS",
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(subnets=internal_subnets),
-            removal_policy=RemovalPolicy.DESTROY,
+            removal_policy=RemovalPolicy.RETAIN,
         )
 
         self.instance = rds.DatabaseInstance(
@@ -55,7 +61,7 @@ class RdsConstruct(Construct):
                 version=rds.MysqlEngineVersion.VER_8_0
             ),
             instance_type=ec2.InstanceType.of(
-                ec2.InstanceClass.T3, ec2.InstanceSize.MICRO
+                ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MICRO
             ),
             vpc=vpc,
             subnet_group=subnet_group,
@@ -65,4 +71,9 @@ class RdsConstruct(Construct):
             storage_encrypted=True,
             deletion_protection=False,
             removal_policy=RemovalPolicy.DESTROY,
+            database_name="sentinel",
+            credentials=rds.Credentials.from_generated_secret(
+                "sentinel_rds_admin",
+                secret_name="sentinel/rds/mysql/admin",
+            ),
         )

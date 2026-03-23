@@ -83,6 +83,7 @@ class WazuhConstruct(Construct):
                         path.dirname(__file__),
                         "..",
                         "..",
+                        "..",
                         "backend",
                         "lambda",
                         "wazuh_ingest",
