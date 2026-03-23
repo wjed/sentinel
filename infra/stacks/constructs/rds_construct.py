@@ -35,7 +35,7 @@ class RdsConstruct(Construct):
             self,
             "RdsSG",
             vpc=vpc,
-            description="RDS MySQL — no inbound by default",
+            description="RDS MySQL - no inbound by default",
             allow_all_outbound=False,
         )
 

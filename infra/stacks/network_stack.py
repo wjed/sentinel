@@ -27,19 +27,19 @@ class NetworkStack(Stack):
             self,
             "Vpc",
             ip_addresses=ec2.IpAddresses.cidr("10.0.0.0/16"),
-            max_azs=1,
+            max_azs=2,
             nat_gateways=0,
             subnet_configuration=[],
         )
 
         # Create explicit static subnets using L2 constructs.
-        # Use one public and one private subnet per AZ (one AZ total).
-        azs = self.availability_zones[:1]
+        # Use one public and one private subnet per AZ (two AZs total).
+        azs = self.availability_zones[:2]
 
-        # Public: 10.0.0.0/24
-        # Private: 10.0.1.0/24
-        public_cidrs = ["10.0.0.0/24"]
-        private_cidrs = ["10.0.1.0/24"]
+        # Public: 10.0.0.0/24, 10.0.2.0/24
+        # Private: 10.0.1.0/24, 10.0.3.0/24
+        public_cidrs = ["10.0.0.0/24", "10.0.2.0/24"]
+        private_cidrs = ["10.0.1.0/24", "10.0.3.0/24"]
 
         public_subnets = []
         private_subnets = []
@@ -65,7 +65,7 @@ class NetworkStack(Stack):
             private_subnets.append(priv)
 
         # Internal data subnets (isolated from internet). No default route to NAT/IGW.
-        internal_cidrs = ["10.0.4.0/24"]
+        internal_cidrs = ["10.0.4.0/24", "10.0.5.0/24"]
         internal_subnets = []
         for idx, az in enumerate(azs):
             internal = ec2.PrivateSubnet(

@@ -53,13 +53,14 @@ sentinel_cfn_app = appregistry.CfnApplication(
 
 # Associate each member stack with the application.
 # CfnResourceAssociation is placed inside each member stack and references
-# the AppRegistry application by its logical name (plain string — no circular dep).
-_app_registry_stack_name = "SentinelNet-AppRegistry"
+# the AppRegistry application by its name (plain string — no circular dep).
+_application_name = "SentinelNet"
 for _stack in [network_stack, user_data_stack, website_stack, backend_stack]:
+    _stack.add_dependency(appregistry_stack)
     appregistry.CfnResourceAssociation(
         _stack,
         "AppRegistryAssociation",
-        application=_app_registry_stack_name,
+        application=_application_name,
         resource_type="CFN_STACK",
         resource=_stack.stack_name,
     )
