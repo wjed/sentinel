@@ -18,7 +18,10 @@ function callbackUri(url) {
 export function getAuthority() {
   const c = getResolvedConfig()
   if (c?.authority) return c.authority
-  return `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${FALLBACK_POOL_ID}`
+  const poolId = typeof import.meta !== 'undefined' && import.meta.env?.VITE_COGNITO_POOL_ID
+    ? import.meta.env.VITE_COGNITO_POOL_ID
+    : FALLBACK_POOL_ID
+  return `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/${poolId}`
 }
 
 export function getClientId() {

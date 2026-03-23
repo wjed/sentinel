@@ -114,7 +114,7 @@ export default function TopNav() {
       }}
     >
       <Link
-        to="/"
+        to={auth.isAuthenticated ? '/dashboard' : '/'}
         style={{
           display: 'flex',
           alignItems: 'center',
