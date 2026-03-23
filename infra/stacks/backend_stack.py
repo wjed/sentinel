@@ -17,7 +17,7 @@ from aws_cdk import (
 )
 from constructs import Construct
 
-from .constructs import HiveConstruct, TelemetryConstruct, RdsConstruct
+from .constructs import HiveConstruct, TelemetryConstruct, RdsConstruct, GrafanaConstruct
 
 
 
@@ -228,55 +228,18 @@ class BackendStack(Stack):
                 )
                 for idx, subnet_id in enumerate(public_subnet_ids)
             ]
-            subnet_selection = ec2.SubnetSelection(subnets=public_subnets)
 
-            # ECS Cluster
-            cluster = ecs.Cluster(self, "BackendCluster", vpc=vpc)
-
-            # Fargate Task Definition for Grafana
-            task_def = ecs.FargateTaskDefinition(self, "GrafanaTaskDef")
-            task_def.add_container(
-                "GrafanaContainer",
-                image=ecs.ContainerImage.from_registry("public.ecr.aws/bitnami/grafana:latest"),
-                port_mappings=[ecs.PortMapping(container_port=3000)],
-            )
-
-            # Fargate Service in public subnet with public IP so it can pull the image (no NAT needed)
-            service = ecs.FargateService(
+            grafana = GrafanaConstruct(
                 self,
-                "GrafanaService",
-                cluster=cluster,
-                task_definition=task_def,
-                vpc_subnets=subnet_selection,
-                assign_public_ip=True,
-            )
-
-            # Internal ALB (not internet-facing) in same subnets
-            lb = elbv2.ApplicationLoadBalancer(
-                self,
-                "GrafanaLB",
+                "Grafana",
                 vpc=vpc,
-                internet_facing=False,
-                vpc_subnets=subnet_selection,
-            )
-            listener = lb.add_listener("GrafanaListener", port=80)
-            listener.add_targets(
-                "GrafanaTarget",
-                port=3000,
-                protocol=elbv2.ApplicationProtocol.HTTP,
-                targets=[service],
-                health_check=elbv2.HealthCheck(
-                    path="/api/health",
-                    interval=Duration.seconds(15),
-                    timeout=Duration.seconds(5),
-                    healthy_http_codes="200",
-                ),
+                public_subnets=public_subnets,
             )
 
             CfnOutput(
                 self,
                 "GrafanaEndpoint",
-                value=lb.load_balancer_dns_name,
+                value=grafana.lb_dns,
                 description="Grafana ALB endpoint (private)",
             )
 
