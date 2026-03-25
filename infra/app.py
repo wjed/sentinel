@@ -65,4 +65,15 @@ for _stack in [network_stack, user_data_stack, website_stack, backend_stack]:
         resource=_stack.stack_name,
     )
 
+# --- Cost Allocation Tags ---
+cdk.Tags.of(app).add("Project", "SentinelNet")
+cdk.Tags.of(app).add("Environment", "Dev")
+cdk.Tags.of(app).add("Tenant", "Shared")
+
+cdk.Tags.of(website_stack).add("Service", "Frontend")
+cdk.Tags.of(backend_stack).add("Service", "Backend")
+cdk.Tags.of(user_data_stack).add("Service", "Backend")
+cdk.Tags.of(network_stack).add("Service", "Infra")
+cdk.Tags.of(appregistry_stack).add("Service", "Infra")
+
 app.synth()
