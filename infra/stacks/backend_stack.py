@@ -18,6 +18,10 @@ from aws_cdk import (
 from constructs import Construct
 
 
+def render_file_command(destination: str, contents: str) -> str:
+    normalized_contents = contents.replace("\r\n", "\n").rstrip("\n")
+    return f"cat <<'EOF' > {destination}\n{normalized_contents}\nEOF"
+
 
 class BackendStack(Stack):
     def __init__(
@@ -33,6 +37,8 @@ class BackendStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
 
         azs = self.availability_zones
+        repo_root = path.abspath(path.join(path.dirname(__file__), "..", ".."))
+        wazuh_forwarder_dir = path.join(repo_root, "backend", "wazuh_forwarder")
         private_subnets = [
             ec2.Subnet.from_subnet_attributes(
                 self,
@@ -75,7 +81,9 @@ class BackendStack(Stack):
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.CUSTOMER_MANAGED,
             encryption_key=telemetry_kms_key,
-            point_in_time_recovery=True,
+            point_in_time_recovery_specification=dynamodb.PointInTimeRecoverySpecification(
+                point_in_time_recovery_enabled=True
+            ),
             time_to_live_attribute="expiresAt",
             removal_policy=RemovalPolicy.DESTROY,
         )
@@ -221,15 +229,54 @@ class BackendStack(Stack):
         )
         wazuh_role.add_to_policy(
             iam.PolicyStatement(
-                actions=["sqs:SendMessage"],
+                actions=["sqs:SendMessage", "sqs:SendMessageBatch"],
                 resources=[wazuh_alert_queue.queue_arn],
             )
+        )
+
+        with open(
+            path.join(wazuh_forwarder_dir, "wazuh_to_sqs.py"),
+            encoding="utf-8",
+        ) as forwarder_file:
+            forwarder_script = forwarder_file.read()
+
+        with open(
+            path.join(wazuh_forwarder_dir, "sentinel-wazuh-forwarder.service"),
+            encoding="utf-8",
+        ) as service_file:
+            forwarder_service = service_file.read()
+
+        forwarder_env = "\n".join(
+            [
+                f"WAZUH_ALERT_QUEUE_URL={wazuh_alert_queue.queue_url}",
+                "WAZUH_ALERTS_FILE=/var/ossec/logs/alerts/alerts.json",
+                "WAZUH_STATE_FILE=/var/lib/sentinel/wazuh-forwarder-state.json",
+                "WAZUH_BATCH_SIZE=10",
+                "WAZUH_POLL_INTERVAL_SECONDS=2.0",
+            ]
         )
 
         user_data = ec2.UserData.for_linux()
         user_data.add_commands(
             "yum update -y",
-            "yum install -y curl",
+            "yum install -y curl python3 python3-pip",
+            "python3 -c \"import boto3\" || python3 -m pip install boto3",
+            "mkdir -p /opt/sentinel /etc/sentinel /var/lib/sentinel",
+            render_file_command("/opt/sentinel/wazuh_to_sqs.py", forwarder_script),
+            "chmod 0755 /opt/sentinel/wazuh_to_sqs.py",
+            render_file_command("/etc/sentinel/wazuh-forwarder.env", forwarder_env),
+            "chmod 0644 /etc/sentinel/wazuh-forwarder.env",
+            render_file_command(
+                "/etc/systemd/system/sentinel-wazuh-forwarder.service",
+                forwarder_service,
+            ),
+            "chmod 0644 /etc/systemd/system/sentinel-wazuh-forwarder.service",
+            "systemctl daemon-reload",
+            "systemctl enable sentinel-wazuh-forwarder.service",
+            (
+                "systemctl restart sentinel-wazuh-forwarder.service "
+                "|| systemctl start sentinel-wazuh-forwarder.service"
+            ),
             "# TODO: add Wazuh repository and install steps for the chosen OS",
             "# Example (RHEL/CentOS/AmazonLinux compatible):",
             "# curl -sO https://packages.wazuh.com/4.x/yum/wazuh-repo-4.x.rpm || true",
@@ -242,9 +289,7 @@ class BackendStack(Stack):
             self,
             "WazuhManagerInstance",
             instance_type=ec2.InstanceType("t3.medium"),
-            machine_image=ec2.MachineImage.latest_amazon_linux(
-                generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2
-            ),
+            machine_image=ec2.MachineImage.latest_amazon_linux2(),
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(subnets=private_subnets),
             security_group=wazuh_sg,
