@@ -1,7 +1,8 @@
 Resources:
-  TelemetryTableKmsKeyB6BF64D0:
+  TelemetryTelemetryKeyB57DE886:
     Type: AWS::KMS::Key
     Properties:
+      Description: CMK for Sentinel telemetry DynamoDB table
       EnableKeyRotation: true
       KeyPolicy:
         Statement:
@@ -19,18 +20,8 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/TelemetryTableKmsKey/Resource
-  TelemetryTableKmsKeyAlias5441A580:
-    Type: AWS::KMS::Alias
-    Properties:
-      AliasName: alias/sentinel-telemetry-key
-      TargetKeyId:
-        Fn::GetAtt:
-          - TelemetryTableKmsKeyB6BF64D0
-          - Arn
-    Metadata:
-      aws:cdk:path: SentinelNet-Backend/TelemetryTableKmsKey/Alias/Resource
-  TelemetryTableB87F4322:
+      aws:cdk:path: SentinelNet-Backend/Telemetry/TelemetryKey/Resource
+  TelemetryTelemetryTable703058D1:
     Type: AWS::DynamoDB::Table
     Properties:
       AttributeDefinitions:
@@ -49,7 +40,7 @@ Resources:
       SSESpecification:
         KMSMasterKeyId:
           Fn::GetAtt:
-            - TelemetryTableKmsKeyB6BF64D0
+            - TelemetryTelemetryKeyB57DE886
             - Arn
         SSEEnabled: true
         SSEType: KMS
@@ -60,8 +51,8 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/TelemetryTable/Resource
-  WazuhAlertsDLQ65C49654:
+      aws:cdk:path: SentinelNet-Backend/Telemetry/TelemetryTable/Resource
+  WazuhWazuhAlertsDLQ8AAA9052:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600
@@ -70,8 +61,8 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhAlertsDLQ/Resource
-  WazuhAlertsDLQPolicyF9571419:
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhAlertsDLQ/Resource
+  WazuhWazuhAlertsDLQPolicy8EBC158A:
     Type: AWS::SQS::QueuePolicy
     Properties:
       PolicyDocument:
@@ -85,14 +76,14 @@ Resources:
               AWS: "*"
             Resource:
               Fn::GetAtt:
-                - WazuhAlertsDLQ65C49654
+                - WazuhWazuhAlertsDLQ8AAA9052
                 - Arn
         Version: "2012-10-17"
       Queues:
-        - Ref: WazuhAlertsDLQ65C49654
+        - Ref: WazuhWazuhAlertsDLQ8AAA9052
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhAlertsDLQ/Policy/Resource
-  WazuhAlertsQueue76D82DE1:
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhAlertsDLQ/Policy/Resource
+  WazuhWazuhAlertsQueue433D840D:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 345600
@@ -100,7 +91,7 @@ Resources:
       RedrivePolicy:
         deadLetterTargetArn:
           Fn::GetAtt:
-            - WazuhAlertsDLQ65C49654
+            - WazuhWazuhAlertsDLQ8AAA9052
             - Arn
         maxReceiveCount: 5
       SqsManagedSseEnabled: true
@@ -108,8 +99,8 @@ Resources:
     UpdateReplacePolicy: Delete
     DeletionPolicy: Delete
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhAlertsQueue/Resource
-  WazuhAlertsQueuePolicy031CA5C3:
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhAlertsQueue/Resource
+  WazuhWazuhAlertsQueuePolicy0BD82811:
     Type: AWS::SQS::QueuePolicy
     Properties:
       PolicyDocument:
@@ -123,14 +114,14 @@ Resources:
               AWS: "*"
             Resource:
               Fn::GetAtt:
-                - WazuhAlertsQueue76D82DE1
+                - WazuhWazuhAlertsQueue433D840D
                 - Arn
         Version: "2012-10-17"
       Queues:
-        - Ref: WazuhAlertsQueue76D82DE1
+        - Ref: WazuhWazuhAlertsQueue433D840D
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhAlertsQueue/Policy/Resource
-  WazuhIngestFunctionServiceRole439FEB41:
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhAlertsQueue/Policy/Resource
+  WazuhWazuhIngestFunctionServiceRole8EC943FE:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -147,8 +138,8 @@ Resources:
               - Ref: AWS::Partition
               - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhIngestFunction/ServiceRole/Resource
-  WazuhIngestFunctionServiceRoleDefaultPolicy26C8DE06:
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhIngestFunction/ServiceRole/Resource
+  WazuhWazuhIngestFunctionServiceRoleDefaultPolicy4AED29F7:
     Type: AWS::IAM::Policy
     Properties:
       PolicyDocument:
@@ -162,7 +153,7 @@ Resources:
             Effect: Allow
             Resource:
               Fn::GetAtt:
-                - WazuhAlertsQueue76D82DE1
+                - WazuhWazuhAlertsQueue433D840D
                 - Arn
           - Action:
               - dynamodb:PutItem
@@ -170,7 +161,7 @@ Resources:
             Effect: Allow
             Resource:
               Fn::GetAtt:
-                - TelemetryTableB87F4322
+                - TelemetryTelemetryTable703058D1
                 - Arn
           - Action:
               - kms:Decrypt
@@ -180,15 +171,15 @@ Resources:
             Effect: Allow
             Resource:
               Fn::GetAtt:
-                - TelemetryTableKmsKeyB6BF64D0
+                - TelemetryTelemetryKeyB57DE886
                 - Arn
         Version: "2012-10-17"
-      PolicyName: WazuhIngestFunctionServiceRoleDefaultPolicy26C8DE06
+      PolicyName: WazuhWazuhIngestFunctionServiceRoleDefaultPolicy4AED29F7
       Roles:
-        - Ref: WazuhIngestFunctionServiceRole439FEB41
+        - Ref: WazuhWazuhIngestFunctionServiceRole8EC943FE
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhIngestFunction/ServiceRole/DefaultPolicy/Resource
-  WazuhIngestFunction4930B55B:
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhIngestFunction/ServiceRole/DefaultPolicy/Resource
+  WazuhWazuhIngestFunction87C9D109:
     Type: AWS::Lambda::Function
     Properties:
       Code:
@@ -197,128 +188,40 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME:
-            Ref: TelemetryTableB87F4322
+            Ref: TelemetryTelemetryTable703058D1
           RETENTION_DAYS: "30"
       FunctionName: sentinel-wazuh-ingest
       Handler: handler.handler
       MemorySize: 256
       Role:
         Fn::GetAtt:
-          - WazuhIngestFunctionServiceRole439FEB41
+          - WazuhWazuhIngestFunctionServiceRole8EC943FE
           - Arn
       Runtime: python3.11
       Timeout: 60
     DependsOn:
-      - WazuhIngestFunctionServiceRoleDefaultPolicy26C8DE06
-      - WazuhIngestFunctionServiceRole439FEB41
+      - WazuhWazuhIngestFunctionServiceRoleDefaultPolicy4AED29F7
+      - WazuhWazuhIngestFunctionServiceRole8EC943FE
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhIngestFunction/Resource
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhIngestFunction/Resource
       aws:asset:path: asset.1427cbeab28f3757b845559f8bfef4b3e1e5ce52d6147e9a3546aa12bd35576c
       aws:asset:is-bundled: false
       aws:asset:property: Code
-  WazuhIngestFunctionSqsEventSourceSentinelNetBackendWazuhAlertsQueueA58DA6924727E678:
+  WazuhWazuhIngestFunctionSqsEventSourceSentinelNetBackendWazuhWazuhAlertsQueueBDC8D68CE0B5BE08:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       BatchSize: 10
       EventSourceArn:
         Fn::GetAtt:
-          - WazuhAlertsQueue76D82DE1
+          - WazuhWazuhAlertsQueue433D840D
           - Arn
       FunctionName:
-        Ref: WazuhIngestFunction4930B55B
+        Ref: WazuhWazuhIngestFunction87C9D109
       FunctionResponseTypes:
         - ReportBatchItemFailures
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhIngestFunction/SqsEventSource:SentinelNetBackendWazuhAlertsQueueA58DA692/Resource
-  RDSSecurityGroup6BF2CF10:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Security group for RDS MySQL (isolated data subnet)
-      SecurityGroupEgress:
-        - CidrIp: 255.255.255.255/32
-          Description: Disallow all traffic
-          FromPort: 252
-          IpProtocol: icmp
-          ToPort: 86
-      VpcId:
-        Fn::ImportValue: SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A
-    Metadata:
-      aws:cdk:path: SentinelNet-Backend/RDSSecurityGroup/Resource
-  SentinelMySQLSubnetGroupBBC6FE70:
-    Type: AWS::RDS::DBSubnetGroup
-    Properties:
-      DBSubnetGroupDescription: Subnet group for SentinelMySQL database
-      SubnetIds:
-        - Fn::ImportValue: SentinelNet-Network:ExportsOutputRefInternalSubnet1SubnetDC6EA2344248007A
-        - Fn::ImportValue: SentinelNet-Network:ExportsOutputRefInternalSubnet2Subnet0EAE4CAF8C454D4B
-    Metadata:
-      aws:cdk:path: SentinelNet-Backend/SentinelMySQL/SubnetGroup/Default
-  SentinelMySQLSecretFAE1E09E:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Description:
-        Fn::Join:
-          - ""
-          - - "Generated by the CDK for stack: "
-            - Ref: AWS::StackName
-      GenerateSecretString:
-        ExcludeCharacters: " %+~`#$&*()|[]{}:;<>?!'/@\"\\"
-        GenerateStringKey: password
-        PasswordLength: 30
-        SecretStringTemplate: '{"username":"admin"}'
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-    Metadata:
-      aws:cdk:path: SentinelNet-Backend/SentinelMySQL/Secret/Resource
-  SentinelMySQLSecretAttachment98DC9CF4:
-    Type: AWS::SecretsManager::SecretTargetAttachment
-    Properties:
-      SecretId:
-        Ref: SentinelMySQLSecretFAE1E09E
-      TargetId:
-        Ref: SentinelMySQL8140E674
-      TargetType: AWS::RDS::DBInstance
-    Metadata:
-      aws:cdk:path: SentinelNet-Backend/SentinelMySQL/Secret/Attachment/Resource
-  SentinelMySQL8140E674:
-    Type: AWS::RDS::DBInstance
-    Properties:
-      AllocatedStorage: "20"
-      BackupRetentionPeriod: 7
-      CopyTagsToSnapshot: true
-      DBInstanceClass: db.t3.micro
-      DBInstanceIdentifier: sentinel-mysql
-      DBName: sentineldb
-      DBSubnetGroupName:
-        Ref: SentinelMySQLSubnetGroupBBC6FE70
-      DeletionProtection: false
-      Engine: mysql
-      EngineVersion: "8.0"
-      MasterUserPassword:
-        Fn::Join:
-          - ""
-          - - "{{resolve:secretsmanager:"
-            - Ref: SentinelMySQLSecretFAE1E09E
-            - :SecretString:password::}}
-      MasterUsername:
-        Fn::Join:
-          - ""
-          - - "{{resolve:secretsmanager:"
-            - Ref: SentinelMySQLSecretFAE1E09E
-            - :SecretString:username::}}
-      MaxAllocatedStorage: 100
-      MultiAZ: false
-      PubliclyAccessible: false
-      StorageType: gp2
-      VPCSecurityGroups:
-        - Fn::GetAtt:
-            - RDSSecurityGroup6BF2CF10
-            - GroupId
-    UpdateReplacePolicy: Delete
-    DeletionPolicy: Delete
-    Metadata:
-      aws:cdk:path: SentinelNet-Backend/SentinelMySQL/Resource
-  WazuhManagerSG06589BF9:
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhIngestFunction/SqsEventSource:SentinelNetBackendWazuhWazuhAlertsQueueBDC8D68C/Resource
+  WazuhWazuhManagerSG5B212655:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Wazuh Manager internal subnet only, no inbound by default
@@ -350,8 +253,8 @@ Resources:
       VpcId:
         Fn::ImportValue: SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhManagerSG/Resource
-  WazuhInstanceRole5691B293:
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhManagerSG/Resource
+  WazuhWazuhInstanceRole3D518A13:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -368,8 +271,8 @@ Resources:
               - Ref: AWS::Partition
               - :iam::aws:policy/AmazonSSMManagedInstanceCore
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhInstanceRole/Resource
-  WazuhInstanceRoleDefaultPolicy32F9671E:
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhInstanceRole/Resource
+  WazuhWazuhInstanceRoleDefaultPolicy262056E2:
     Type: AWS::IAM::Policy
     Properties:
       PolicyDocument:
@@ -380,39 +283,39 @@ Resources:
             Effect: Allow
             Resource:
               Fn::GetAtt:
-                - WazuhAlertsQueue76D82DE1
+                - WazuhWazuhAlertsQueue433D840D
                 - Arn
         Version: "2012-10-17"
-      PolicyName: WazuhInstanceRoleDefaultPolicy32F9671E
+      PolicyName: WazuhWazuhInstanceRoleDefaultPolicy262056E2
       Roles:
-        - Ref: WazuhInstanceRole5691B293
+        - Ref: WazuhWazuhInstanceRole3D518A13
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhInstanceRole/DefaultPolicy/Resource
-  WazuhManagerInstanceInstanceProfileC90A4BDC:
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhInstanceRole/DefaultPolicy/Resource
+  WazuhWazuhManagerInstanceInstanceProfileF4F28375:
     Type: AWS::IAM::InstanceProfile
     Properties:
       Roles:
-        - Ref: WazuhInstanceRole5691B293
+        - Ref: WazuhWazuhInstanceRole3D518A13
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhManagerInstance/InstanceProfile
-  WazuhManagerInstanceB208459F:
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhManagerInstance/InstanceProfile
+  WazuhWazuhManagerInstance15E3DA91:
     Type: AWS::EC2::Instance
     Properties:
       AvailabilityZone: us-east-1a
       IamInstanceProfile:
-        Ref: WazuhManagerInstanceInstanceProfileC90A4BDC
+        Ref: WazuhWazuhManagerInstanceInstanceProfileF4F28375
       ImageId:
         Ref: SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amikernel510hvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter
       InstanceType: t3.medium
       SecurityGroupIds:
         - Fn::GetAtt:
-            - WazuhManagerSG06589BF9
+            - WazuhWazuhManagerSG5B212655
             - GroupId
       SubnetId:
         Fn::ImportValue: SentinelNet-Network:ExportsOutputRefPrivateSubnet1Subnet51DDBC2FF0743ECA
       Tags:
         - Key: Name
-          Value: SentinelNet-Backend/WazuhManagerInstance
+          Value: SentinelNet-Backend/Wazuh/WazuhManagerInstance
       UserData:
         Fn::Base64:
           Fn::Join:
@@ -683,7 +586,7 @@ Resources:
                 chmod 0755 /opt/sentinel/wazuh_to_sqs.py
                 cat <<'EOF' > /etc/sentinel/wazuh-forwarder.env
                 WAZUH_ALERT_QUEUE_URL=
-              - Ref: WazuhAlertsQueue76D82DE1
+              - Ref: WazuhWazuhAlertsQueue433D840D
               - |-
                 
                 WAZUH_ALERTS_FILE=/var/ossec/logs/alerts/alerts.json
@@ -720,15 +623,105 @@ Resources:
                 # yum install -y wazuh-manager || true
                 # systemctl enable --now wazuh-manager || true
     DependsOn:
-      - WazuhInstanceRoleDefaultPolicy32F9671E
-      - WazuhInstanceRole5691B293
+      - WazuhWazuhInstanceRoleDefaultPolicy262056E2
+      - WazuhWazuhInstanceRole3D518A13
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/WazuhManagerInstance/Resource
-  BackendCluster5086059C:
+      aws:cdk:path: SentinelNet-Backend/Wazuh/WazuhManagerInstance/Resource
+  RdsRdsSG21C6898B:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RDS MySQL - no inbound by default
+      SecurityGroupEgress:
+        - CidrIp: 255.255.255.255/32
+          Description: Disallow all traffic
+          FromPort: 252
+          IpProtocol: icmp
+          ToPort: 86
+      SecurityGroupIngress:
+        - CidrIp:
+            Fn::ImportValue: SentinelNet-Network:ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396
+          Description: MySQL from VPC CIDR
+          FromPort: 3306
+          IpProtocol: tcp
+          ToPort: 3306
+      VpcId:
+        Fn::ImportValue: SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/Rds/RdsSG/Resource
+  RdsRdsSubnetGroup8EC591B0:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Isolated subnets for Sentinel RDS
+      SubnetIds:
+        - Fn::ImportValue: SentinelNet-Network:ExportsOutputRefInternalSubnet1SubnetDC6EA2344248007A
+        - Fn::ImportValue: SentinelNet-Network:ExportsOutputRefInternalSubnet2Subnet0EAE4CAF8C454D4B
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/Rds/RdsSubnetGroup/Default
+  SentinelNetBackendRdsRdsInstanceSecret774204D53fdaad7efa858a3daf9490cf0a702aeb:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description:
+        Fn::Join:
+          - ""
+          - - "Generated by the CDK for stack: "
+            - Ref: AWS::StackName
+      GenerateSecretString:
+        ExcludeCharacters: " %+~`#$&*()|[]{}:;<>?!'/@\"\\"
+        GenerateStringKey: password
+        PasswordLength: 30
+        SecretStringTemplate: '{"username":"sentinel_rds_admin"}'
+      Name: sentinel/rds/mysql/admin
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/Rds/RdsInstance/Secret/Resource
+  RdsRdsInstanceSecretAttachment867426A6:
+    Type: AWS::SecretsManager::SecretTargetAttachment
+    Properties:
+      SecretId:
+        Ref: SentinelNetBackendRdsRdsInstanceSecret774204D53fdaad7efa858a3daf9490cf0a702aeb
+      TargetId:
+        Ref: RdsRdsInstance295A7CFA
+      TargetType: AWS::RDS::DBInstance
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/Rds/RdsInstance/Secret/Attachment/Resource
+  RdsRdsInstance295A7CFA:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: "20"
+      CopyTagsToSnapshot: true
+      DBInstanceClass: db.t3.micro
+      DBName: sentinel
+      DBSubnetGroupName:
+        Ref: RdsRdsSubnetGroup8EC591B0
+      DeletionProtection: false
+      Engine: mysql
+      EngineVersion: "8.0"
+      MasterUserPassword:
+        Fn::Join:
+          - ""
+          - - "{{resolve:secretsmanager:"
+            - Ref: SentinelNetBackendRdsRdsInstanceSecret774204D53fdaad7efa858a3daf9490cf0a702aeb
+            - :SecretString:password::}}
+      MasterUsername: sentinel_rds_admin
+      MultiAZ: false
+      StorageEncrypted: true
+      StorageType: gp2
+      VPCSecurityGroups:
+        - Fn::GetAtt:
+            - RdsRdsSG21C6898B
+            - GroupId
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/Rds/RdsInstance/Resource
+  GrafanaGrafanaCluster470B4B6A:
     Type: AWS::ECS::Cluster
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/BackendCluster/Resource
-  GrafanaTaskDefTaskRoleE004D9AD:
+      aws:cdk:path: SentinelNet-Backend/Grafana/GrafanaCluster/Resource
+  GrafanaGrafanaTaskDefTaskRole5F452275:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -739,8 +732,8 @@ Resources:
               Service: ecs-tasks.amazonaws.com
         Version: "2012-10-17"
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/GrafanaTaskDef/TaskRole/Resource
-  GrafanaTaskDef393E4183:
+      aws:cdk:path: SentinelNet-Backend/Grafana/GrafanaTaskDef/TaskRole/Resource
+  GrafanaGrafanaTaskDefF92C0C69:
     Type: AWS::ECS::TaskDefinition
     Properties:
       ContainerDefinitions:
@@ -751,22 +744,22 @@ Resources:
             - ContainerPort: 3000
               Protocol: tcp
       Cpu: "256"
-      Family: SentinelNetBackendGrafanaTaskDefCFD4757D
+      Family: SentinelNetBackendGrafanaGrafanaTaskDef9D74848F
       Memory: "512"
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
       TaskRoleArn:
         Fn::GetAtt:
-          - GrafanaTaskDefTaskRoleE004D9AD
+          - GrafanaGrafanaTaskDefTaskRole5F452275
           - Arn
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/GrafanaTaskDef/Resource
-  GrafanaServiceB3AB259D:
+      aws:cdk:path: SentinelNet-Backend/Grafana/GrafanaTaskDef/Resource
+  GrafanaGrafanaService2E5EB2F8:
     Type: AWS::ECS::Service
     Properties:
       Cluster:
-        Ref: BackendCluster5086059C
+        Ref: GrafanaGrafanaCluster470B4B6A
       DeploymentConfiguration:
         Alarms:
           AlarmNames: []
@@ -781,29 +774,29 @@ Resources:
         - ContainerName: GrafanaContainer
           ContainerPort: 3000
           TargetGroupArn:
-            Ref: GrafanaLBGrafanaListenerGrafanaTargetGroup15D0F181
+            Ref: GrafanaGrafanaLBGrafanaListenerGrafanaTargetGroup0D0354B0
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           SecurityGroups:
             - Fn::GetAtt:
-                - GrafanaServiceSecurityGroup342BB1A7
+                - GrafanaGrafanaServiceSecurityGroupFC60B3CC
                 - GroupId
           Subnets:
             - Fn::ImportValue: SentinelNet-Network:ExportsOutputRefPublicSubnet1Subnet0306792710644A21
             - Fn::ImportValue: SentinelNet-Network:ExportsOutputRefPublicSubnet2Subnet78B4B4BDD1FA85DA
       TaskDefinition:
-        Ref: GrafanaTaskDef393E4183
+        Ref: GrafanaGrafanaTaskDefF92C0C69
     DependsOn:
-      - GrafanaLBGrafanaListenerGrafanaTargetGroup15D0F181
-      - GrafanaLBGrafanaListener8B62B877
-      - GrafanaTaskDefTaskRoleE004D9AD
+      - GrafanaGrafanaLBGrafanaListenerGrafanaTargetGroup0D0354B0
+      - GrafanaGrafanaLBGrafanaListenerBE2A7225
+      - GrafanaGrafanaTaskDefTaskRole5F452275
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/GrafanaService/Service
-  GrafanaServiceSecurityGroup342BB1A7:
+      aws:cdk:path: SentinelNet-Backend/Grafana/GrafanaService/Service
+  GrafanaGrafanaServiceSecurityGroupFC60B3CC:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: SentinelNet-Backend/GrafanaService/SecurityGroup
+      GroupDescription: SentinelNet-Backend/Grafana/GrafanaService/SecurityGroup
       SecurityGroupEgress:
         - CidrIp: 0.0.0.0/0
           Description: Allow all outbound traffic by default
@@ -811,29 +804,29 @@ Resources:
       VpcId:
         Fn::ImportValue: SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A
     DependsOn:
-      - GrafanaTaskDefTaskRoleE004D9AD
+      - GrafanaGrafanaTaskDefTaskRole5F452275
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/GrafanaService/SecurityGroup/Resource
-  GrafanaServiceSecurityGroupfromSentinelNetBackendGrafanaLBSecurityGroupB93B30283000F0B1225E:
+      aws:cdk:path: SentinelNet-Backend/Grafana/GrafanaService/SecurityGroup/Resource
+  GrafanaGrafanaServiceSecurityGroupfromSentinelNetBackendGrafanaGrafanaLBSecurityGroupE87F583E3000F9C2AA50:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       Description: Load balancer to target
       FromPort: 3000
       GroupId:
         Fn::GetAtt:
-          - GrafanaServiceSecurityGroup342BB1A7
+          - GrafanaGrafanaServiceSecurityGroupFC60B3CC
           - GroupId
       IpProtocol: tcp
       SourceSecurityGroupId:
         Fn::GetAtt:
-          - GrafanaLBSecurityGroup82079C7C
+          - GrafanaGrafanaLBSecurityGroupEF6B6AC3
           - GroupId
       ToPort: 3000
     DependsOn:
-      - GrafanaTaskDefTaskRoleE004D9AD
+      - GrafanaGrafanaTaskDefTaskRole5F452275
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/GrafanaService/SecurityGroup/from SentinelNetBackendGrafanaLBSecurityGroupB93B3028:3000
-  GrafanaLBF33A13F1:
+      aws:cdk:path: SentinelNet-Backend/Grafana/GrafanaService/SecurityGroup/from SentinelNetBackendGrafanaGrafanaLBSecurityGroupE87F583E:3000
+  GrafanaGrafanaLB702A541A:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       LoadBalancerAttributes:
@@ -842,18 +835,18 @@ Resources:
       Scheme: internal
       SecurityGroups:
         - Fn::GetAtt:
-            - GrafanaLBSecurityGroup82079C7C
+            - GrafanaGrafanaLBSecurityGroupEF6B6AC3
             - GroupId
       Subnets:
         - Fn::ImportValue: SentinelNet-Network:ExportsOutputRefPublicSubnet1Subnet0306792710644A21
         - Fn::ImportValue: SentinelNet-Network:ExportsOutputRefPublicSubnet2Subnet78B4B4BDD1FA85DA
       Type: application
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/GrafanaLB/Resource
-  GrafanaLBSecurityGroup82079C7C:
+      aws:cdk:path: SentinelNet-Backend/Grafana/GrafanaLB/Resource
+  GrafanaGrafanaLBSecurityGroupEF6B6AC3:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Automatically created Security Group for ELB SentinelNetBackendGrafanaLB904A1A00
+      GroupDescription: Automatically created Security Group for ELB SentinelNetBackendGrafanaGrafanaLB97172D58
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
           Description: Allow from anyone on port 80
@@ -863,38 +856,38 @@ Resources:
       VpcId:
         Fn::ImportValue: SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/GrafanaLB/SecurityGroup/Resource
-  GrafanaLBSecurityGrouptoSentinelNetBackendGrafanaServiceSecurityGroupF2417EE2300000174E01:
+      aws:cdk:path: SentinelNet-Backend/Grafana/GrafanaLB/SecurityGroup/Resource
+  GrafanaGrafanaLBSecurityGrouptoSentinelNetBackendGrafanaGrafanaServiceSecurityGroup8FB48EF03000A4A29A97:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
       Description: Load balancer to target
       DestinationSecurityGroupId:
         Fn::GetAtt:
-          - GrafanaServiceSecurityGroup342BB1A7
+          - GrafanaGrafanaServiceSecurityGroupFC60B3CC
           - GroupId
       FromPort: 3000
       GroupId:
         Fn::GetAtt:
-          - GrafanaLBSecurityGroup82079C7C
+          - GrafanaGrafanaLBSecurityGroupEF6B6AC3
           - GroupId
       IpProtocol: tcp
       ToPort: 3000
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/GrafanaLB/SecurityGroup/to SentinelNetBackendGrafanaServiceSecurityGroupF2417EE2:3000
-  GrafanaLBGrafanaListener8B62B877:
+      aws:cdk:path: SentinelNet-Backend/Grafana/GrafanaLB/SecurityGroup/to SentinelNetBackendGrafanaGrafanaServiceSecurityGroup8FB48EF0:3000
+  GrafanaGrafanaLBGrafanaListenerBE2A7225:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
         - TargetGroupArn:
-            Ref: GrafanaLBGrafanaListenerGrafanaTargetGroup15D0F181
+            Ref: GrafanaGrafanaLBGrafanaListenerGrafanaTargetGroup0D0354B0
           Type: forward
       LoadBalancerArn:
-        Ref: GrafanaLBF33A13F1
+        Ref: GrafanaGrafanaLB702A541A
       Port: 80
       Protocol: HTTP
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/GrafanaLB/GrafanaListener/Resource
-  GrafanaLBGrafanaListenerGrafanaTargetGroup15D0F181:
+      aws:cdk:path: SentinelNet-Backend/Grafana/GrafanaLB/GrafanaListener/Resource
+  GrafanaGrafanaLBGrafanaListenerGrafanaTargetGroup0D0354B0:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       HealthCheckIntervalSeconds: 15
@@ -911,11 +904,242 @@ Resources:
       VpcId:
         Fn::ImportValue: SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A
     Metadata:
-      aws:cdk:path: SentinelNet-Backend/GrafanaLB/GrafanaListener/GrafanaTargetGroup/Resource
+      aws:cdk:path: SentinelNet-Backend/Grafana/GrafanaLB/GrafanaListener/GrafanaTargetGroup/Resource
+  TheHiveHiveCluster7F7AD871:
+    Type: AWS::ECS::Cluster
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/TheHive/HiveCluster/Resource
+  TheHiveHiveTaskDefTaskRole30157087:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/TheHive/HiveTaskDef/TaskRole/Resource
+  TheHiveHiveTaskDefTaskRoleDefaultPolicy345AB0F2:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - sqs:ReceiveMessage
+              - sqs:ChangeMessageVisibility
+              - sqs:GetQueueUrl
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - WazuhWazuhAlertsQueue433D840D
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: TheHiveHiveTaskDefTaskRoleDefaultPolicy345AB0F2
+      Roles:
+        - Ref: TheHiveHiveTaskDefTaskRole30157087
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/TheHive/HiveTaskDef/TaskRole/DefaultPolicy/Resource
+  TheHiveHiveTaskDefBE66CDA4:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      ContainerDefinitions:
+        - Environment:
+            - Name: db.url
+              Value: http://127.0.0.1:9200
+          Essential: true
+          Image: strangebee/thehive:latest
+          Name: TheHiveContainer
+          PortMappings:
+            - ContainerPort: 9000
+              Protocol: tcp
+        - Environment:
+            - Name: discovery.type
+              Value: single-node
+            - Name: xpack.security.enabled
+              Value: "false"
+          Essential: true
+          Image: docker.elastic.co/elasticsearch/elasticsearch:7.17.14
+          Name: ElasticsearchContainer
+          PortMappings:
+            - ContainerPort: 9200
+              Protocol: tcp
+      Cpu: "2048"
+      Family: SentinelNetBackendTheHiveHiveTaskDef240EEBDB
+      Memory: "4096"
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn:
+        Fn::GetAtt:
+          - TheHiveHiveTaskDefTaskRole30157087
+          - Arn
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/TheHive/HiveTaskDef/Resource
+  TheHiveHiveSG23DB8020:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SG for TheHive Fargate service
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      SecurityGroupIngress:
+        - CidrIp:
+            Fn::ImportValue: SentinelNet-Network:ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396
+          Description: Allow VPC access
+          FromPort: 9000
+          IpProtocol: tcp
+          ToPort: 9000
+      VpcId:
+        Fn::ImportValue: SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/TheHive/HiveSG/Resource
+  TheHiveHiveSGfromSentinelNetBackendTheHiveHiveLBSGF107C23E90006D37E567:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: from SentinelNetBackendTheHiveHiveLBSGF107C23E:9000
+      FromPort: 9000
+      GroupId:
+        Fn::GetAtt:
+          - TheHiveHiveSG23DB8020
+          - GroupId
+      IpProtocol: tcp
+      SourceSecurityGroupId:
+        Fn::GetAtt:
+          - TheHiveHiveLBSG21A4B965
+          - GroupId
+      ToPort: 9000
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/TheHive/HiveSG/from SentinelNetBackendTheHiveHiveLBSGF107C23E:9000
+  TheHiveHiveServiceA52E732E:
+    Type: AWS::ECS::Service
+    Properties:
+      Cluster:
+        Ref: TheHiveHiveCluster7F7AD871
+      DeploymentConfiguration:
+        Alarms:
+          AlarmNames: []
+          Enable: false
+          Rollback: false
+        MaximumPercent: 200
+        MinimumHealthyPercent: 50
+      EnableECSManagedTags: false
+      HealthCheckGracePeriodSeconds: 60
+      LaunchType: FARGATE
+      LoadBalancers:
+        - ContainerName: TheHiveContainer
+          ContainerPort: 9000
+          TargetGroupArn:
+            Ref: TheHiveHiveLBHiveListenerHiveTargetGroupB53CFB4E
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+            - Fn::GetAtt:
+                - TheHiveHiveSG23DB8020
+                - GroupId
+          Subnets:
+            - Fn::ImportValue: SentinelNet-Network:ExportsOutputRefPrivateSubnet1Subnet51DDBC2FF0743ECA
+            - Fn::ImportValue: SentinelNet-Network:ExportsOutputRefPrivateSubnet2Subnet2ABB2F40C8B2A342
+      TaskDefinition:
+        Ref: TheHiveHiveTaskDefBE66CDA4
+    DependsOn:
+      - TheHiveHiveLBHiveListenerHiveTargetGroupB53CFB4E
+      - TheHiveHiveLBHiveListener498FBEE1
+      - TheHiveHiveTaskDefTaskRoleDefaultPolicy345AB0F2
+      - TheHiveHiveTaskDefTaskRole30157087
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/TheHive/HiveService/Service
+  TheHiveHiveLBSG21A4B965:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SentinelNet-Backend/TheHive/HiveLBSG
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic by default
+          IpProtocol: "-1"
+      SecurityGroupIngress:
+        - CidrIp:
+            Fn::ImportValue: SentinelNet-Network:ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396
+          Description:
+            Fn::Join:
+              - ""
+              - - "from "
+                - Fn::ImportValue: SentinelNet-Network:ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396
+                - :80
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0
+          Description: Allow from anyone on port 80
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+      VpcId:
+        Fn::ImportValue: SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/TheHive/HiveLBSG/Resource
+  TheHiveHiveLB649B5DEA:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      LoadBalancerAttributes:
+        - Key: deletion_protection.enabled
+          Value: "false"
+      Scheme: internal
+      SecurityGroups:
+        - Fn::GetAtt:
+            - TheHiveHiveLBSG21A4B965
+            - GroupId
+      Subnets:
+        - Fn::ImportValue: SentinelNet-Network:ExportsOutputRefPrivateSubnet1Subnet51DDBC2FF0743ECA
+        - Fn::ImportValue: SentinelNet-Network:ExportsOutputRefPrivateSubnet2Subnet2ABB2F40C8B2A342
+      Type: application
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/TheHive/HiveLB/Resource
+  TheHiveHiveLBHiveListener498FBEE1:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn:
+            Ref: TheHiveHiveLBHiveListenerHiveTargetGroupB53CFB4E
+          Type: forward
+      LoadBalancerArn:
+        Ref: TheHiveHiveLB649B5DEA
+      Port: 80
+      Protocol: HTTP
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/TheHive/HiveLB/HiveListener/Resource
+  TheHiveHiveLBHiveListenerHiveTargetGroupB53CFB4E:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /api/v1/about
+      Port: 9000
+      Protocol: HTTP
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: "false"
+      TargetType: ip
+      VpcId:
+        Fn::ImportValue: SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/TheHive/HiveLB/HiveListener/HiveTargetGroup/Resource
+  AppRegistryAssociation:
+    Type: AWS::ServiceCatalogAppRegistry::ResourceAssociation
+    Properties:
+      Application: SentinelNet
+      Resource: SentinelNet-Backend
+      ResourceType: CFN_STACK
+    Metadata:
+      aws:cdk:path: SentinelNet-Backend/AppRegistryAssociation
   CDKMetadata:
     Type: AWS::CDK::Metadata
     Properties:
-      Analytics: v2:deflate64:H4sIAAAAAAAA/2VS21LbMBD9Ft4VlSb8QEKAYQrTNM47s5Y3RrUtudpVmIxG/96RHBtDXrxnzzl7kaylXN7dytsb+KCFqppFq0sZCgbViD2S9U6hgA96C01HMvzCs7g/mhTWrQZKSQZRVGcDna1KGQ5QtpiUDKKgfyTDH48+kwPI351ttTpP5JBG0UJXViDDozeKtTXJMOGHExou8l6v0Pfa1Em+ZqPQ0Mmwt8MqOX7O+0TPhhiMwp2zR523Xb0BETLJdQqCVnLjVYO8AUKBailDgco7zecnZ32fmnwlxpbz9leuZ1M7JLriHzIdhatIhi0wlEA4dSl8aZCnudvNnBjdBSqHPOhjZRSUWerAQI1OhmFwMg7hAK5GXjODeu/QsJgM35UoUJEM960nRpd8I3wEVwPjAajZ4lEbPf6+74w1DNqgm3GX2gLdSY/3lWEU2AKxVq2FqoQWjNKmPi1lWPd9qxWk8hcL1SZrw0Zf8rlPE6O5eEY804ezThc8S2MU+UEUDPXl1e3AQYeXO/jtufccxe7M79b8WMmfd3J185e0XjhvWHco90P8D5hBrpxzAwAA
+      Analytics: v2:deflate64:H4sIAAAAAAAA/2VT227bMAz9lr4rWpf0B5KmHYq2WBbnvaBlxtVsS55IpTAE//sg+VK3eTEPDw8vpum1XN/dytsb+KCVKqpVrXMZMgZViSOS9U6hgA96C1VDMjxjJ+7P5hm7XhSdgcYWuQwnyGuMfAK9oH8kwx+PPpEDSM+DrbXqZnJwe1FDkxcgw6M3irU1UTDjhwsaztIgr9C22pQxfM32QkMjw9EOoyT72e8TPRliMAoPzp51mnbzBkTIJLfRCNrInVcV8g4IBaq1DBkq7zR3v5z1bSzylZhKLstfqZ5M6ZDoin9IdC9cQTJkPjfIc5v9bknsgSEHwrnFRGSoHPKQMAV7QYmlBgyU6GQYGkfhYE7gSuQtM6j3Bg2LWfA90gtUJMN97YnRRd0EH8GVwHgCqvZ41kZPn+87Yw2DNugW3JibobvoaV8J9gJrINaqtlDkUINR2pSXtQzbtq21gpj+YqHYpdgw0Rd/qdPEaEbNhBfx4V3njS/cuME0jwKG2pbQtg5LTew6GQ9s/Du2RFbpVKsX6YIyhnI80wM4aHBc2m/PredeHDp+t+bHRv68k5ubv6T1ynnDukF5HOx/2J4GE5UDAAA=
     Metadata:
       aws:cdk:path: SentinelNet-Backend/CDKMetadata/Default
 Parameters:
@@ -927,38 +1151,63 @@ Parameters:
     Default: /cdk-bootstrap/hnb659fds/version
     Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
 Outputs:
-  WazuhManagerPrivateIp:
-    Description: Wazuh Manager private IP
-    Value:
-      Fn::GetAtt:
-        - WazuhManagerInstanceB208459F
-        - PrivateIp
   GrafanaEndpoint:
     Description: Grafana ALB endpoint (private)
     Value:
       Fn::GetAtt:
-        - GrafanaLBF33A13F1
+        - GrafanaGrafanaLB702A541A
+        - DNSName
+  WazuhManagerPrivateIp:
+    Description: Wazuh Manager private IP
+    Value:
+      Fn::GetAtt:
+        - WazuhWazuhManagerInstance15E3DA91
+        - PrivateIp
+  HiveEndpoint:
+    Description: TheHive ALB endpoint (private)
+    Value:
+      Fn::GetAtt:
+        - TheHiveHiveLB649B5DEA
         - DNSName
   TelemetryTableName:
     Description: DynamoDB table name for normalized Wazuh alerts
     Value:
-      Ref: TelemetryTableB87F4322
+      Ref: TelemetryTelemetryTable703058D1
   WazuhAlertsQueueUrl:
     Description: SQS queue URL for Wazuh alert ingestion
     Value:
-      Ref: WazuhAlertsQueue76D82DE1
+      Ref: WazuhWazuhAlertsQueue433D840D
   WazuhAlertsQueueArn:
     Description: SQS queue ARN for Wazuh alert ingestion
     Value:
       Fn::GetAtt:
-        - WazuhAlertsQueue76D82DE1
+        - WazuhWazuhAlertsQueue433D840D
         - Arn
   WazuhAlertsDlqUrl:
     Description: SQS dead-letter queue URL for Wazuh alert ingestion
     Value:
-      Ref: WazuhAlertsDLQ65C49654
+      Ref: WazuhWazuhAlertsDLQ8AAA9052
   WazuhIngestLambdaName:
     Description: Lambda function name for Wazuh alert ingestion
     Value:
-      Ref: WazuhIngestFunction4930B55B
+      Ref: WazuhWazuhIngestFunction87C9D109
+  RdsMySqlEndpoint:
+    Value:
+      Fn::GetAtt:
+        - RdsRdsInstance295A7CFA
+        - Endpoint.Address
+    Export:
+      Name: SentinelNetRdsMySqlEndpoint
+  RdsMySqlPort:
+    Value:
+      Fn::GetAtt:
+        - RdsRdsInstance295A7CFA
+        - Endpoint.Port
+    Export:
+      Name: SentinelNetRdsMySqlPort
+  RdsMySqlSecretArn:
+    Value:
+      Ref: RdsRdsInstanceSecretAttachment867426A6
+    Export:
+      Name: SentinelNetRdsMySqlSecretArn
 
