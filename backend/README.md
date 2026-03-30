@@ -49,12 +49,12 @@ BackendStack provisions:
 
 Message requirements:
 - Body must be one JSON object string per SQS message.
-- Normalized fields: `id`, `timestamp`, `severity`, `eventType`, `raw`, `expiresAt`.
-- `id` fallback: `agent.id` -> `agent.name` -> `unknown`.
-- `timestamp` fallback: `timestamp` or `@timestamp` -> current UTC ISO8601.
-- `severity` fallback: `rule.level` -> `0`.
+- Stored fields: `agentId`, `id`, `timestamp`, `severity`, `eventType`, `raw`, `expiresAt`.
+- `agent` must be an object and include `agent.id` or `agent.name`.
+- `timestamp` or `@timestamp` must be present and parse as a valid UTC-normalizable time.
+- `rule` must be an object and `rule.level` must be numeric.
 - `eventType` is always `wazuh_alert`.
-- Invalid JSON fails only that record (`batchItemFailures`) so SQS retries and eventually sends to DLQ.
+- Invalid JSON or structurally invalid alerts fail only that record (`batchItemFailures`) so SQS retries and eventually sends to DLQ.
 
 ### Local offline test
 
@@ -107,9 +107,9 @@ Expected log line includes:
 ```bash
 aws dynamodb get-item \
   --table-name "$TELEMETRY_TABLE_NAME" \
-  --key '{"id":{"S":"001"},"timestamp":{"S":"2026-03-02T18:30:00Z"}}' \
+  --key '{"agentId":{"S":"001"},"timestamp":{"S":"2026-03-02T18:30:00Z"}}' \
   --consistent-read
 ```
 
 Expected outcome:
-- `Item` is returned with `eventType` = `wazuh_alert`, `severity` = `10`, and `raw` containing the full original message body.
+- `Item` is returned with `agentId` = `001`, `id` = `001`, `eventType` = `wazuh_alert`, `severity` = `10`, and `raw` containing the full original message body.

@@ -55,6 +55,7 @@ class WazuhIngestHandlerTests(unittest.TestCase):
         self.assertEqual(len(request_items), 1)
 
         written_item = request_items[0]["PutRequest"]["Item"]
+        self.assertEqual(written_item["agentId"]["S"], "001")
         self.assertEqual(written_item["id"]["S"], "001")
         self.assertEqual(written_item["timestamp"]["S"], "2026-03-02T18:30:00Z")
         self.assertEqual(written_item["severity"]["N"], "10")

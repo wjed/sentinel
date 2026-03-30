@@ -144,6 +144,16 @@ class WazuhConstruct(Construct):
             ec2.Port.tcp(1515),
             "Wazuh registration TCP from VPC",
         )
+        wazuh_sg.add_egress_rule(
+            ec2.Peer.any_ipv4(),
+            ec2.Port.tcp(80),
+            "HTTP egress for package repositories",
+        )
+        wazuh_sg.add_egress_rule(
+            ec2.Peer.any_ipv4(),
+            ec2.Port.tcp(443),
+            "HTTPS egress for SSM, SQS, and package repositories",
+        )
 
         wazuh_role = iam.Role(
             self,

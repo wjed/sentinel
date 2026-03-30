@@ -33,7 +33,7 @@ class TelemetryConstruct(Construct):
             "TelemetryTable",
             table_name="sentinel-telemetry",
             partition_key=dynamodb.Attribute(
-                name="id",
+                name="agentId",
                 type=dynamodb.AttributeType.STRING,
             ),
             sort_key=dynamodb.Attribute(

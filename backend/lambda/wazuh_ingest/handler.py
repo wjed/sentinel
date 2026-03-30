@@ -86,6 +86,7 @@ def normalize_event(payload: dict[str, Any], raw_body: str) -> dict[str, Any]:
 
 def to_dynamodb_item(normalized: dict[str, Any]) -> dict[str, dict[str, str]]:
     return {
+        "agentId": {"S": normalized["id"]},
         "id": {"S": normalized["id"]},
         "timestamp": {"S": normalized["timestamp"]},
         "severity": {"N": str(normalized["severity"])},

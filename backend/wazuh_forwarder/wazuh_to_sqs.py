@@ -125,6 +125,13 @@ def collect_batch(
                 break
 
             line_end_offset = handle.tell()
+            if is_incomplete_trailing_line(
+                raw_line=raw_line,
+                line_end_offset=line_end_offset,
+                file_size=file_stat.st_size,
+            ):
+                break
+
             checkpoint_state = OffsetState(
                 inode=file_stat.st_ino,
                 offset=line_end_offset,
@@ -173,6 +180,14 @@ def collect_batch(
         retry_state=retry_state,
         checkpoint_state=checkpoint_state,
     )
+
+
+def is_incomplete_trailing_line(
+    raw_line: str,
+    line_end_offset: int,
+    file_size: int,
+) -> bool:
+    return line_end_offset == file_size and not raw_line.endswith("\n")
 
 
 def is_valid_alert_json(raw_line: str) -> bool:

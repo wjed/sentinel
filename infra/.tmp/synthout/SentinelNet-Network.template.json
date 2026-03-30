@@ -1,0 +1,767 @@
+{
+ "Resources": {
+  "Vpc8378EB38": {
+   "Type": "AWS::EC2::VPC",
+   "Properties": {
+    "CidrBlock": "10.0.0.0/16",
+    "EnableDnsHostnames": true,
+    "EnableDnsSupport": true,
+    "InstanceTenancy": "default",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/Vpc"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ]
+   }
+  },
+  "VpcDynamoDbEndpoint564903D1": {
+   "Type": "AWS::EC2::VPCEndpoint",
+   "Properties": {
+    "RouteTableIds": [
+     {
+      "Ref": "InternalSubnet1RouteTableB61856C9"
+     },
+     {
+      "Ref": "InternalSubnet2RouteTableB0D1FF39"
+     }
+    ],
+    "ServiceName": {
+     "Fn::Join": [
+      "",
+      [
+       "com.amazonaws.",
+       {
+        "Ref": "AWS::Region"
+       },
+       ".dynamodb"
+      ]
+     ]
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/Vpc"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcEndpointType": "Gateway",
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "PublicSubnet1Subnet03067927": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      0,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.0.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/PublicSubnet1"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "PublicSubnet1RouteTable57E60591": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/PublicSubnet1"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "PublicSubnet1RouteTableAssociation0E73B917": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "PublicSubnet1RouteTable57E60591"
+    },
+    "SubnetId": {
+     "Ref": "PublicSubnet1Subnet03067927"
+    }
+   }
+  },
+  "PrivateSubnet1Subnet51DDBC2F": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      0,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.1.0/24",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/PrivateSubnet1"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "PrivateSubnet1RouteTable902C0229": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/PrivateSubnet1"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "PrivateSubnet1RouteTableAssociationE8D35FCB": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "PrivateSubnet1RouteTable902C0229"
+    },
+    "SubnetId": {
+     "Ref": "PrivateSubnet1Subnet51DDBC2F"
+    }
+   }
+  },
+  "PublicSubnet2Subnet78B4B4BD": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      1,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.2.0/24",
+    "MapPublicIpOnLaunch": true,
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/PublicSubnet2"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "PublicSubnet2RouteTable1853D61A": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/PublicSubnet2"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "PublicSubnet2RouteTableAssociation1339F17B": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "PublicSubnet2RouteTable1853D61A"
+    },
+    "SubnetId": {
+     "Ref": "PublicSubnet2Subnet78B4B4BD"
+    }
+   }
+  },
+  "PrivateSubnet2Subnet2ABB2F40": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      1,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.3.0/24",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/PrivateSubnet2"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "PrivateSubnet2RouteTableEA49866C": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/PrivateSubnet2"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "PrivateSubnet2RouteTableAssociation239A73D7": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "PrivateSubnet2RouteTableEA49866C"
+    },
+    "SubnetId": {
+     "Ref": "PrivateSubnet2Subnet2ABB2F40"
+    }
+   }
+  },
+  "InternalSubnet1SubnetDC6EA234": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      0,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.4.0/24",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/InternalSubnet1"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "InternalSubnet1RouteTableB61856C9": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/InternalSubnet1"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "InternalSubnet1RouteTableAssociation05D61375": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "InternalSubnet1RouteTableB61856C9"
+    },
+    "SubnetId": {
+     "Ref": "InternalSubnet1SubnetDC6EA234"
+    }
+   }
+  },
+  "InternalSubnet2Subnet0EAE4CAF": {
+   "Type": "AWS::EC2::Subnet",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      1,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "CidrBlock": "10.0.5.0/24",
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/InternalSubnet2"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "InternalSubnet2RouteTableB0D1FF39": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Network/InternalSubnet2"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "InternalSubnet2RouteTableAssociation7CAB1253": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "InternalSubnet2RouteTableB0D1FF39"
+    },
+    "SubnetId": {
+     "Ref": "InternalSubnet2Subnet0EAE4CAF"
+    }
+   }
+  },
+  "InternetGateway": {
+   "Type": "AWS::EC2::InternetGateway",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ]
+   }
+  },
+  "IGWAttachment": {
+   "Type": "AWS::EC2::VPCGatewayAttachment",
+   "Properties": {
+    "InternetGatewayId": {
+     "Ref": "InternetGateway"
+    },
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "PublicRouteTable": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "sentinel-public-rt"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "PublicDefaultRoute": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "GatewayId": {
+     "Ref": "InternetGateway"
+    },
+    "RouteTableId": {
+     "Ref": "PublicRouteTable"
+    }
+   }
+  },
+  "PublicRTA1": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "PublicRouteTable"
+    },
+    "SubnetId": {
+     "Ref": "PublicSubnet1Subnet03067927"
+    }
+   }
+  },
+  "PublicRTA2": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "PublicRouteTable"
+    },
+    "SubnetId": {
+     "Ref": "PublicSubnet2Subnet78B4B4BD"
+    }
+   }
+  },
+  "NatEip": {
+   "Type": "AWS::EC2::EIP",
+   "Properties": {
+    "Domain": "vpc",
+    "Tags": [
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ]
+   }
+  },
+  "NatGateway": {
+   "Type": "AWS::EC2::NatGateway",
+   "Properties": {
+    "AllocationId": {
+     "Fn::GetAtt": [
+      "NatEip",
+      "AllocationId"
+     ]
+    },
+    "SubnetId": {
+     "Ref": "PublicSubnet1Subnet03067927"
+    },
+    "Tags": [
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ]
+   }
+  },
+  "PrivateRouteTable": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "sentinel-private-rt"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "PrivateDefaultRoute": {
+   "Type": "AWS::EC2::Route",
+   "Properties": {
+    "DestinationCidrBlock": "0.0.0.0/0",
+    "NatGatewayId": {
+     "Ref": "NatGateway"
+    },
+    "RouteTableId": {
+     "Ref": "PrivateRouteTable"
+    }
+   }
+  },
+  "PrivateRTA1": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "PrivateRouteTable"
+    },
+    "SubnetId": {
+     "Ref": "PrivateSubnet1Subnet51DDBC2F"
+    }
+   }
+  },
+  "PrivateRTA2": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "PrivateRouteTable"
+    },
+    "SubnetId": {
+     "Ref": "PrivateSubnet2Subnet2ABB2F40"
+    }
+   }
+  },
+  "InternalRouteTable": {
+   "Type": "AWS::EC2::RouteTable",
+   "Properties": {
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "sentinel-internal-rt"
+     },
+     {
+      "Key": "SentinelNet",
+      "Value": "Network"
+     }
+    ],
+    "VpcId": {
+     "Ref": "Vpc8378EB38"
+    }
+   }
+  },
+  "InternalRTA1": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "InternalRouteTable"
+    },
+    "SubnetId": {
+     "Ref": "InternalSubnet1SubnetDC6EA234"
+    }
+   }
+  },
+  "InternalRTA2": {
+   "Type": "AWS::EC2::SubnetRouteTableAssociation",
+   "Properties": {
+    "RouteTableId": {
+     "Ref": "InternalRouteTable"
+    },
+    "SubnetId": {
+     "Ref": "InternalSubnet2Subnet0EAE4CAF"
+    }
+   }
+  },
+  "AppRegistryAssociation": {
+   "Type": "AWS::ServiceCatalogAppRegistry::ResourceAssociation",
+   "Properties": {
+    "Application": "SentinelNet",
+    "Resource": "SentinelNet-Network",
+    "ResourceType": "CFN_STACK"
+   }
+  }
+ },
+ "Outputs": {
+  "VpcId": {
+   "Description": "VPC ID for center/backend workloads.",
+   "Value": {
+    "Ref": "Vpc8378EB38"
+   },
+   "Export": {
+    "Name": "SentinelNetVpcId"
+   }
+  },
+  "PrivateSubnetIds": {
+   "Description": "Comma-separated private subnet IDs.",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      {
+       "Ref": "PrivateSubnet1Subnet51DDBC2F"
+      },
+      ",",
+      {
+       "Ref": "PrivateSubnet2Subnet2ABB2F40"
+      }
+     ]
+    ]
+   },
+   "Export": {
+    "Name": "SentinelNetPrivateSubnetIds"
+   }
+  },
+  "PublicSubnetIds": {
+   "Description": "Comma-separated public subnet IDs.",
+   "Value": {
+    "Fn::Join": [
+     "",
+     [
+      {
+       "Ref": "PublicSubnet1Subnet03067927"
+      },
+      ",",
+      {
+       "Ref": "PublicSubnet2Subnet78B4B4BD"
+      }
+     ]
+    ]
+   },
+   "Export": {
+    "Name": "SentinelNetPublicSubnetIds"
+   }
+  },
+  "DynamoDbEndpointId": {
+   "Description": "DynamoDB Gateway VPC Endpoint ID (isolated data tier).",
+   "Value": {
+    "Ref": "VpcDynamoDbEndpoint564903D1"
+   },
+   "Export": {
+    "Name": "SentinelNetDynamoDbEndpointId"
+   }
+  },
+  "ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396": {
+   "Value": {
+    "Fn::GetAtt": [
+     "Vpc8378EB38",
+     "CidrBlock"
+    ]
+   },
+   "Export": {
+    "Name": "SentinelNet-Network:ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396"
+   }
+  },
+  "ExportsOutputRefVpc8378EB38272D6E3A": {
+   "Value": {
+    "Ref": "Vpc8378EB38"
+   },
+   "Export": {
+    "Name": "SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A"
+   }
+  },
+  "ExportsOutputRefPrivateSubnet1Subnet51DDBC2FF0743ECA": {
+   "Value": {
+    "Ref": "PrivateSubnet1Subnet51DDBC2F"
+   },
+   "Export": {
+    "Name": "SentinelNet-Network:ExportsOutputRefPrivateSubnet1Subnet51DDBC2FF0743ECA"
+   }
+  },
+  "ExportsOutputRefInternalSubnet1SubnetDC6EA2344248007A": {
+   "Value": {
+    "Ref": "InternalSubnet1SubnetDC6EA234"
+   },
+   "Export": {
+    "Name": "SentinelNet-Network:ExportsOutputRefInternalSubnet1SubnetDC6EA2344248007A"
+   }
+  },
+  "ExportsOutputRefInternalSubnet2Subnet0EAE4CAF8C454D4B": {
+   "Value": {
+    "Ref": "InternalSubnet2Subnet0EAE4CAF"
+   },
+   "Export": {
+    "Name": "SentinelNet-Network:ExportsOutputRefInternalSubnet2Subnet0EAE4CAF8C454D4B"
+   }
+  },
+  "ExportsOutputRefPublicSubnet1Subnet0306792710644A21": {
+   "Value": {
+    "Ref": "PublicSubnet1Subnet03067927"
+   },
+   "Export": {
+    "Name": "SentinelNet-Network:ExportsOutputRefPublicSubnet1Subnet0306792710644A21"
+   }
+  },
+  "ExportsOutputRefPublicSubnet2Subnet78B4B4BDD1FA85DA": {
+   "Value": {
+    "Ref": "PublicSubnet2Subnet78B4B4BD"
+   },
+   "Export": {
+    "Name": "SentinelNet-Network:ExportsOutputRefPublicSubnet2Subnet78B4B4BDD1FA85DA"
+   }
+  },
+  "ExportsOutputRefPrivateSubnet2Subnet2ABB2F40C8B2A342": {
+   "Value": {
+    "Ref": "PrivateSubnet2Subnet2ABB2F40"
+   },
+   "Export": {
+    "Name": "SentinelNet-Network:ExportsOutputRefPrivateSubnet2Subnet2ABB2F40C8B2A342"
+   }
+  }
+ },
+ "Parameters": {
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

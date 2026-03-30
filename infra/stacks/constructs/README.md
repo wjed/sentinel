@@ -43,6 +43,13 @@ Sets up **Wazuh alert ingestion and manager infrastructure** using SQS queues, a
 | `1514` | UDP | VPC CIDR | Wazuh agent communication |
 | `1515` | TCP | VPC CIDR | Wazuh agent registration |
 
+**Security group outbound rules:**
+
+| Port | Protocol | Destination | Purpose |
+|---|---|---|---|
+| `80` | TCP | `0.0.0.0/0` | Package repository access during bootstrap |
+| `443` | TCP | `0.0.0.0/0` | SSM, SQS, and package repository access |
+
 **Usage:**
 ```python
 wazuh = WazuhConstruct(
@@ -57,7 +64,7 @@ wazuh = WazuhConstruct(
 wazuh.alert_queue.grant_send_messages(my_resource)
 ```
 
-> **Note:** `allow_all_outbound=False` on the security group means outbound rules must be added explicitly if the Wazuh Manager needs to reach external services (e.g. package repos, threat intel feeds).
+> **Note:** `allow_all_outbound=False` stays in place so outbound traffic is explicit. Add more egress rules if the Wazuh Manager needs additional destinations beyond bootstrap, SSM, and SQS.
 
 ---
 

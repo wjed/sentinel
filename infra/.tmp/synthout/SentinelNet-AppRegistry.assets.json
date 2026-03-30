@@ -1,0 +1,20 @@
+{
+  "version": "50.0.0",
+  "files": {
+    "4701d21891a50d628821ac8231f64e23b74fe575fc9e5f11d1893ad36c7e706c": {
+      "displayName": "SentinelNet-AppRegistry Template",
+      "source": {
+        "path": "SentinelNet-AppRegistry.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "current_account-current_region-403bf853": {
+          "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
+          "objectKey": "4701d21891a50d628821ac8231f64e23b74fe575fc9e5f11d1893ad36c7e706c.json",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}
