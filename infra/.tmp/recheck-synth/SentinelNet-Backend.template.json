@@ -1,0 +1,1355 @@
+{
+ "Resources": {
+  "TelemetryTelemetryKeyB57DE886": {
+   "Type": "AWS::KMS::Key",
+   "Properties": {
+    "Description": "CMK for Sentinel telemetry DynamoDB table",
+    "EnableKeyRotation": true,
+    "KeyPolicy": {
+     "Statement": [
+      {
+       "Action": "kms:*",
+       "Effect": "Allow",
+       "Principal": {
+        "AWS": {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":iam::",
+           {
+            "Ref": "AWS::AccountId"
+           },
+           ":root"
+          ]
+         ]
+        }
+       },
+       "Resource": "*"
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete"
+  },
+  "TelemetryTelemetryTable703058D1": {
+   "Type": "AWS::DynamoDB::Table",
+   "Properties": {
+    "AttributeDefinitions": [
+     {
+      "AttributeName": "agentId",
+      "AttributeType": "S"
+     },
+     {
+      "AttributeName": "timestamp",
+      "AttributeType": "S"
+     }
+    ],
+    "BillingMode": "PAY_PER_REQUEST",
+    "KeySchema": [
+     {
+      "AttributeName": "agentId",
+      "KeyType": "HASH"
+     },
+     {
+      "AttributeName": "timestamp",
+      "KeyType": "RANGE"
+     }
+    ],
+    "PointInTimeRecoverySpecification": {
+     "PointInTimeRecoveryEnabled": true
+    },
+    "SSESpecification": {
+     "KMSMasterKeyId": {
+      "Fn::GetAtt": [
+       "TelemetryTelemetryKeyB57DE886",
+       "Arn"
+      ]
+     },
+     "SSEEnabled": true,
+     "SSEType": "KMS"
+    },
+    "TableName": "sentinel-telemetry",
+    "TimeToLiveSpecification": {
+     "AttributeName": "expiresAt",
+     "Enabled": true
+    }
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete"
+  },
+  "WazuhWazuhAlertsDLQ8AAA9052": {
+   "Type": "AWS::SQS::Queue",
+   "Properties": {
+    "MessageRetentionPeriod": 1209600,
+    "QueueName": "sentinel-wazuh-alerts-dlq",
+    "SqsManagedSseEnabled": true
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete"
+  },
+  "WazuhWazuhAlertsDLQPolicy8EBC158A": {
+   "Type": "AWS::SQS::QueuePolicy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sqs:*",
+       "Condition": {
+        "Bool": {
+         "aws:SecureTransport": "false"
+        }
+       },
+       "Effect": "Deny",
+       "Principal": {
+        "AWS": "*"
+       },
+       "Resource": {
+        "Fn::GetAtt": [
+         "WazuhWazuhAlertsDLQ8AAA9052",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Queues": [
+     {
+      "Ref": "WazuhWazuhAlertsDLQ8AAA9052"
+     }
+    ]
+   }
+  },
+  "WazuhWazuhAlertsQueue433D840D": {
+   "Type": "AWS::SQS::Queue",
+   "Properties": {
+    "MessageRetentionPeriod": 345600,
+    "QueueName": "sentinel-wazuh-alerts",
+    "RedrivePolicy": {
+     "deadLetterTargetArn": {
+      "Fn::GetAtt": [
+       "WazuhWazuhAlertsDLQ8AAA9052",
+       "Arn"
+      ]
+     },
+     "maxReceiveCount": 5
+    },
+    "SqsManagedSseEnabled": true,
+    "VisibilityTimeout": 120
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete"
+  },
+  "WazuhWazuhAlertsQueuePolicy0BD82811": {
+   "Type": "AWS::SQS::QueuePolicy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sqs:*",
+       "Condition": {
+        "Bool": {
+         "aws:SecureTransport": "false"
+        }
+       },
+       "Effect": "Deny",
+       "Principal": {
+        "AWS": "*"
+       },
+       "Resource": {
+        "Fn::GetAtt": [
+         "WazuhWazuhAlertsQueue433D840D",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "Queues": [
+     {
+      "Ref": "WazuhWazuhAlertsQueue433D840D"
+     }
+    ]
+   }
+  },
+  "WazuhWazuhIngestFunctionServiceRole8EC943FE": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "lambda.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+       ]
+      ]
+     }
+    ]
+   }
+  },
+  "WazuhWazuhIngestFunctionServiceRoleDefaultPolicy4AED29F7": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "sqs:ReceiveMessage",
+        "sqs:ChangeMessageVisibility",
+        "sqs:GetQueueUrl",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "WazuhWazuhAlertsQueue433D840D",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:BatchWriteItem"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "TelemetryTelemetryTable703058D1",
+         "Arn"
+        ]
+       }
+      },
+      {
+       "Action": [
+        "kms:Decrypt",
+        "kms:Encrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "TelemetryTelemetryKeyB57DE886",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "WazuhWazuhIngestFunctionServiceRoleDefaultPolicy4AED29F7",
+    "Roles": [
+     {
+      "Ref": "WazuhWazuhIngestFunctionServiceRole8EC943FE"
+     }
+    ]
+   }
+  },
+  "WazuhWazuhIngestFunction87C9D109": {
+   "Type": "AWS::Lambda::Function",
+   "Properties": {
+    "Code": {
+     "S3Bucket": {
+      "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}"
+     },
+     "S3Key": "573e84311b6ca684ec8f0e4f78befb82fdffab2a6855898bb1eebebc6ff734c3.zip"
+    },
+    "Environment": {
+     "Variables": {
+      "TABLE_NAME": {
+       "Ref": "TelemetryTelemetryTable703058D1"
+      },
+      "RETENTION_DAYS": "30"
+     }
+    },
+    "FunctionName": "sentinel-wazuh-ingest",
+    "Handler": "handler.handler",
+    "MemorySize": 256,
+    "Role": {
+     "Fn::GetAtt": [
+      "WazuhWazuhIngestFunctionServiceRole8EC943FE",
+      "Arn"
+     ]
+    },
+    "Runtime": "python3.11",
+    "Timeout": 60
+   },
+   "DependsOn": [
+    "WazuhWazuhIngestFunctionServiceRoleDefaultPolicy4AED29F7",
+    "WazuhWazuhIngestFunctionServiceRole8EC943FE"
+   ]
+  },
+  "WazuhWazuhIngestFunctionSqsEventSourceSentinelNetBackendWazuhWazuhAlertsQueueBDC8D68CE0B5BE08": {
+   "Type": "AWS::Lambda::EventSourceMapping",
+   "Properties": {
+    "BatchSize": 10,
+    "EventSourceArn": {
+     "Fn::GetAtt": [
+      "WazuhWazuhAlertsQueue433D840D",
+      "Arn"
+     ]
+    },
+    "FunctionName": {
+     "Ref": "WazuhWazuhIngestFunction87C9D109"
+    },
+    "FunctionResponseTypes": [
+     "ReportBatchItemFailures"
+    ]
+   }
+  },
+  "WazuhWazuhManagerSG5B212655": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Wazuh Manager internal subnet only, no inbound by default",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "HTTP egress for package repositories",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "HTTPS egress for SSM, SQS, and package repositories",
+      "FromPort": 443,
+      "IpProtocol": "tcp",
+      "ToPort": 443
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": {
+       "Fn::ImportValue": "SentinelNet-Network:ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396"
+      },
+      "Description": "Wazuh agent TCP from VPC",
+      "FromPort": 1514,
+      "IpProtocol": "tcp",
+      "ToPort": 1514
+     },
+     {
+      "CidrIp": {
+       "Fn::ImportValue": "SentinelNet-Network:ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396"
+      },
+      "Description": "Wazuh agent UDP from VPC",
+      "FromPort": 1514,
+      "IpProtocol": "udp",
+      "ToPort": 1514
+     },
+     {
+      "CidrIp": {
+       "Fn::ImportValue": "SentinelNet-Network:ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396"
+      },
+      "Description": "Wazuh registration TCP from VPC",
+      "FromPort": 1515,
+      "IpProtocol": "tcp",
+      "ToPort": 1515
+     }
+    ],
+    "VpcId": {
+     "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A"
+    }
+   }
+  },
+  "WazuhWazuhInstanceRole3D518A13": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ec2.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "ManagedPolicyArns": [
+     {
+      "Fn::Join": [
+       "",
+       [
+        "arn:",
+        {
+         "Ref": "AWS::Partition"
+        },
+        ":iam::aws:policy/AmazonSSMManagedInstanceCore"
+       ]
+      ]
+     }
+    ]
+   }
+  },
+  "WazuhWazuhInstanceRoleDefaultPolicy262056E2": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "sqs:SendMessage",
+        "sqs:SendMessageBatch"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "WazuhWazuhAlertsQueue433D840D",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "WazuhWazuhInstanceRoleDefaultPolicy262056E2",
+    "Roles": [
+     {
+      "Ref": "WazuhWazuhInstanceRole3D518A13"
+     }
+    ]
+   }
+  },
+  "WazuhWazuhManagerInstanceInstanceProfileF4F28375": {
+   "Type": "AWS::IAM::InstanceProfile",
+   "Properties": {
+    "Roles": [
+     {
+      "Ref": "WazuhWazuhInstanceRole3D518A13"
+     }
+    ]
+   }
+  },
+  "WazuhWazuhManagerInstance15E3DA91": {
+   "Type": "AWS::EC2::Instance",
+   "Properties": {
+    "AvailabilityZone": {
+     "Fn::Select": [
+      0,
+      {
+       "Fn::GetAZs": ""
+      }
+     ]
+    },
+    "IamInstanceProfile": {
+     "Ref": "WazuhWazuhManagerInstanceInstanceProfileF4F28375"
+    },
+    "ImageId": {
+     "Ref": "SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amikernel510hvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter"
+    },
+    "InstanceType": "t3.medium",
+    "SecurityGroupIds": [
+     {
+      "Fn::GetAtt": [
+       "WazuhWazuhManagerSG5B212655",
+       "GroupId"
+      ]
+     }
+    ],
+    "SubnetId": {
+     "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefPrivateSubnet1Subnet51DDBC2FF0743ECA"
+    },
+    "Tags": [
+     {
+      "Key": "Name",
+      "Value": "SentinelNet-Backend/Wazuh/WazuhManagerInstance"
+     }
+    ],
+    "UserData": {
+     "Fn::Base64": {
+      "Fn::Join": [
+       "",
+       [
+        "#!/bin/bash\nyum update -y\nyum install -y curl python3 python3-pip\npython3 -c \"import boto3\" || python3 -m pip install boto3\nmkdir -p /opt/sentinel /etc/sentinel /var/lib/sentinel\ncat <<'EOF' > /opt/sentinel/wazuh_to_sqs.py\nimport json\nimport os\nimport time\nfrom dataclasses import dataclass\nfrom pathlib import Path\nfrom typing import Any\n\ntry:\n    import boto3\nexcept ImportError:  # pragma: no cover - supports offline tests without boto3 installed\n    boto3 = None\n\nDEFAULT_ALERTS_FILE = \"/var/ossec/logs/alerts/alerts.json\"\nDEFAULT_STATE_FILE = \"/var/lib/sentinel/wazuh-forwarder-state.json\"\nDEFAULT_BATCH_SIZE = 10\nDEFAULT_POLL_INTERVAL_SECONDS = 2.0\nMAX_SQS_BATCH_SIZE = 10\nMAX_SQS_MESSAGE_BYTES = 256 * 1024\n\n\n@dataclass(frozen=True)\nclass OffsetState:\n    inode: int | None = None\n    offset: int = 0\n\n\n@dataclass(frozen=True)\nclass AlertEntry:\n    body: str\n    end_offset: int\n\n\n@dataclass(frozen=True)\nclass CollectedBatch:\n    entries: list[AlertEntry]\n    retry_state: OffsetState\n    checkpoint_state: OffsetState\n\n\n@dataclass(frozen=True)\nclass ForwarderConfig:\n    queue_url: str\n    alerts_file: Path\n    state_file: Path\n    batch_size: int = DEFAULT_BATCH_SIZE\n    poll_interval_seconds: float = DEFAULT_POLL_INTERVAL_SECONDS\n\n\ndef build_config_from_env() -> ForwarderConfig:\n    queue_url = os.environ[\"WAZUH_ALERT_QUEUE_URL\"].strip()\n    batch_size = int(os.environ.get(\"WAZUH_BATCH_SIZE\", str(DEFAULT_BATCH_SIZE)))\n    if batch_size < 1 or batch_size > MAX_SQS_BATCH_SIZE:\n        raise ValueError(\n            f\"WAZUH_BATCH_SIZE must be between 1 and {MAX_SQS_BATCH_SIZE}\"\n        )\n\n    return ForwarderConfig(\n        queue_url=queue_url,\n        alerts_file=Path(os.environ.get(\"WAZUH_ALERTS_FILE\", DEFAULT_ALERTS_FILE)),\n        state_file=Path(os.environ.get(\"WAZUH_STATE_FILE\", DEFAULT_STATE_FILE)),\n        batch_size=batch_size,\n        poll_interval_seconds=float(\n            os.environ.get(\n                \"WAZUH_POLL_INTERVAL_SECONDS\",\n                str(DEFAULT_POLL_INTERVAL_SECONDS),\n            )\n        ),\n    )\n\n\ndef load_state(state_file: Path) -> OffsetState:\n    if not state_file.exists():\n        return OffsetState()\n\n    try:\n        payload = json.loads(state_file.read_text(encoding=\"utf-8\"))\n    except json.JSONDecodeError:\n        print(f\"State file {state_file} is invalid JSON; resetting checkpoint\")\n        return OffsetState()\n\n    inode_value = payload.get(\"inode\")\n    offset_value = payload.get(\"offset\", 0)\n    inode = int(inode_value) if inode_value is not None else None\n    offset = max(0, int(offset_value))\n    return OffsetState(inode=inode, offset=offset)\n\n\ndef save_state(state_file: Path, state: OffsetState) -> None:\n    state_file.parent.mkdir(parents=True, exist_ok=True)\n    state_file.write_text(\n        json.dumps({\"inode\": state.inode, \"offset\": state.offset}),\n        encoding=\"utf-8\",\n    )\n\n\ndef collect_batch(\n    alerts_file: Path,\n    current_state: OffsetState,\n    max_batch_size: int,\n) -> CollectedBatch:\n    if not alerts_file.exists():\n        return CollectedBatch(\n            entries=[],\n            retry_state=current_state,\n            checkpoint_state=current_state,\n        )\n\n    file_stat = alerts_file.stat()\n    state = current_state\n    if state.inode != file_stat.st_ino or file_stat.st_size < state.offset:\n        state = OffsetState(inode=file_stat.st_ino, offset=0)\n\n    entries: list[AlertEntry] = []\n    retry_state = state\n    checkpoint_state = state\n    found_valid_entry = False\n\n    with alerts_file.open(\"r\", encoding=\"utf-8\") as handle:\n        handle.seek(state.offset)\n\n        while len(entries) < max_batch_size:\n            line_start_offset = handle.tell()\n            raw_line = handle.readline()\n            if not raw_line:\n                break\n\n            line_end_offset = handle.tell()\n            if is_incomplete_trailing_line(\n                raw_line=raw_line,\n                line_end_offset=line_end_offset,\n                file_size=file_stat.st_size,\n            ):\n                break\n\n            checkpoint_state = OffsetState(\n                inode=file_stat.st_ino,\n                offset=line_end_offset,\n            )\n            stripped_line = raw_line.strip()\n\n            if not stripped_line:\n                if not found_valid_entry:\n                    retry_state = checkpoint_state\n                continue\n\n            if not is_valid_alert_json(stripped_line):\n                print(\n                    f\"Skipping malformed Wazuh alert line at offset \"\n                    f\"{line_start_offset} in {alerts_file}\"\n                )\n                if not found_valid_entry:\n                    retry_state = checkpoint_state\n                continue\n\n            if len(stripped_line.encode(\"utf-8\")) > MAX_SQS_MESSAGE_BYTES:\n                print(\n                    f\"Skipping oversized Wazuh alert at offset \"\n                    f\"{line_start_offset} in {alerts_file}\"\n                )\n                if not found_valid_entry:\n                    retry_state = checkpoint_state\n                continue\n\n            if not found_valid_entry:\n                retry_state = OffsetState(\n                    inode=file_stat.st_ino,\n                    offset=line_start_offset,\n                )\n                found_valid_entry = True\n\n            entries.append(\n                AlertEntry(\n                    body=stripped_line,\n                    end_offset=line_end_offset,\n                )\n            )\n\n    return CollectedBatch(\n        entries=entries,\n        retry_state=retry_state,\n        checkpoint_state=checkpoint_state,\n    )\n\n\ndef is_incomplete_trailing_line(\n    raw_line: str,\n    line_end_offset: int,\n    file_size: int,\n) -> bool:\n    return line_end_offset == file_size and not raw_line.endswith(\"\\n\")\n\n\ndef is_valid_alert_json(raw_line: str) -> bool:\n    try:\n        payload = json.loads(raw_line)\n    except json.JSONDecodeError:\n        return False\n    return isinstance(payload, dict)\n\n\ndef send_entries(\n    sqs_client: Any,\n    queue_url: str,\n    entries: list[AlertEntry],\n) -> bool:\n    if not entries:\n        return True\n\n    batch_entries = [\n        {\"Id\": f\"alert-{index}\", \"MessageBody\": entry.body}\n        for index, entry in enumerate(entries)\n    ]\n    response = sqs_client.send_message_batch(\n        QueueUrl=queue_url,\n        Entries=batch_entries,\n    )\n\n    failed_entries = response.get(\"Failed\", [])\n    if failed_entries:\n        failed_ids = \", \".join(\n            failure.get(\"Id\", \"unknown\")\n            for failure in failed_entries\n        )\n        print(f\"Failed to send SQS batch entries: {failed_ids}\")\n        return False\n\n    print(f\"Forwarded {len(entries)} Wazuh alerts to SQS\")\n    return True\n\n\ndef run_once(config: ForwarderConfig, sqs_client: Any) -> bool:\n    current_state = load_state(config.state_file)\n    batch = collect_batch(\n        alerts_file=config.alerts_file,\n        current_state=current_state,\n        max_batch_size=config.batch_size,\n    )\n\n    if not batch.entries:\n        if batch.checkpoint_state != current_state:\n            save_state(config.state_file, batch.checkpoint_state)\n        return False\n\n    if send_entries(\n        sqs_client=sqs_client,\n        queue_url=config.queue_url,\n        entries=batch.entries,\n    ):\n        save_state(config.state_file, batch.checkpoint_state)\n        return True\n\n    save_state(config.state_file, batch.retry_state)\n    return False\n\n\ndef main() -> None:\n    if boto3 is None:\n        raise RuntimeError(\"boto3 is required to run the Wazuh forwarder\")\n\n    config = build_config_from_env()\n    sqs_client = boto3.client(\"sqs\")\n\n    while True:\n        did_forward = run_once(config=config, sqs_client=sqs_client)\n        if not did_forward:\n            time.sleep(config.poll_interval_seconds)\n\n\nif __name__ == \"__main__\":\n    main()\nEOF\nchmod 0755 /opt/sentinel/wazuh_to_sqs.py\ncat <<'EOF' > /etc/sentinel/wazuh-forwarder.env\nWAZUH_ALERT_QUEUE_URL=",
+        {
+         "Ref": "WazuhWazuhAlertsQueue433D840D"
+        },
+        "\nWAZUH_ALERTS_FILE=/var/ossec/logs/alerts/alerts.json\nWAZUH_STATE_FILE=/var/lib/sentinel/wazuh-forwarder-state.json\nWAZUH_BATCH_SIZE=10\nWAZUH_POLL_INTERVAL_SECONDS=2.0\nEOF\nchmod 0644 /etc/sentinel/wazuh-forwarder.env\ncat <<'EOF' > /etc/systemd/system/sentinel-wazuh-forwarder.service\n[Unit]\nDescription=SentinelNet Wazuh alert forwarder\nAfter=network-online.target\nWants=network-online.target\n\n[Service]\nType=simple\nUser=root\nEnvironmentFile=/etc/sentinel/wazuh-forwarder.env\nExecStart=/usr/bin/python3 /opt/sentinel/wazuh_to_sqs.py\nRestart=always\nRestartSec=5\n\n[Install]\nWantedBy=multi-user.target\nEOF\nchmod 0644 /etc/systemd/system/sentinel-wazuh-forwarder.service\nsystemctl daemon-reload\nsystemctl enable sentinel-wazuh-forwarder.service\nsystemctl restart sentinel-wazuh-forwarder.service || systemctl start sentinel-wazuh-forwarder.service\n# TODO: add Wazuh repository and install steps for the chosen OS\n# Example (RHEL/CentOS/AmazonLinux compatible):\n# curl -sO https://packages.wazuh.com/4.x/yum/wazuh-repo-4.x.rpm || true\n# rpm -ivh wazuh-repo-4.x.rpm || true\n# yum install -y wazuh-manager || true\n# systemctl enable --now wazuh-manager || true"
+       ]
+      ]
+     }
+    }
+   },
+   "DependsOn": [
+    "WazuhWazuhInstanceRoleDefaultPolicy262056E2",
+    "WazuhWazuhInstanceRole3D518A13"
+   ]
+  },
+  "RdsRdsSG21C6898B": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "RDS MySQL - no inbound by default",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "255.255.255.255/32",
+      "Description": "Disallow all traffic",
+      "FromPort": 252,
+      "IpProtocol": "icmp",
+      "ToPort": 86
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": {
+       "Fn::ImportValue": "SentinelNet-Network:ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396"
+      },
+      "Description": "MySQL from VPC CIDR",
+      "FromPort": 3306,
+      "IpProtocol": "tcp",
+      "ToPort": 3306
+     }
+    ],
+    "VpcId": {
+     "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A"
+    }
+   }
+  },
+  "RdsRdsSubnetGroup8EC591B0": {
+   "Type": "AWS::RDS::DBSubnetGroup",
+   "Properties": {
+    "DBSubnetGroupDescription": "Isolated subnets for Sentinel RDS",
+    "SubnetIds": [
+     {
+      "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefInternalSubnet1SubnetDC6EA2344248007A"
+     },
+     {
+      "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefInternalSubnet2Subnet0EAE4CAF8C454D4B"
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Retain",
+   "DeletionPolicy": "Retain"
+  },
+  "SentinelNetBackendRdsRdsInstanceSecret774204D53fdaad7efa858a3daf9490cf0a702aeb": {
+   "Type": "AWS::SecretsManager::Secret",
+   "Properties": {
+    "Description": {
+     "Fn::Join": [
+      "",
+      [
+       "Generated by the CDK for stack: ",
+       {
+        "Ref": "AWS::StackName"
+       }
+      ]
+     ]
+    },
+    "GenerateSecretString": {
+     "ExcludeCharacters": " %+~`#$&*()|[]{}:;<>?!'/@\"\\",
+     "GenerateStringKey": "password",
+     "PasswordLength": 30,
+     "SecretStringTemplate": "{\"username\":\"sentinel_rds_admin\"}"
+    },
+    "Name": "sentinel/rds/mysql/admin"
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete"
+  },
+  "RdsRdsInstanceSecretAttachment867426A6": {
+   "Type": "AWS::SecretsManager::SecretTargetAttachment",
+   "Properties": {
+    "SecretId": {
+     "Ref": "SentinelNetBackendRdsRdsInstanceSecret774204D53fdaad7efa858a3daf9490cf0a702aeb"
+    },
+    "TargetId": {
+     "Ref": "RdsRdsInstance295A7CFA"
+    },
+    "TargetType": "AWS::RDS::DBInstance"
+   }
+  },
+  "RdsRdsInstance295A7CFA": {
+   "Type": "AWS::RDS::DBInstance",
+   "Properties": {
+    "AllocatedStorage": "20",
+    "CopyTagsToSnapshot": true,
+    "DBInstanceClass": "db.t3.micro",
+    "DBName": "sentinel",
+    "DBSubnetGroupName": {
+     "Ref": "RdsRdsSubnetGroup8EC591B0"
+    },
+    "DeletionProtection": false,
+    "Engine": "mysql",
+    "EngineVersion": "8.0",
+    "MasterUserPassword": {
+     "Fn::Join": [
+      "",
+      [
+       "{{resolve:secretsmanager:",
+       {
+        "Ref": "SentinelNetBackendRdsRdsInstanceSecret774204D53fdaad7efa858a3daf9490cf0a702aeb"
+       },
+       ":SecretString:password::}}"
+      ]
+     ]
+    },
+    "MasterUsername": "sentinel_rds_admin",
+    "MultiAZ": false,
+    "StorageEncrypted": true,
+    "StorageType": "gp2",
+    "VPCSecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "RdsRdsSG21C6898B",
+       "GroupId"
+      ]
+     }
+    ]
+   },
+   "UpdateReplacePolicy": "Delete",
+   "DeletionPolicy": "Delete"
+  },
+  "GrafanaGrafanaCluster470B4B6A": {
+   "Type": "AWS::ECS::Cluster"
+  },
+  "GrafanaGrafanaTaskDefTaskRole5F452275": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   }
+  },
+  "GrafanaGrafanaTaskDefF92C0C69": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Essential": true,
+      "Image": "public.ecr.aws/bitnami/grafana:latest",
+      "Name": "GrafanaContainer",
+      "PortMappings": [
+       {
+        "ContainerPort": 3000,
+        "Protocol": "tcp"
+       }
+      ]
+     }
+    ],
+    "Cpu": "256",
+    "Family": "SentinelNetBackendGrafanaGrafanaTaskDef9D74848F",
+    "Memory": "512",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "GrafanaGrafanaTaskDefTaskRole5F452275",
+      "Arn"
+     ]
+    }
+   }
+  },
+  "GrafanaGrafanaService2E5EB2F8": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "Cluster": {
+     "Ref": "GrafanaGrafanaCluster470B4B6A"
+    },
+    "DeploymentConfiguration": {
+     "Alarms": {
+      "AlarmNames": [],
+      "Enable": false,
+      "Rollback": false
+     },
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 50
+    },
+    "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 60,
+    "LaunchType": "FARGATE",
+    "LoadBalancers": [
+     {
+      "ContainerName": "GrafanaContainer",
+      "ContainerPort": 3000,
+      "TargetGroupArn": {
+       "Ref": "GrafanaGrafanaLBGrafanaListenerGrafanaTargetGroup0D0354B0"
+      }
+     }
+    ],
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "ENABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "GrafanaGrafanaServiceSecurityGroupFC60B3CC",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefPublicSubnet1Subnet0306792710644A21"
+       },
+       {
+        "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefPublicSubnet2Subnet78B4B4BDD1FA85DA"
+       }
+      ]
+     }
+    },
+    "TaskDefinition": {
+     "Ref": "GrafanaGrafanaTaskDefF92C0C69"
+    }
+   },
+   "DependsOn": [
+    "GrafanaGrafanaLBGrafanaListenerGrafanaTargetGroup0D0354B0",
+    "GrafanaGrafanaLBGrafanaListenerBE2A7225",
+    "GrafanaGrafanaTaskDefTaskRole5F452275"
+   ]
+  },
+  "GrafanaGrafanaServiceSecurityGroupFC60B3CC": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "SentinelNet-Backend/Grafana/GrafanaService/SecurityGroup",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "VpcId": {
+     "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A"
+    }
+   },
+   "DependsOn": [
+    "GrafanaGrafanaTaskDefTaskRole5F452275"
+   ]
+  },
+  "GrafanaGrafanaServiceSecurityGroupfromSentinelNetBackendGrafanaGrafanaLBSecurityGroupE87F583E3000F9C2AA50": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "FromPort": 3000,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "GrafanaGrafanaServiceSecurityGroupFC60B3CC",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "GrafanaGrafanaLBSecurityGroupEF6B6AC3",
+      "GroupId"
+     ]
+    },
+    "ToPort": 3000
+   },
+   "DependsOn": [
+    "GrafanaGrafanaTaskDefTaskRole5F452275"
+   ]
+  },
+  "GrafanaGrafanaLB702A541A": {
+   "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "Properties": {
+    "LoadBalancerAttributes": [
+     {
+      "Key": "deletion_protection.enabled",
+      "Value": "false"
+     }
+    ],
+    "Scheme": "internal",
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "GrafanaGrafanaLBSecurityGroupEF6B6AC3",
+       "GroupId"
+      ]
+     }
+    ],
+    "Subnets": [
+     {
+      "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefPublicSubnet1Subnet0306792710644A21"
+     },
+     {
+      "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefPublicSubnet2Subnet78B4B4BDD1FA85DA"
+     }
+    ],
+    "Type": "application"
+   }
+  },
+  "GrafanaGrafanaLBSecurityGroupEF6B6AC3": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "Automatically created Security Group for ELB SentinelNetBackendGrafanaGrafanaLB97172D58",
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 80",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "VpcId": {
+     "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A"
+    }
+   }
+  },
+  "GrafanaGrafanaLBSecurityGrouptoSentinelNetBackendGrafanaGrafanaServiceSecurityGroup8FB48EF03000A4A29A97": {
+   "Type": "AWS::EC2::SecurityGroupEgress",
+   "Properties": {
+    "Description": "Load balancer to target",
+    "DestinationSecurityGroupId": {
+     "Fn::GetAtt": [
+      "GrafanaGrafanaServiceSecurityGroupFC60B3CC",
+      "GroupId"
+     ]
+    },
+    "FromPort": 3000,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "GrafanaGrafanaLBSecurityGroupEF6B6AC3",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "ToPort": 3000
+   }
+  },
+  "GrafanaGrafanaLBGrafanaListenerBE2A7225": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "GrafanaGrafanaLBGrafanaListenerGrafanaTargetGroup0D0354B0"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "GrafanaGrafanaLB702A541A"
+    },
+    "Port": 80,
+    "Protocol": "HTTP"
+   }
+  },
+  "GrafanaGrafanaLBGrafanaListenerGrafanaTargetGroup0D0354B0": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "HealthCheckIntervalSeconds": 15,
+    "HealthCheckPath": "/api/health",
+    "HealthCheckTimeoutSeconds": 5,
+    "Matcher": {
+     "HttpCode": "200"
+    },
+    "Port": 3000,
+    "Protocol": "HTTP",
+    "TargetGroupAttributes": [
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "VpcId": {
+     "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A"
+    }
+   }
+  },
+  "TheHiveHiveCluster7F7AD871": {
+   "Type": "AWS::ECS::Cluster"
+  },
+  "TheHiveHiveTaskDefTaskRole30157087": {
+   "Type": "AWS::IAM::Role",
+   "Properties": {
+    "AssumeRolePolicyDocument": {
+     "Statement": [
+      {
+       "Action": "sts:AssumeRole",
+       "Effect": "Allow",
+       "Principal": {
+        "Service": "ecs-tasks.amazonaws.com"
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    }
+   }
+  },
+  "TheHiveHiveTaskDefTaskRoleDefaultPolicy345AB0F2": {
+   "Type": "AWS::IAM::Policy",
+   "Properties": {
+    "PolicyDocument": {
+     "Statement": [
+      {
+       "Action": [
+        "sqs:ReceiveMessage",
+        "sqs:ChangeMessageVisibility",
+        "sqs:GetQueueUrl",
+        "sqs:DeleteMessage",
+        "sqs:GetQueueAttributes"
+       ],
+       "Effect": "Allow",
+       "Resource": {
+        "Fn::GetAtt": [
+         "WazuhWazuhAlertsQueue433D840D",
+         "Arn"
+        ]
+       }
+      }
+     ],
+     "Version": "2012-10-17"
+    },
+    "PolicyName": "TheHiveHiveTaskDefTaskRoleDefaultPolicy345AB0F2",
+    "Roles": [
+     {
+      "Ref": "TheHiveHiveTaskDefTaskRole30157087"
+     }
+    ]
+   }
+  },
+  "TheHiveHiveTaskDefBE66CDA4": {
+   "Type": "AWS::ECS::TaskDefinition",
+   "Properties": {
+    "ContainerDefinitions": [
+     {
+      "Environment": [
+       {
+        "Name": "db.url",
+        "Value": "http://127.0.0.1:9200"
+       }
+      ],
+      "Essential": true,
+      "Image": "strangebee/thehive:latest",
+      "Name": "TheHiveContainer",
+      "PortMappings": [
+       {
+        "ContainerPort": 9000,
+        "Protocol": "tcp"
+       }
+      ]
+     },
+     {
+      "Environment": [
+       {
+        "Name": "discovery.type",
+        "Value": "single-node"
+       },
+       {
+        "Name": "xpack.security.enabled",
+        "Value": "false"
+       }
+      ],
+      "Essential": true,
+      "Image": "docker.elastic.co/elasticsearch/elasticsearch:7.17.14",
+      "Name": "ElasticsearchContainer",
+      "PortMappings": [
+       {
+        "ContainerPort": 9200,
+        "Protocol": "tcp"
+       }
+      ]
+     }
+    ],
+    "Cpu": "2048",
+    "Family": "SentinelNetBackendTheHiveHiveTaskDef240EEBDB",
+    "Memory": "4096",
+    "NetworkMode": "awsvpc",
+    "RequiresCompatibilities": [
+     "FARGATE"
+    ],
+    "TaskRoleArn": {
+     "Fn::GetAtt": [
+      "TheHiveHiveTaskDefTaskRole30157087",
+      "Arn"
+     ]
+    }
+   }
+  },
+  "TheHiveHiveSG23DB8020": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "SG for TheHive Fargate service",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": {
+       "Fn::ImportValue": "SentinelNet-Network:ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396"
+      },
+      "Description": "Allow VPC access",
+      "FromPort": 9000,
+      "IpProtocol": "tcp",
+      "ToPort": 9000
+     }
+    ],
+    "VpcId": {
+     "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A"
+    }
+   }
+  },
+  "TheHiveHiveSGfromSentinelNetBackendTheHiveHiveLBSGF107C23E90006D37E567": {
+   "Type": "AWS::EC2::SecurityGroupIngress",
+   "Properties": {
+    "Description": "from SentinelNetBackendTheHiveHiveLBSGF107C23E:9000",
+    "FromPort": 9000,
+    "GroupId": {
+     "Fn::GetAtt": [
+      "TheHiveHiveSG23DB8020",
+      "GroupId"
+     ]
+    },
+    "IpProtocol": "tcp",
+    "SourceSecurityGroupId": {
+     "Fn::GetAtt": [
+      "TheHiveHiveLBSG21A4B965",
+      "GroupId"
+     ]
+    },
+    "ToPort": 9000
+   }
+  },
+  "TheHiveHiveServiceA52E732E": {
+   "Type": "AWS::ECS::Service",
+   "Properties": {
+    "Cluster": {
+     "Ref": "TheHiveHiveCluster7F7AD871"
+    },
+    "DeploymentConfiguration": {
+     "Alarms": {
+      "AlarmNames": [],
+      "Enable": false,
+      "Rollback": false
+     },
+     "MaximumPercent": 200,
+     "MinimumHealthyPercent": 50
+    },
+    "EnableECSManagedTags": false,
+    "HealthCheckGracePeriodSeconds": 60,
+    "LaunchType": "FARGATE",
+    "LoadBalancers": [
+     {
+      "ContainerName": "TheHiveContainer",
+      "ContainerPort": 9000,
+      "TargetGroupArn": {
+       "Ref": "TheHiveHiveLBHiveListenerHiveTargetGroupB53CFB4E"
+      }
+     }
+    ],
+    "NetworkConfiguration": {
+     "AwsvpcConfiguration": {
+      "AssignPublicIp": "DISABLED",
+      "SecurityGroups": [
+       {
+        "Fn::GetAtt": [
+         "TheHiveHiveSG23DB8020",
+         "GroupId"
+        ]
+       }
+      ],
+      "Subnets": [
+       {
+        "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefPrivateSubnet1Subnet51DDBC2FF0743ECA"
+       },
+       {
+        "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefPrivateSubnet2Subnet2ABB2F40C8B2A342"
+       }
+      ]
+     }
+    },
+    "TaskDefinition": {
+     "Ref": "TheHiveHiveTaskDefBE66CDA4"
+    }
+   },
+   "DependsOn": [
+    "TheHiveHiveLBHiveListenerHiveTargetGroupB53CFB4E",
+    "TheHiveHiveLBHiveListener498FBEE1",
+    "TheHiveHiveTaskDefTaskRoleDefaultPolicy345AB0F2",
+    "TheHiveHiveTaskDefTaskRole30157087"
+   ]
+  },
+  "TheHiveHiveLBSG21A4B965": {
+   "Type": "AWS::EC2::SecurityGroup",
+   "Properties": {
+    "GroupDescription": "SentinelNet-Backend/TheHive/HiveLBSG",
+    "SecurityGroupEgress": [
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow all outbound traffic by default",
+      "IpProtocol": "-1"
+     }
+    ],
+    "SecurityGroupIngress": [
+     {
+      "CidrIp": {
+       "Fn::ImportValue": "SentinelNet-Network:ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396"
+      },
+      "Description": {
+       "Fn::Join": [
+        "",
+        [
+         "from ",
+         {
+          "Fn::ImportValue": "SentinelNet-Network:ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396"
+         },
+         ":80"
+        ]
+       ]
+      },
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     },
+     {
+      "CidrIp": "0.0.0.0/0",
+      "Description": "Allow from anyone on port 80",
+      "FromPort": 80,
+      "IpProtocol": "tcp",
+      "ToPort": 80
+     }
+    ],
+    "VpcId": {
+     "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A"
+    }
+   }
+  },
+  "TheHiveHiveLB649B5DEA": {
+   "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+   "Properties": {
+    "LoadBalancerAttributes": [
+     {
+      "Key": "deletion_protection.enabled",
+      "Value": "false"
+     }
+    ],
+    "Scheme": "internal",
+    "SecurityGroups": [
+     {
+      "Fn::GetAtt": [
+       "TheHiveHiveLBSG21A4B965",
+       "GroupId"
+      ]
+     }
+    ],
+    "Subnets": [
+     {
+      "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefPrivateSubnet1Subnet51DDBC2FF0743ECA"
+     },
+     {
+      "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefPrivateSubnet2Subnet2ABB2F40C8B2A342"
+     }
+    ],
+    "Type": "application"
+   }
+  },
+  "TheHiveHiveLBHiveListener498FBEE1": {
+   "Type": "AWS::ElasticLoadBalancingV2::Listener",
+   "Properties": {
+    "DefaultActions": [
+     {
+      "TargetGroupArn": {
+       "Ref": "TheHiveHiveLBHiveListenerHiveTargetGroupB53CFB4E"
+      },
+      "Type": "forward"
+     }
+    ],
+    "LoadBalancerArn": {
+     "Ref": "TheHiveHiveLB649B5DEA"
+    },
+    "Port": 80,
+    "Protocol": "HTTP"
+   }
+  },
+  "TheHiveHiveLBHiveListenerHiveTargetGroupB53CFB4E": {
+   "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+   "Properties": {
+    "HealthCheckIntervalSeconds": 30,
+    "HealthCheckPath": "/api/v1/about",
+    "Port": 9000,
+    "Protocol": "HTTP",
+    "TargetGroupAttributes": [
+     {
+      "Key": "stickiness.enabled",
+      "Value": "false"
+     }
+    ],
+    "TargetType": "ip",
+    "VpcId": {
+     "Fn::ImportValue": "SentinelNet-Network:ExportsOutputRefVpc8378EB38272D6E3A"
+    }
+   }
+  },
+  "AppRegistryAssociation": {
+   "Type": "AWS::ServiceCatalogAppRegistry::ResourceAssociation",
+   "Properties": {
+    "Application": "SentinelNet",
+    "Resource": "SentinelNet-Backend",
+    "ResourceType": "CFN_STACK"
+   }
+  }
+ },
+ "Parameters": {
+  "SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amikernel510hvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter": {
+   "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+   "Default": "/aws/service/ami-amazon-linux-latest/amzn2-ami-kernel-5.10-hvm-x86_64-gp2"
+  },
+  "BootstrapVersion": {
+   "Type": "AWS::SSM::Parameter::Value<String>",
+   "Default": "/cdk-bootstrap/hnb659fds/version",
+   "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]"
+  }
+ },
+ "Outputs": {
+  "GrafanaEndpoint": {
+   "Description": "Grafana ALB endpoint (private)",
+   "Value": {
+    "Fn::GetAtt": [
+     "GrafanaGrafanaLB702A541A",
+     "DNSName"
+    ]
+   }
+  },
+  "WazuhManagerPrivateIp": {
+   "Description": "Wazuh Manager private IP",
+   "Value": {
+    "Fn::GetAtt": [
+     "WazuhWazuhManagerInstance15E3DA91",
+     "PrivateIp"
+    ]
+   }
+  },
+  "HiveEndpoint": {
+   "Description": "TheHive ALB endpoint (private)",
+   "Value": {
+    "Fn::GetAtt": [
+     "TheHiveHiveLB649B5DEA",
+     "DNSName"
+    ]
+   }
+  },
+  "TelemetryTableName": {
+   "Description": "DynamoDB table name for normalized Wazuh alerts",
+   "Value": {
+    "Ref": "TelemetryTelemetryTable703058D1"
+   }
+  },
+  "WazuhAlertsQueueUrl": {
+   "Description": "SQS queue URL for Wazuh alert ingestion",
+   "Value": {
+    "Ref": "WazuhWazuhAlertsQueue433D840D"
+   }
+  },
+  "WazuhAlertsQueueArn": {
+   "Description": "SQS queue ARN for Wazuh alert ingestion",
+   "Value": {
+    "Fn::GetAtt": [
+     "WazuhWazuhAlertsQueue433D840D",
+     "Arn"
+    ]
+   }
+  },
+  "WazuhAlertsDlqUrl": {
+   "Description": "SQS dead-letter queue URL for Wazuh alert ingestion",
+   "Value": {
+    "Ref": "WazuhWazuhAlertsDLQ8AAA9052"
+   }
+  },
+  "WazuhIngestLambdaName": {
+   "Description": "Lambda function name for Wazuh alert ingestion",
+   "Value": {
+    "Ref": "WazuhWazuhIngestFunction87C9D109"
+   }
+  },
+  "RdsMySqlEndpoint": {
+   "Value": {
+    "Fn::GetAtt": [
+     "RdsRdsInstance295A7CFA",
+     "Endpoint.Address"
+    ]
+   },
+   "Export": {
+    "Name": "SentinelNetRdsMySqlEndpoint"
+   }
+  },
+  "RdsMySqlPort": {
+   "Value": {
+    "Fn::GetAtt": [
+     "RdsRdsInstance295A7CFA",
+     "Endpoint.Port"
+    ]
+   },
+   "Export": {
+    "Name": "SentinelNetRdsMySqlPort"
+   }
+  },
+  "RdsMySqlSecretArn": {
+   "Value": {
+    "Ref": "RdsRdsInstanceSecretAttachment867426A6"
+   },
+   "Export": {
+    "Name": "SentinelNetRdsMySqlSecretArn"
+   }
+  }
+ },
+ "Rules": {
+  "CheckBootstrapVersion": {
+   "Assertions": [
+    {
+     "Assert": {
+      "Fn::Not": [
+       {
+        "Fn::Contains": [
+         [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+         ],
+         {
+          "Ref": "BootstrapVersion"
+         }
+        ]
+       }
+      ]
+     },
+     "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI."
+    }
+   ]
+  }
+ }
+}

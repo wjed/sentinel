@@ -18,6 +18,10 @@ SECONDS_PER_DAY = 24 * 60 * 60
 DYNAMODB = boto3.client("dynamodb") if boto3 else None
 
 
+class AlertValidationError(ValueError):
+    pass
+
+
 def handler(event: dict[str, Any], context: Any) -> dict[str, list[dict[str, str]]]:
     records = event.get("Records", [])
     prepared_items: list[tuple[str, dict[str, dict[str, str]]]] = []
@@ -31,13 +35,13 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, list[dict[str, str
             payload = json.loads(body)
             if not isinstance(payload, dict):
                 raise ValueError("SQS message body must be a JSON object")
+            normalized = normalize_event(payload=payload, raw_body=body)
         except Exception as err:  # noqa: BLE001 - keep record-level failure handling explicit
-            print(f"Failed to parse SQS message {message_id}: {err}")
+            print(f"Failed to process SQS message {message_id}: {err}")
             if message_id:
                 failed_message_ids.append(message_id)
             continue
 
-        normalized = normalize_event(payload=payload, raw_body=body)
         print(
             f"Prepared Wazuh alert id={normalized['id']} "
             f"timestamp={normalized['timestamp']} severity={normalized['severity']}"
@@ -56,13 +60,17 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, list[dict[str, str
 
 
 def normalize_event(payload: dict[str, Any], raw_body: str) -> dict[str, Any]:
-    agent = payload.get("agent") if isinstance(payload.get("agent"), dict) else {}
-
-    event_id = agent.get("id") or agent.get("name") or "unknown"
+    agent = require_object(payload, "agent")
+    event_id = first_non_empty(agent.get("id"), agent.get("name"))
+    if event_id is None:
+        raise AlertValidationError("alert must include agent.id or agent.name")
     event_timestamp = resolve_timestamp(payload)
 
-    rule = payload.get("rule") if isinstance(payload.get("rule"), dict) else {}
-    severity = coerce_int(rule.get("level"), default=0)
+    rule = require_object(payload, "rule")
+    severity_value = rule.get("level")
+    severity = coerce_int(severity_value, default=None)
+    if severity is None:
+        raise AlertValidationError("alert must include a numeric rule.level")
 
     expires_at = int(time.time()) + (RETENTION_DAYS * SECONDS_PER_DAY)
 
@@ -78,6 +86,7 @@ def normalize_event(payload: dict[str, Any], raw_body: str) -> dict[str, Any]:
 
 def to_dynamodb_item(normalized: dict[str, Any]) -> dict[str, dict[str, str]]:
     return {
+        "agentId": {"S": normalized["id"]},
         "id": {"S": normalized["id"]},
         "timestamp": {"S": normalized["timestamp"]},
         "severity": {"N": str(normalized["severity"])},
@@ -139,7 +148,9 @@ def resolve_timestamp(payload: dict[str, Any]) -> str:
         )
         return dt.isoformat().replace("+00:00", "Z")
 
-    return utc_now_iso()
+    raise AlertValidationError(
+        "alert must include a valid timestamp or @timestamp value"
+    )
 
 
 def parse_iso_timestamp(value: str) -> str | None:
@@ -163,14 +174,27 @@ def parse_iso_timestamp(value: str) -> str | None:
     return parsed.replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
-def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-
-
-def coerce_int(value: Any, default: int) -> int:
+def coerce_int(value: Any, default: int | None) -> int | None:
     if isinstance(value, bool):
         return int(value)
     try:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def require_object(payload: dict[str, Any], key: str) -> dict[str, Any]:
+    value = payload.get(key)
+    if isinstance(value, dict):
+        return value
+    raise AlertValidationError(f"alert must include an object '{key}' field")
+
+
+def first_non_empty(*values: Any) -> Any:
+    for value in values:
+        if value is None:
+            continue
+        text = str(value).strip()
+        if text:
+            return text
+    return None

@@ -55,6 +55,7 @@ class WazuhIngestHandlerTests(unittest.TestCase):
         self.assertEqual(len(request_items), 1)
 
         written_item = request_items[0]["PutRequest"]["Item"]
+        self.assertEqual(written_item["agentId"]["S"], "001")
         self.assertEqual(written_item["id"]["S"], "001")
         self.assertEqual(written_item["timestamp"]["S"], "2026-03-02T18:30:00Z")
         self.assertEqual(written_item["severity"]["N"], "10")
@@ -62,6 +63,28 @@ class WazuhIngestHandlerTests(unittest.TestCase):
         self.assertEqual(written_item["raw"]["S"], valid_body)
         expected_ttl = 1_700_000_000 + (30 * 24 * 60 * 60)
         self.assertEqual(written_item["expiresAt"]["N"], str(expected_ttl))
+
+    def test_structurally_invalid_alert_returns_record_failure(self) -> None:
+        fake_ddb = FakeDynamoDbClient()
+        invalid_body = json.dumps(
+            {
+                "timestamp": "2026-03-02T18:30:00Z",
+                "agent": {"id": "001"},
+                "rule": {"description": "missing level"},
+            }
+        )
+        sqs_event = {"Records": [{"messageId": "msg-schema", "body": invalid_body}]}
+
+        with patch.object(ingest_handler, "DYNAMODB", fake_ddb), patch.object(
+            ingest_handler, "TABLE_NAME", "telemetry-test"
+        ):
+            response = ingest_handler.handler(sqs_event, None)
+
+        self.assertEqual(
+            response,
+            {"batchItemFailures": [{"itemIdentifier": "msg-schema"}]},
+        )
+        self.assertEqual(fake_ddb.calls, [])
 
     def test_invalid_json_returns_record_failure(self) -> None:
         fake_ddb = FakeDynamoDbClient()
@@ -77,6 +100,20 @@ class WazuhIngestHandlerTests(unittest.TestCase):
             {"batchItemFailures": [{"itemIdentifier": "msg-bad"}]},
         )
         self.assertEqual(fake_ddb.calls, [])
+
+    def test_epoch_timestamp_is_normalized_to_utc_iso(self) -> None:
+        normalized = ingest_handler.normalize_event(
+            payload={
+                "timestamp": 1_709_311_800,
+                "agent": {"name": "endpoint-002"},
+                "rule": {"level": "7"},
+            },
+            raw_body="{}",
+        )
+
+        self.assertEqual(normalized["id"], "endpoint-002")
+        self.assertEqual(normalized["timestamp"], "2024-03-01T16:50:00Z")
+        self.assertEqual(normalized["severity"], 7)
 
 
 if __name__ == "__main__":

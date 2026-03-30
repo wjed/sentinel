@@ -33,6 +33,11 @@ from aws_cdk import aws_sqs as sqs
 from constructs import Construct
 
 
+def render_file_command(destination: str, contents: str) -> str:
+    normalized_contents = contents.replace("\r\n", "\n").rstrip("\n")
+    return f"cat <<'EOF' > {destination}\n{normalized_contents}\nEOF"
+
+
 class WazuhConstruct(Construct):
     def __init__(
         self,
@@ -45,6 +50,8 @@ class WazuhConstruct(Construct):
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        repo_root = path.abspath(path.join(path.dirname(__file__), "..", "..", ".."))
+        wazuh_forwarder_dir = path.join(repo_root, "backend", "wazuh_forwarder")
 
         self.alert_dlq = sqs.Queue(
             self,
@@ -137,6 +144,16 @@ class WazuhConstruct(Construct):
             ec2.Port.tcp(1515),
             "Wazuh registration TCP from VPC",
         )
+        wazuh_sg.add_egress_rule(
+            ec2.Peer.any_ipv4(),
+            ec2.Port.tcp(80),
+            "HTTP egress for package repositories",
+        )
+        wazuh_sg.add_egress_rule(
+            ec2.Peer.any_ipv4(),
+            ec2.Port.tcp(443),
+            "HTTPS egress for SSM, SQS, and package repositories",
+        )
 
         wazuh_role = iam.Role(
             self,
@@ -150,15 +167,54 @@ class WazuhConstruct(Construct):
         )
         wazuh_role.add_to_policy(
             iam.PolicyStatement(
-                actions=["sqs:SendMessage"],
+                actions=["sqs:SendMessage", "sqs:SendMessageBatch"],
                 resources=[self.alert_queue.queue_arn],
             )
+        )
+
+        with open(
+            path.join(wazuh_forwarder_dir, "wazuh_to_sqs.py"),
+            encoding="utf-8",
+        ) as forwarder_file:
+            forwarder_script = forwarder_file.read()
+
+        with open(
+            path.join(wazuh_forwarder_dir, "sentinel-wazuh-forwarder.service"),
+            encoding="utf-8",
+        ) as service_file:
+            forwarder_service = service_file.read()
+
+        forwarder_env = "\n".join(
+            [
+                f"WAZUH_ALERT_QUEUE_URL={self.alert_queue.queue_url}",
+                "WAZUH_ALERTS_FILE=/var/ossec/logs/alerts/alerts.json",
+                "WAZUH_STATE_FILE=/var/lib/sentinel/wazuh-forwarder-state.json",
+                "WAZUH_BATCH_SIZE=10",
+                "WAZUH_POLL_INTERVAL_SECONDS=2.0",
+            ]
         )
 
         user_data = ec2.UserData.for_linux()
         user_data.add_commands(
             "yum update -y",
-            "yum install -y curl",
+            "yum install -y curl python3 python3-pip",
+            "python3 -c \"import boto3\" || python3 -m pip install boto3",
+            "mkdir -p /opt/sentinel /etc/sentinel /var/lib/sentinel",
+            render_file_command("/opt/sentinel/wazuh_to_sqs.py", forwarder_script),
+            "chmod 0755 /opt/sentinel/wazuh_to_sqs.py",
+            render_file_command("/etc/sentinel/wazuh-forwarder.env", forwarder_env),
+            "chmod 0644 /etc/sentinel/wazuh-forwarder.env",
+            render_file_command(
+                "/etc/systemd/system/sentinel-wazuh-forwarder.service",
+                forwarder_service,
+            ),
+            "chmod 0644 /etc/systemd/system/sentinel-wazuh-forwarder.service",
+            "systemctl daemon-reload",
+            "systemctl enable sentinel-wazuh-forwarder.service",
+            (
+                "systemctl restart sentinel-wazuh-forwarder.service "
+                "|| systemctl start sentinel-wazuh-forwarder.service"
+            ),
             "# TODO: add Wazuh repository and install steps for the chosen OS",
             "# Example (RHEL/CentOS/AmazonLinux compatible):",
             "# curl -sO https://packages.wazuh.com/4.x/yum/wazuh-repo-4.x.rpm || true",
