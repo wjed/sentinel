@@ -1,0 +1,34 @@
+{
+  "version": "50.0.0",
+  "files": {
+    "573e84311b6ca684ec8f0e4f78befb82fdffab2a6855898bb1eebebc6ff734c3": {
+      "displayName": "Wazuh/WazuhIngestFunction/Code",
+      "source": {
+        "path": "asset.573e84311b6ca684ec8f0e4f78befb82fdffab2a6855898bb1eebebc6ff734c3",
+        "packaging": "zip"
+      },
+      "destinations": {
+        "current_account-current_region-36b480f1": {
+          "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
+          "objectKey": "573e84311b6ca684ec8f0e4f78befb82fdffab2a6855898bb1eebebc6ff734c3.zip",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
+        }
+      }
+    },
+    "004c14ebaa61a1673e957cdf2673419c651f8162db5c8e8dabd2552c28e95a36": {
+      "displayName": "SentinelNet-Backend Template",
+      "source": {
+        "path": "SentinelNet-Backend.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "current_account-current_region-dabd9a33": {
+          "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
+          "objectKey": "004c14ebaa61a1673e957cdf2673419c651f8162db5c8e8dabd2552c28e95a36.json",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

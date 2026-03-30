@@ -47,14 +47,14 @@ appregistry_stack = cdk.Stack(app, "SentinelNet-AppRegistry", env=env)
 sentinel_cfn_app = appregistry.CfnApplication(
     appregistry_stack,
     "SentinelNetApplication",
-    name="SentinelNet-App",
+    name="SentinelNet",
     description="SentinelNet Security Platform - network monitoring and SIEM",
 )
 
 # Associate each member stack with the application.
 # CfnResourceAssociation is placed inside each member stack and references
 # the AppRegistry application by its name (plain string — no circular dep).
-_application_name = "SentinelNet-App"
+_application_name = "SentinelNet"
 for _stack in [network_stack, user_data_stack, website_stack, backend_stack]:
     _stack.add_dependency(appregistry_stack)
     appregistry.CfnResourceAssociation(

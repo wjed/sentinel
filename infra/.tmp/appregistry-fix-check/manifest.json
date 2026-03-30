@@ -1,0 +1,1804 @@
+{
+  "version": "50.0.0",
+  "artifacts": {
+    "SentinelNet-UserData.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "SentinelNet-UserData.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "SentinelNet-UserData": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://unknown-account/unknown-region",
+      "properties": {
+        "templateFile": "SentinelNet-UserData.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/ec04a6d951a73040cf224b934b96726cb0358bae0588cfc1b95f2c604897e4f1.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "SentinelNet-UserData.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "SentinelNet-AppRegistry",
+        "SentinelNet-UserData.assets"
+      ],
+      "metadata": {
+        "/SentinelNet-UserData/UserProfilesTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UserProfilesTableF49D814C"
+          }
+        ],
+        "/SentinelNet-UserData/ProfilePicturesBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfilePicturesBucket40EEC510"
+          }
+        ],
+        "/SentinelNet-UserData/ProfilePicturesBucket/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfilePicturesBucketPolicy20FA6EA3"
+          }
+        ],
+        "/SentinelNet-UserData/ProfilePicturesBucket/AutoDeleteObjectsCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfilePicturesBucketAutoDeleteObjectsCustomResourceB3D0FA4B"
+          }
+        ],
+        "/SentinelNet-UserData/Custom::S3AutoDeleteObjectsCustomResourceProvider": [
+          {
+            "type": "aws:cdk:is-custom-resource-handler-customResourceProvider",
+            "data": true
+          }
+        ],
+        "/SentinelNet-UserData/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+          }
+        ],
+        "/SentinelNet-UserData/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F"
+          }
+        ],
+        "/SentinelNet-UserData/ProfilesTableName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfilesTableName"
+          }
+        ],
+        "/SentinelNet-UserData/ProfilesTableArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfilesTableArn"
+          }
+        ],
+        "/SentinelNet-UserData/ProfilePicturesBucketName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfilePicturesBucketName"
+          }
+        ],
+        "/SentinelNet-UserData/AppRegistryAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AppRegistryAssociation"
+          }
+        ],
+        "/SentinelNet-UserData/Exports/Output{\"Fn::GetAtt\":[\"UserProfilesTableF49D814C\",\"Arn\"]}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputFnGetAttUserProfilesTableF49D814CArn7153F076"
+          }
+        ],
+        "/SentinelNet-UserData/Exports/Output{\"Ref\":\"UserProfilesTableF49D814C\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefUserProfilesTableF49D814CFDAAD262"
+          }
+        ],
+        "/SentinelNet-UserData/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/SentinelNet-UserData/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "SentinelNet-UserData"
+    },
+    "SentinelNet-Website.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "SentinelNet-Website.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "SentinelNet-Website": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://unknown-account/unknown-region",
+      "properties": {
+        "templateFile": "SentinelNet-Website.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/1ecc890b7384bddfc9fb27b7114a02f59e7b45782ac8bc8deaae4378418bd7fb.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "SentinelNet-Website.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "SentinelNet-AppRegistry",
+        "SentinelNet-UserData",
+        "SentinelNet-Website.assets"
+      ],
+      "metadata": {
+        "/SentinelNet-Website/WebsiteBucket/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WebsiteBucket75C24D94"
+          }
+        ],
+        "/SentinelNet-Website/WebsiteBucket/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WebsiteBucketPolicyE10E3262"
+          }
+        ],
+        "/SentinelNet-Website/WebsiteBucket/AutoDeleteObjectsCustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WebsiteBucketAutoDeleteObjectsCustomResource8750E461"
+          }
+        ],
+        "/SentinelNet-Website/Custom::S3AutoDeleteObjectsCustomResourceProvider": [
+          {
+            "type": "aws:cdk:is-custom-resource-handler-customResourceProvider",
+            "data": true
+          }
+        ],
+        "/SentinelNet-Website/Custom::S3AutoDeleteObjectsCustomResourceProvider/Role": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092"
+          }
+        ],
+        "/SentinelNet-Website/Custom::S3AutoDeleteObjectsCustomResourceProvider/Handler": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F"
+          }
+        ],
+        "/SentinelNet-Website/SpaRewrite/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SpaRewrite1C145184"
+          }
+        ],
+        "/SentinelNet-Website/Distribution/Origin1/S3OriginAccessControl/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DistributionOrigin1S3OriginAccessControlEB606076"
+          }
+        ],
+        "/SentinelNet-Website/Distribution/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Distribution830FAC52"
+          }
+        ],
+        "/SentinelNet-Website/UserPool/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UserPool6BA7E5F2"
+          }
+        ],
+        "/SentinelNet-Website/UserPool/Domain/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UserPoolDomainD0EA232A"
+          }
+        ],
+        "/SentinelNet-Website/UserPool/WebClient/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "UserPoolWebClient4C9370B0"
+          }
+        ],
+        "/SentinelNet-Website/ProfileApi/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfileApiServiceRoleB968C161"
+          }
+        ],
+        "/SentinelNet-Website/ProfileApi/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfileApiServiceRoleDefaultPolicy557095B1"
+          }
+        ],
+        "/SentinelNet-Website/ProfileApi/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfileApiABF5D3F3"
+          }
+        ],
+        "/SentinelNet-Website/ProfileHttpApi/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfileHttpApi229300B3"
+          }
+        ],
+        "/SentinelNet-Website/ProfileHttpApi/DefaultStage/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfileHttpApiDefaultStage61A765EB"
+          }
+        ],
+        "/SentinelNet-Website/ProfileHttpApi/GET--profile/ProfileIntegration/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfileHttpApiGETprofileProfileIntegration513F7FB6"
+          }
+        ],
+        "/SentinelNet-Website/ProfileHttpApi/GET--profile/ProfileIntegration-Permission": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfileHttpApiGETprofileProfileIntegrationPermissionA9428C12"
+          }
+        ],
+        "/SentinelNet-Website/ProfileHttpApi/GET--profile/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfileHttpApiGETprofile5550B095"
+          }
+        ],
+        "/SentinelNet-Website/ProfileHttpApi/CognitoAuthorizer/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfileHttpApiCognitoAuthorizer0D9C1705"
+          }
+        ],
+        "/SentinelNet-Website/ProfileHttpApi/PATCH--profile/ProfileIntegration-Permission": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfileHttpApiPATCHprofileProfileIntegrationPermissionB69D1438"
+          }
+        ],
+        "/SentinelNet-Website/ProfileHttpApi/PATCH--profile/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfileHttpApiPATCHprofile0A3B6D05"
+          }
+        ],
+        "/SentinelNet-Website/ProfileApiUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ProfileApiUrl"
+          }
+        ],
+        "/SentinelNet-Website/DeployWebsite/AwsCliLayer/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DeployWebsiteAwsCliLayer17DBC421"
+          }
+        ],
+        "/SentinelNet-Website/DeployWebsite/CustomResource/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DeployWebsiteCustomResourceD116527B"
+          }
+        ],
+        "/SentinelNet-Website/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C": [
+          {
+            "type": "aws:cdk:is-custom-resource-handler-singleton",
+            "data": true
+          },
+          {
+            "type": "aws:cdk:is-custom-resource-handler-runtime-family",
+            "data": 2
+          }
+        ],
+        "/SentinelNet-Website/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRole89A01265"
+          }
+        ],
+        "/SentinelNet-Website/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756CServiceRoleDefaultPolicy88902FDF"
+          }
+        ],
+        "/SentinelNet-Website/Custom::CDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CustomCDKBucketDeployment8693BB64968944B69AAFB0CC9EB8756C81C01536"
+          }
+        ],
+        "/SentinelNet-Website/WebsiteURL": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WebsiteURL"
+          }
+        ],
+        "/SentinelNet-Website/DistributionId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DistributionId"
+          }
+        ],
+        "/SentinelNet-Website/CognitoUserPoolId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CognitoUserPoolId"
+          }
+        ],
+        "/SentinelNet-Website/CognitoClientId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CognitoClientId"
+          }
+        ],
+        "/SentinelNet-Website/AppRegistryAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AppRegistryAssociation"
+          }
+        ],
+        "/SentinelNet-Website/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/SentinelNet-Website/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "SentinelNet-Website"
+    },
+    "SentinelNet-Network.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "SentinelNet-Network.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "SentinelNet-Network": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://unknown-account/unknown-region",
+      "properties": {
+        "templateFile": "SentinelNet-Network.template.json",
+        "terminationProtection": false,
+        "tags": {
+          "SentinelNet": "Network"
+        },
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/c181a8164da5d7def242ff082a4d5f1fec4d6494f9243c4d7c99a76d99fe605c.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "SentinelNet-Network.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "SentinelNet-AppRegistry",
+        "SentinelNet-Network.assets"
+      ],
+      "metadata": {
+        "/SentinelNet-Network": [
+          {
+            "type": "aws:cdk:stack-tags",
+            "data": [
+              {
+                "Key": "SentinelNet",
+                "Value": "Network"
+              }
+            ]
+          }
+        ],
+        "/SentinelNet-Network/Vpc/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "Vpc8378EB38"
+          }
+        ],
+        "/SentinelNet-Network/Vpc/DynamoDbEndpoint/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VpcDynamoDbEndpoint564903D1"
+          }
+        ],
+        "/SentinelNet-Network/PublicSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PublicSubnet1Subnet03067927"
+          }
+        ],
+        "/SentinelNet-Network/PublicSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PublicSubnet1RouteTable57E60591"
+          }
+        ],
+        "/SentinelNet-Network/PublicSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PublicSubnet1RouteTableAssociation0E73B917"
+          }
+        ],
+        "/SentinelNet-Network/PrivateSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PrivateSubnet1Subnet51DDBC2F"
+          }
+        ],
+        "/SentinelNet-Network/PrivateSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PrivateSubnet1RouteTable902C0229"
+          }
+        ],
+        "/SentinelNet-Network/PrivateSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PrivateSubnet1RouteTableAssociationE8D35FCB"
+          }
+        ],
+        "/SentinelNet-Network/PublicSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PublicSubnet2Subnet78B4B4BD"
+          }
+        ],
+        "/SentinelNet-Network/PublicSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PublicSubnet2RouteTable1853D61A"
+          }
+        ],
+        "/SentinelNet-Network/PublicSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PublicSubnet2RouteTableAssociation1339F17B"
+          }
+        ],
+        "/SentinelNet-Network/PrivateSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PrivateSubnet2Subnet2ABB2F40"
+          }
+        ],
+        "/SentinelNet-Network/PrivateSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PrivateSubnet2RouteTableEA49866C"
+          }
+        ],
+        "/SentinelNet-Network/PrivateSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PrivateSubnet2RouteTableAssociation239A73D7"
+          }
+        ],
+        "/SentinelNet-Network/InternalSubnet1/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "InternalSubnet1SubnetDC6EA234"
+          }
+        ],
+        "/SentinelNet-Network/InternalSubnet1/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "InternalSubnet1RouteTableB61856C9"
+          }
+        ],
+        "/SentinelNet-Network/InternalSubnet1/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "InternalSubnet1RouteTableAssociation05D61375"
+          }
+        ],
+        "/SentinelNet-Network/InternalSubnet2/Subnet": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "InternalSubnet2Subnet0EAE4CAF"
+          }
+        ],
+        "/SentinelNet-Network/InternalSubnet2/RouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "InternalSubnet2RouteTableB0D1FF39"
+          }
+        ],
+        "/SentinelNet-Network/InternalSubnet2/RouteTableAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "InternalSubnet2RouteTableAssociation7CAB1253"
+          }
+        ],
+        "/SentinelNet-Network/InternetGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "InternetGateway"
+          }
+        ],
+        "/SentinelNet-Network/IGWAttachment": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "IGWAttachment"
+          }
+        ],
+        "/SentinelNet-Network/PublicRouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PublicRouteTable"
+          }
+        ],
+        "/SentinelNet-Network/PublicDefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PublicDefaultRoute"
+          }
+        ],
+        "/SentinelNet-Network/PublicRTA1": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PublicRTA1"
+          }
+        ],
+        "/SentinelNet-Network/PublicRTA2": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PublicRTA2"
+          }
+        ],
+        "/SentinelNet-Network/NatEip": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "NatEip"
+          }
+        ],
+        "/SentinelNet-Network/NatGateway": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "NatGateway"
+          }
+        ],
+        "/SentinelNet-Network/PrivateRouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PrivateRouteTable"
+          }
+        ],
+        "/SentinelNet-Network/PrivateDefaultRoute": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PrivateDefaultRoute"
+          }
+        ],
+        "/SentinelNet-Network/PrivateRTA1": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PrivateRTA1"
+          }
+        ],
+        "/SentinelNet-Network/PrivateRTA2": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PrivateRTA2"
+          }
+        ],
+        "/SentinelNet-Network/InternalRouteTable": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "InternalRouteTable"
+          }
+        ],
+        "/SentinelNet-Network/InternalRTA1": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "InternalRTA1"
+          }
+        ],
+        "/SentinelNet-Network/InternalRTA2": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "InternalRTA2"
+          }
+        ],
+        "/SentinelNet-Network/VpcId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "VpcId"
+          }
+        ],
+        "/SentinelNet-Network/PrivateSubnetIds": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PrivateSubnetIds"
+          }
+        ],
+        "/SentinelNet-Network/PublicSubnetIds": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "PublicSubnetIds"
+          }
+        ],
+        "/SentinelNet-Network/DynamoDbEndpointId": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "DynamoDbEndpointId"
+          }
+        ],
+        "/SentinelNet-Network/AppRegistryAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AppRegistryAssociation"
+          }
+        ],
+        "/SentinelNet-Network/Exports/Output{\"Fn::GetAtt\":[\"Vpc8378EB38\",\"CidrBlock\"]}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputFnGetAttVpc8378EB38CidrBlock14DD2396"
+          }
+        ],
+        "/SentinelNet-Network/Exports/Output{\"Ref\":\"Vpc8378EB38\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefVpc8378EB38272D6E3A"
+          }
+        ],
+        "/SentinelNet-Network/Exports/Output{\"Ref\":\"PrivateSubnet1Subnet51DDBC2F\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefPrivateSubnet1Subnet51DDBC2FF0743ECA"
+          }
+        ],
+        "/SentinelNet-Network/Exports/Output{\"Ref\":\"InternalSubnet1SubnetDC6EA234\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefInternalSubnet1SubnetDC6EA2344248007A"
+          }
+        ],
+        "/SentinelNet-Network/Exports/Output{\"Ref\":\"InternalSubnet2Subnet0EAE4CAF\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefInternalSubnet2Subnet0EAE4CAF8C454D4B"
+          }
+        ],
+        "/SentinelNet-Network/Exports/Output{\"Ref\":\"PublicSubnet1Subnet03067927\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefPublicSubnet1Subnet0306792710644A21"
+          }
+        ],
+        "/SentinelNet-Network/Exports/Output{\"Ref\":\"PublicSubnet2Subnet78B4B4BD\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefPublicSubnet2Subnet78B4B4BDD1FA85DA"
+          }
+        ],
+        "/SentinelNet-Network/Exports/Output{\"Ref\":\"PrivateSubnet2Subnet2ABB2F40\"}": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "ExportsOutputRefPrivateSubnet2Subnet2ABB2F40C8B2A342"
+          }
+        ],
+        "/SentinelNet-Network/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/SentinelNet-Network/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "SentinelNet-Network"
+    },
+    "SentinelNet-Backend.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "SentinelNet-Backend.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "SentinelNet-Backend": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://unknown-account/unknown-region",
+      "properties": {
+        "templateFile": "SentinelNet-Backend.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/004c14ebaa61a1673e957cdf2673419c651f8162db5c8e8dabd2552c28e95a36.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "SentinelNet-Backend.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "SentinelNet-AppRegistry",
+        "SentinelNet-Network",
+        "SentinelNet-Backend.assets"
+      ],
+      "metadata": {
+        "/SentinelNet-Backend/PrivateSubnetRef1": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "No routeTableId was provided to the subnet at 'SentinelNet-Backend/PrivateSubnetRef1'. Attempting to read its .routeTable.routeTableId will return null/undefined. (More info: https://github.com/aws/aws-cdk/pull/3171) [ack: @aws-cdk/aws-ec2:noSubnetRouteTableId]",
+            "trace": [
+              "Annotations.addMessage (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:2066)",
+              "Annotations.addWarningV2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:984)",
+              "new ImportedSubnet2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\vpc.js:1:48290)",
+              "new ImportedSubnet2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\prop-injectable.js:1:681)",
+              "Subnet2.fromSubnetAttributes (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\vpc.js:1:30535)",
+              "C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:316:151",
+              "Kernel._Kernel_ensureSync (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:918:24)",
+              "Kernel.sinvoke (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:316:102)",
+              "KernelHost.processRequest (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15484:36)",
+              "KernelHost.run (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15444:22)",
+              "Immediate._onImmediate (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15445:45)",
+              "process.processImmediate (node:internal/timers:504:21)"
+            ]
+          }
+        ],
+        "/SentinelNet-Backend/PrivateSubnetRef2": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "No routeTableId was provided to the subnet at 'SentinelNet-Backend/PrivateSubnetRef2'. Attempting to read its .routeTable.routeTableId will return null/undefined. (More info: https://github.com/aws/aws-cdk/pull/3171) [ack: @aws-cdk/aws-ec2:noSubnetRouteTableId]",
+            "trace": [
+              "Annotations.addMessage (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:2066)",
+              "Annotations.addWarningV2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:984)",
+              "new ImportedSubnet2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\vpc.js:1:48290)",
+              "new ImportedSubnet2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\prop-injectable.js:1:681)",
+              "Subnet2.fromSubnetAttributes (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\vpc.js:1:30535)",
+              "C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:316:151",
+              "Kernel._Kernel_ensureSync (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:918:24)",
+              "Kernel.sinvoke (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:316:102)",
+              "KernelHost.processRequest (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15484:36)",
+              "KernelHost.run (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15444:22)",
+              "Immediate._onImmediate (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15445:45)",
+              "process.processImmediate (node:internal/timers:504:21)"
+            ]
+          }
+        ],
+        "/SentinelNet-Backend/InternalSubnetRef1": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "No routeTableId was provided to the subnet at 'SentinelNet-Backend/InternalSubnetRef1'. Attempting to read its .routeTable.routeTableId will return null/undefined. (More info: https://github.com/aws/aws-cdk/pull/3171) [ack: @aws-cdk/aws-ec2:noSubnetRouteTableId]",
+            "trace": [
+              "Annotations.addMessage (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:2066)",
+              "Annotations.addWarningV2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:984)",
+              "new ImportedSubnet2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\vpc.js:1:48290)",
+              "new ImportedSubnet2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\prop-injectable.js:1:681)",
+              "Subnet2.fromSubnetAttributes (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\vpc.js:1:30535)",
+              "C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:316:151",
+              "Kernel._Kernel_ensureSync (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:918:24)",
+              "Kernel.sinvoke (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:316:102)",
+              "KernelHost.processRequest (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15484:36)",
+              "KernelHost.run (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15444:22)",
+              "Immediate._onImmediate (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15445:45)",
+              "process.processImmediate (node:internal/timers:504:21)"
+            ]
+          }
+        ],
+        "/SentinelNet-Backend/InternalSubnetRef2": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "No routeTableId was provided to the subnet at 'SentinelNet-Backend/InternalSubnetRef2'. Attempting to read its .routeTable.routeTableId will return null/undefined. (More info: https://github.com/aws/aws-cdk/pull/3171) [ack: @aws-cdk/aws-ec2:noSubnetRouteTableId]",
+            "trace": [
+              "Annotations.addMessage (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:2066)",
+              "Annotations.addWarningV2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:984)",
+              "new ImportedSubnet2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\vpc.js:1:48290)",
+              "new ImportedSubnet2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\prop-injectable.js:1:681)",
+              "Subnet2.fromSubnetAttributes (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\vpc.js:1:30535)",
+              "C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:316:151",
+              "Kernel._Kernel_ensureSync (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:918:24)",
+              "Kernel.sinvoke (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:316:102)",
+              "KernelHost.processRequest (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15484:36)",
+              "KernelHost.run (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15444:22)",
+              "Immediate._onImmediate (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15445:45)",
+              "process.processImmediate (node:internal/timers:504:21)"
+            ]
+          }
+        ],
+        "/SentinelNet-Backend/Telemetry/TelemetryKey/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TelemetryTelemetryKeyB57DE886"
+          }
+        ],
+        "/SentinelNet-Backend/Telemetry/TelemetryTable": [
+          {
+            "type": "aws:cdk:hasPhysicalName",
+            "data": {
+              "Ref": "TelemetryTelemetryTable703058D1"
+            }
+          }
+        ],
+        "/SentinelNet-Backend/Telemetry/TelemetryTable/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TelemetryTelemetryTable703058D1"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhAlertsDLQ/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhAlertsDLQ8AAA9052"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhAlertsDLQ/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhAlertsDLQPolicy8EBC158A"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhAlertsQueue/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhAlertsQueue433D840D"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhAlertsQueue/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhAlertsQueuePolicy0BD82811"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhIngestFunction/ServiceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhIngestFunctionServiceRole8EC943FE"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhIngestFunction/ServiceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhIngestFunctionServiceRoleDefaultPolicy4AED29F7"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhIngestFunction/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhIngestFunction87C9D109"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhIngestFunction/SqsEventSource:SentinelNetBackendWazuhWazuhAlertsQueueBDC8D68C/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhIngestFunctionSqsEventSourceSentinelNetBackendWazuhWazuhAlertsQueueBDC8D68CE0B5BE08"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhManagerSG/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhManagerSG5B212655"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhInstanceRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhInstanceRole3D518A13"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhInstanceRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhInstanceRoleDefaultPolicy262056E2"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhManagerInstance/InstanceProfile": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhManagerInstanceInstanceProfileF4F28375"
+          }
+        ],
+        "/SentinelNet-Backend/Wazuh/WazuhManagerInstance/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhWazuhManagerInstance15E3DA91"
+          }
+        ],
+        "/SentinelNet-Backend/SsmParameterValue:--aws--service--ami-amazon-linux-latest--amzn2-ami-kernel-5.10-hvm-x86_64-gp2:C96584B6-F00A-464E-AD19-53AFF4B05118.Parameter": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SsmParameterValueawsserviceamiamazonlinuxlatestamzn2amikernel510hvmx8664gp2C96584B6F00A464EAD1953AFF4B05118Parameter"
+          }
+        ],
+        "/SentinelNet-Backend/Rds/RdsSG/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RdsRdsSG21C6898B"
+          }
+        ],
+        "/SentinelNet-Backend/Rds/RdsSubnetGroup/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RdsRdsSubnetGroup8EC591B0"
+          }
+        ],
+        "/SentinelNet-Backend/Rds/RdsInstance/Secret/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SentinelNetBackendRdsRdsInstanceSecret774204D53fdaad7efa858a3daf9490cf0a702aeb"
+          }
+        ],
+        "/SentinelNet-Backend/Rds/RdsInstance/Secret/Attachment/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RdsRdsInstanceSecretAttachment867426A6"
+          }
+        ],
+        "/SentinelNet-Backend/Rds/RdsInstance/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RdsRdsInstance295A7CFA"
+          }
+        ],
+        "/SentinelNet-Backend/PublicSubnetRef1": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "No routeTableId was provided to the subnet at 'SentinelNet-Backend/PublicSubnetRef1'. Attempting to read its .routeTable.routeTableId will return null/undefined. (More info: https://github.com/aws/aws-cdk/pull/3171) [ack: @aws-cdk/aws-ec2:noSubnetRouteTableId]",
+            "trace": [
+              "Annotations.addMessage (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:2066)",
+              "Annotations.addWarningV2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:984)",
+              "new ImportedSubnet2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\vpc.js:1:48290)",
+              "new ImportedSubnet2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\prop-injectable.js:1:681)",
+              "Subnet2.fromSubnetAttributes (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\vpc.js:1:30535)",
+              "C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:316:151",
+              "Kernel._Kernel_ensureSync (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:918:24)",
+              "Kernel.sinvoke (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:316:102)",
+              "KernelHost.processRequest (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15484:36)",
+              "KernelHost.run (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15444:22)",
+              "Immediate._onImmediate (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15445:45)",
+              "process.processImmediate (node:internal/timers:504:21)"
+            ]
+          }
+        ],
+        "/SentinelNet-Backend/PublicSubnetRef2": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "No routeTableId was provided to the subnet at 'SentinelNet-Backend/PublicSubnetRef2'. Attempting to read its .routeTable.routeTableId will return null/undefined. (More info: https://github.com/aws/aws-cdk/pull/3171) [ack: @aws-cdk/aws-ec2:noSubnetRouteTableId]",
+            "trace": [
+              "Annotations.addMessage (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:2066)",
+              "Annotations.addWarningV2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:984)",
+              "new ImportedSubnet2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\vpc.js:1:48290)",
+              "new ImportedSubnet2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\prop-injectable.js:1:681)",
+              "Subnet2.fromSubnetAttributes (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\vpc.js:1:30535)",
+              "C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:316:151",
+              "Kernel._Kernel_ensureSync (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:918:24)",
+              "Kernel.sinvoke (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:316:102)",
+              "KernelHost.processRequest (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15484:36)",
+              "KernelHost.run (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15444:22)",
+              "Immediate._onImmediate (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15445:45)",
+              "process.processImmediate (node:internal/timers:504:21)"
+            ]
+          }
+        ],
+        "/SentinelNet-Backend/Grafana/GrafanaCluster/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GrafanaGrafanaCluster470B4B6A"
+          }
+        ],
+        "/SentinelNet-Backend/Grafana/GrafanaTaskDef/TaskRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GrafanaGrafanaTaskDefTaskRole5F452275"
+          }
+        ],
+        "/SentinelNet-Backend/Grafana/GrafanaTaskDef/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GrafanaGrafanaTaskDefF92C0C69"
+          }
+        ],
+        "/SentinelNet-Backend/Grafana/GrafanaService": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "minHealthyPercent has not been configured so the default value of 50% is used. The number of running tasks will decrease below the desired count during deployments etc. See https://github.com/aws/aws-cdk/issues/31705 [ack: @aws-cdk/aws-ecs:minHealthyPercent]",
+            "trace": [
+              "Annotations.addMessage (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:2066)",
+              "Annotations.addWarningV2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:984)",
+              "new BaseService2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ecs\\lib\\base\\base-service.js:1:12364)",
+              "new FargateService2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ecs\\lib\\fargate\\fargate-service.js:1:6371)",
+              "new FargateService2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\prop-injectable.js:1:681)",
+              "Kernel._Kernel_create (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:549:25)",
+              "Kernel.create (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:219:93)",
+              "KernelHost.processRequest (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15484:36)",
+              "KernelHost.run (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15444:22)",
+              "Immediate._onImmediate (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15445:45)",
+              "process.processImmediate (node:internal/timers:504:21)"
+            ]
+          }
+        ],
+        "/SentinelNet-Backend/Grafana/GrafanaService/Service": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GrafanaGrafanaService2E5EB2F8"
+          }
+        ],
+        "/SentinelNet-Backend/Grafana/GrafanaService/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GrafanaGrafanaServiceSecurityGroupFC60B3CC"
+          }
+        ],
+        "/SentinelNet-Backend/Grafana/GrafanaService/SecurityGroup/from SentinelNetBackendGrafanaGrafanaLBSecurityGroupE87F583E:3000": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GrafanaGrafanaServiceSecurityGroupfromSentinelNetBackendGrafanaGrafanaLBSecurityGroupE87F583E3000F9C2AA50"
+          }
+        ],
+        "/SentinelNet-Backend/Grafana/GrafanaLB/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GrafanaGrafanaLB702A541A"
+          }
+        ],
+        "/SentinelNet-Backend/Grafana/GrafanaLB/SecurityGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GrafanaGrafanaLBSecurityGroupEF6B6AC3"
+          }
+        ],
+        "/SentinelNet-Backend/Grafana/GrafanaLB/SecurityGroup/to SentinelNetBackendGrafanaGrafanaServiceSecurityGroup8FB48EF0:3000": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GrafanaGrafanaLBSecurityGrouptoSentinelNetBackendGrafanaGrafanaServiceSecurityGroup8FB48EF03000A4A29A97"
+          }
+        ],
+        "/SentinelNet-Backend/Grafana/GrafanaLB/GrafanaListener/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GrafanaGrafanaLBGrafanaListenerBE2A7225"
+          }
+        ],
+        "/SentinelNet-Backend/Grafana/GrafanaLB/GrafanaListener/GrafanaTargetGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GrafanaGrafanaLBGrafanaListenerGrafanaTargetGroup0D0354B0"
+          }
+        ],
+        "/SentinelNet-Backend/GrafanaEndpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "GrafanaEndpoint"
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveCluster/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TheHiveHiveCluster7F7AD871"
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveTaskDef/TaskRole/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TheHiveHiveTaskDefTaskRole30157087"
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveTaskDef/TaskRole/DefaultPolicy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TheHiveHiveTaskDefTaskRoleDefaultPolicy345AB0F2"
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveTaskDef/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TheHiveHiveTaskDefBE66CDA4"
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveSG/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TheHiveHiveSG23DB8020"
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveSG/from SentinelNetBackendTheHiveHiveLBSGF107C23E:9000": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TheHiveHiveSGfromSentinelNetBackendTheHiveHiveLBSGF107C23E90006D37E567"
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveService": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "minHealthyPercent has not been configured so the default value of 50% is used. The number of running tasks will decrease below the desired count during deployments etc. See https://github.com/aws/aws-cdk/issues/31705 [ack: @aws-cdk/aws-ecs:minHealthyPercent]",
+            "trace": [
+              "Annotations.addMessage (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:2066)",
+              "Annotations.addWarningV2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:984)",
+              "new BaseService2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ecs\\lib\\base\\base-service.js:1:12364)",
+              "new FargateService2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ecs\\lib\\fargate\\fargate-service.js:1:6371)",
+              "new FargateService2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\prop-injectable.js:1:681)",
+              "Kernel._Kernel_create (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:549:25)",
+              "Kernel.create (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:219:93)",
+              "KernelHost.processRequest (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15484:36)",
+              "KernelHost.run (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15444:22)",
+              "Immediate._onImmediate (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15445:45)",
+              "process.processImmediate (node:internal/timers:504:21)"
+            ]
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveService/Service": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TheHiveHiveServiceA52E732E"
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveLBSG": [
+          {
+            "type": "aws:cdk:warning",
+            "data": "Ignoring Egress rule since 'allowAllOutbound' is set to true; To add customized rules, set allowAllOutbound=false on the SecurityGroup [ack: @aws-cdk/aws-ec2:ipv4IgnoreEgressRule]",
+            "trace": [
+              "Annotations.addMessage (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:2066)",
+              "Annotations.addWarningV2 (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\annotations.js:1:984)",
+              "WrappedClass.addEgressRule (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\security-group.js:1:11164)",
+              "WrappedClass.<anonymous> (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\core\\lib\\metadata-resource.js:1:2015)",
+              "C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\connections.js:1:2011",
+              "ReactiveList.forEachAndForever (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\connections.js:1:6094)",
+              "C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\connections.js:1:1972",
+              "ReactiveList.forEachAndForever (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\connections.js:1:6094)",
+              "Connections.allowTo (C:\\Users\\marti\\AppData\\Local\\Temp\\jsii-kernel-XFzDw0\\node_modules\\aws-cdk-lib\\aws-ec2\\lib\\connections.js:1:1900)",
+              "C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:295:171",
+              "Kernel._Kernel_ensureSync (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:918:24)",
+              "Kernel.invoke (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:295:102)",
+              "KernelHost.processRequest (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15484:36)",
+              "KernelHost.run (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15444:22)",
+              "Immediate._onImmediate (C:\\Users\\marti\\AppData\\Local\\Temp\\tmp33pkg2xt\\lib\\program.js:15445:45)",
+              "process.processImmediate (node:internal/timers:504:21)"
+            ]
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveLBSG/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TheHiveHiveLBSG21A4B965"
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveLB/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TheHiveHiveLB649B5DEA"
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveLB/HiveListener/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TheHiveHiveLBHiveListener498FBEE1"
+          }
+        ],
+        "/SentinelNet-Backend/TheHive/HiveLB/HiveListener/HiveTargetGroup/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TheHiveHiveLBHiveListenerHiveTargetGroupB53CFB4E"
+          }
+        ],
+        "/SentinelNet-Backend/WazuhManagerPrivateIp": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhManagerPrivateIp"
+          }
+        ],
+        "/SentinelNet-Backend/HiveEndpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "HiveEndpoint"
+          }
+        ],
+        "/SentinelNet-Backend/TelemetryTableName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "TelemetryTableName"
+          }
+        ],
+        "/SentinelNet-Backend/WazuhAlertsQueueUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhAlertsQueueUrl"
+          }
+        ],
+        "/SentinelNet-Backend/WazuhAlertsQueueArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhAlertsQueueArn"
+          }
+        ],
+        "/SentinelNet-Backend/WazuhAlertsDlqUrl": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhAlertsDlqUrl"
+          }
+        ],
+        "/SentinelNet-Backend/WazuhIngestLambdaName": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "WazuhIngestLambdaName"
+          }
+        ],
+        "/SentinelNet-Backend/RdsMySqlEndpoint": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RdsMySqlEndpoint"
+          }
+        ],
+        "/SentinelNet-Backend/RdsMySqlPort": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RdsMySqlPort"
+          }
+        ],
+        "/SentinelNet-Backend/RdsMySqlSecretArn": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "RdsMySqlSecretArn"
+          }
+        ],
+        "/SentinelNet-Backend/AppRegistryAssociation": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AppRegistryAssociation"
+          }
+        ],
+        "/SentinelNet-Backend/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/SentinelNet-Backend/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "SentinelNet-Backend"
+    },
+    "SentinelNet-AppRegistry.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "SentinelNet-AppRegistry.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "SentinelNet-AppRegistry": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://unknown-account/unknown-region",
+      "properties": {
+        "templateFile": "SentinelNet-AppRegistry.template.json",
+        "terminationProtection": false,
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/4701d21891a50d628821ac8231f64e23b74fe575fc9e5f11d1893ad36c7e706c.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "SentinelNet-AppRegistry.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "SentinelNet-AppRegistry.assets"
+      ],
+      "metadata": {
+        "/SentinelNet-AppRegistry/SentinelNetApplication": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "SentinelNetApplication"
+          }
+        ],
+        "/SentinelNet-AppRegistry/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/SentinelNet-AppRegistry/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "SentinelNet-AppRegistry"
+    },
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    },
+    "aws-cdk-lib/feature-flag-report": {
+      "type": "cdk:feature-flag-report",
+      "properties": {
+        "module": "aws-cdk-lib",
+        "flags": {
+          "@aws-cdk/aws-signer:signingProfileNamePassedToCfn": {
+            "recommendedValue": true,
+            "explanation": "Pass signingProfileName to CfnSigningProfile"
+          },
+          "@aws-cdk/core:newStyleStackSynthesis": {
+            "recommendedValue": true,
+            "explanation": "Switch to new stack synthesis method which enables CI/CD",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          },
+          "@aws-cdk/core:stackRelativeExports": {
+            "recommendedValue": true,
+            "explanation": "Name exports based on the construct paths relative to the stack, rather than the global construct path",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          },
+          "@aws-cdk/aws-ecs-patterns:secGroupsDisablesImplicitOpenListener": {
+            "recommendedValue": true,
+            "explanation": "Disable implicit openListener when custom security groups are provided"
+          },
+          "@aws-cdk/aws-rds:lowercaseDbIdentifier": {
+            "recommendedValue": true,
+            "explanation": "Force lowercasing of RDS Cluster names in CDK",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          },
+          "@aws-cdk/aws-apigateway:usagePlanKeyOrderInsensitiveId": {
+            "recommendedValue": true,
+            "explanation": "Allow adding/removing multiple UsagePlanKeys independently",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          },
+          "@aws-cdk/aws-lambda:recognizeVersionProps": {
+            "recommendedValue": true,
+            "explanation": "Enable this feature flag to opt in to the updated logical id calculation for Lambda Version created using the  `fn.currentVersion`.",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          },
+          "@aws-cdk/aws-lambda:recognizeLayerVersion": {
+            "recommendedValue": true,
+            "explanation": "Enable this feature flag to opt in to the updated logical id calculation for Lambda Version created using the `fn.currentVersion`."
+          },
+          "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": {
+            "recommendedValue": true,
+            "explanation": "Enable this feature flag to have cloudfront distributions use the security policy TLSv1.2_2021 by default.",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          },
+          "@aws-cdk/core:checkSecretUsage": {
+            "recommendedValue": true,
+            "explanation": "Enable this flag to make it impossible to accidentally use SecretValues in unsafe locations"
+          },
+          "@aws-cdk/core:target-partitions": {
+            "recommendedValue": [
+              "aws",
+              "aws-cn"
+            ],
+            "explanation": "What regions to include in lookup tables of environment agnostic stacks"
+          },
+          "@aws-cdk-containers/ecs-service-extensions:enableDefaultLogDriver": {
+            "recommendedValue": true,
+            "explanation": "ECS extensions will automatically add an `awslogs` driver if no logging is specified"
+          },
+          "@aws-cdk/aws-ec2:uniqueImdsv2TemplateName": {
+            "recommendedValue": true,
+            "explanation": "Enable this feature flag to have Launch Templates generated by the `InstanceRequireImdsv2Aspect` use unique names."
+          },
+          "@aws-cdk/aws-ecs:arnFormatIncludesClusterName": {
+            "recommendedValue": true,
+            "explanation": "ARN format used by ECS. In the new ARN format, the cluster name is part of the resource ID."
+          },
+          "@aws-cdk/aws-iam:minimizePolicies": {
+            "recommendedValue": true,
+            "explanation": "Minimize IAM policies by combining Statements"
+          },
+          "@aws-cdk/core:validateSnapshotRemovalPolicy": {
+            "recommendedValue": true,
+            "explanation": "Error on snapshot removal policies on resources that do not support it."
+          },
+          "@aws-cdk/aws-codepipeline:crossAccountKeyAliasStackSafeResourceName": {
+            "recommendedValue": true,
+            "explanation": "Generate key aliases that include the stack name"
+          },
+          "@aws-cdk/aws-s3:createDefaultLoggingPolicy": {
+            "recommendedValue": true,
+            "explanation": "Enable this feature flag to create an S3 bucket policy by default in cases where an AWS service would automatically create the Policy if one does not exist."
+          },
+          "@aws-cdk/aws-sns-subscriptions:restrictSqsDescryption": {
+            "recommendedValue": true,
+            "explanation": "Restrict KMS key policy for encrypted Queues a bit more"
+          },
+          "@aws-cdk/aws-apigateway:disableCloudWatchRole": {
+            "recommendedValue": true,
+            "explanation": "Make default CloudWatch Role behavior safe for multiple API Gateways in one environment"
+          },
+          "@aws-cdk/core:enablePartitionLiterals": {
+            "recommendedValue": true,
+            "explanation": "Make ARNs concrete if AWS partition is known"
+          },
+          "@aws-cdk/aws-events:eventsTargetQueueSameAccount": {
+            "recommendedValue": true,
+            "explanation": "Event Rules may only push to encrypted SQS queues in the same account"
+          },
+          "@aws-cdk/aws-ecs:disableExplicitDeploymentControllerForCircuitBreaker": {
+            "recommendedValue": true,
+            "explanation": "Avoid setting the \"ECS\" deployment controller when adding a circuit breaker"
+          },
+          "@aws-cdk/aws-iam:importedRoleStackSafeDefaultPolicyName": {
+            "recommendedValue": true,
+            "explanation": "Enable this feature to create default policy names for imported roles that depend on the stack the role is in."
+          },
+          "@aws-cdk/aws-s3:serverAccessLogsUseBucketPolicy": {
+            "recommendedValue": true,
+            "explanation": "Use S3 Bucket Policy instead of ACLs for Server Access Logging"
+          },
+          "@aws-cdk/aws-route53-patters:useCertificate": {
+            "recommendedValue": true,
+            "explanation": "Use the official `Certificate` resource instead of `DnsValidatedCertificate`"
+          },
+          "@aws-cdk/customresources:installLatestAwsSdkDefault": {
+            "recommendedValue": false,
+            "explanation": "Whether to install the latest SDK by default in AwsCustomResource"
+          },
+          "@aws-cdk/aws-rds:databaseProxyUniqueResourceName": {
+            "recommendedValue": true,
+            "explanation": "Use unique resource name for Database Proxy"
+          },
+          "@aws-cdk/aws-codedeploy:removeAlarmsFromDeploymentGroup": {
+            "recommendedValue": true,
+            "explanation": "Remove CloudWatch alarms from deployment group"
+          },
+          "@aws-cdk/aws-apigateway:authorizerChangeDeploymentLogicalId": {
+            "recommendedValue": true,
+            "explanation": "Include authorizer configuration in the calculation of the API deployment logical ID."
+          },
+          "@aws-cdk/aws-ec2:launchTemplateDefaultUserData": {
+            "recommendedValue": true,
+            "explanation": "Define user data for a launch template by default when a machine image is provided."
+          },
+          "@aws-cdk/aws-secretsmanager:useAttachedSecretResourcePolicyForSecretTargetAttachments": {
+            "recommendedValue": true,
+            "explanation": "SecretTargetAttachments uses the ResourcePolicy of the attached Secret."
+          },
+          "@aws-cdk/aws-redshift:columnId": {
+            "recommendedValue": true,
+            "explanation": "Whether to use an ID to track Redshift column changes"
+          },
+          "@aws-cdk/aws-stepfunctions-tasks:enableEmrServicePolicyV2": {
+            "recommendedValue": true,
+            "explanation": "Enable AmazonEMRServicePolicy_v2 managed policies"
+          },
+          "@aws-cdk/aws-ec2:restrictDefaultSecurityGroup": {
+            "recommendedValue": true,
+            "explanation": "Restrict access to the VPC default security group"
+          },
+          "@aws-cdk/aws-apigateway:requestValidatorUniqueId": {
+            "recommendedValue": true,
+            "explanation": "Generate a unique id for each RequestValidator added to a method"
+          },
+          "@aws-cdk/aws-kms:aliasNameRef": {
+            "recommendedValue": true,
+            "explanation": "KMS Alias name and keyArn will have implicit reference to KMS Key"
+          },
+          "@aws-cdk/aws-kms:applyImportedAliasPermissionsToPrincipal": {
+            "recommendedValue": true,
+            "explanation": "Enable grant methods on Aliases imported by name to use kms:ResourceAliases condition"
+          },
+          "@aws-cdk/aws-autoscaling:generateLaunchTemplateInsteadOfLaunchConfig": {
+            "recommendedValue": true,
+            "explanation": "Generate a launch template when creating an AutoScalingGroup"
+          },
+          "@aws-cdk/core:includePrefixInUniqueNameGeneration": {
+            "recommendedValue": true,
+            "explanation": "Include the stack prefix in the stack name generation process"
+          },
+          "@aws-cdk/aws-efs:denyAnonymousAccess": {
+            "recommendedValue": true,
+            "explanation": "EFS denies anonymous clients accesses"
+          },
+          "@aws-cdk/aws-opensearchservice:enableOpensearchMultiAzWithStandby": {
+            "recommendedValue": true,
+            "explanation": "Enables support for Multi-AZ with Standby deployment for opensearch domains"
+          },
+          "@aws-cdk/aws-lambda-nodejs:useLatestRuntimeVersion": {
+            "recommendedValue": true,
+            "explanation": "Enables aws-lambda-nodejs.Function to use the latest available NodeJs runtime as the default"
+          },
+          "@aws-cdk/aws-efs:mountTargetOrderInsensitiveLogicalId": {
+            "recommendedValue": true,
+            "explanation": "When enabled, mount targets will have a stable logicalId that is linked to the associated subnet."
+          },
+          "@aws-cdk/aws-rds:auroraClusterChangeScopeOfInstanceParameterGroupWithEachParameters": {
+            "recommendedValue": true,
+            "explanation": "When enabled, a scope of InstanceParameterGroup for AuroraClusterInstance with each parameters will change."
+          },
+          "@aws-cdk/aws-appsync:useArnForSourceApiAssociationIdentifier": {
+            "recommendedValue": true,
+            "explanation": "When enabled, will always use the arn for identifiers for CfnSourceApiAssociation in the GraphqlApi construct rather than id."
+          },
+          "@aws-cdk/aws-rds:preventRenderingDeprecatedCredentials": {
+            "recommendedValue": true,
+            "explanation": "When enabled, creating an RDS database cluster from a snapshot will only render credentials for snapshot credentials."
+          },
+          "@aws-cdk/aws-codepipeline-actions:useNewDefaultBranchForCodeCommitSource": {
+            "recommendedValue": true,
+            "explanation": "When enabled, the CodeCommit source action is using the default branch name 'main'."
+          },
+          "@aws-cdk/aws-cloudwatch-actions:changeLambdaPermissionLogicalIdForLambdaAction": {
+            "recommendedValue": true,
+            "explanation": "When enabled, the logical ID of a Lambda permission for a Lambda action includes an alarm ID."
+          },
+          "@aws-cdk/aws-codepipeline:crossAccountKeysDefaultValueToFalse": {
+            "recommendedValue": true,
+            "explanation": "Enables Pipeline to set the default value for crossAccountKeys to false."
+          },
+          "@aws-cdk/aws-codepipeline:defaultPipelineTypeToV2": {
+            "recommendedValue": true,
+            "explanation": "Enables Pipeline to set the default pipeline type to V2."
+          },
+          "@aws-cdk/aws-kms:reduceCrossAccountRegionPolicyScope": {
+            "recommendedValue": true,
+            "explanation": "When enabled, IAM Policy created from KMS key grant will reduce the resource scope to this key only."
+          },
+          "@aws-cdk/pipelines:reduceAssetRoleTrustScope": {
+            "recommendedValue": true,
+            "explanation": "Remove the root account principal from PipelineAssetsFileRole trust policy",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          },
+          "@aws-cdk/aws-eks:nodegroupNameAttribute": {
+            "recommendedValue": true,
+            "explanation": "When enabled, nodegroupName attribute of the provisioned EKS NodeGroup will not have the cluster name prefix."
+          },
+          "@aws-cdk/aws-eks:useNativeOidcProvider": {
+            "recommendedValue": true,
+            "explanation": "When enabled, EKS V2 clusters will use the native OIDC provider resource AWS::IAM::OIDCProvider instead of creating the OIDCProvider with a custom resource (iam.OpenIDConnectProvider)."
+          },
+          "@aws-cdk/aws-ec2:ebsDefaultGp3Volume": {
+            "recommendedValue": true,
+            "explanation": "When enabled, the default volume type of the EBS volume will be GP3"
+          },
+          "@aws-cdk/aws-ecs:removeDefaultDeploymentAlarm": {
+            "recommendedValue": true,
+            "explanation": "When enabled, remove default deployment alarm settings"
+          },
+          "@aws-cdk/custom-resources:logApiResponseDataPropertyTrueDefault": {
+            "recommendedValue": false,
+            "explanation": "When enabled, the custom resource used for `AwsCustomResource` will configure the `logApiResponseData` property as true by default"
+          },
+          "@aws-cdk/aws-s3:keepNotificationInImportedBucket": {
+            "recommendedValue": false,
+            "explanation": "When enabled, Adding notifications to a bucket in the current stack will not remove notification from imported stack."
+          },
+          "@aws-cdk/aws-stepfunctions-tasks:useNewS3UriParametersForBedrockInvokeModelTask": {
+            "recommendedValue": true,
+            "explanation": "When enabled, use new props for S3 URI field in task definition of state machine for bedrock invoke model.",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          },
+          "@aws-cdk/core:explicitStackTags": {
+            "recommendedValue": true,
+            "explanation": "When enabled, stack tags need to be assigned explicitly on a Stack."
+          },
+          "@aws-cdk/aws-ecs:reduceEc2FargateCloudWatchPermissions": {
+            "recommendedValue": true,
+            "explanation": "When enabled, we will only grant the necessary permissions when users specify cloudwatch log group through logConfiguration"
+          },
+          "@aws-cdk/aws-dynamodb:resourcePolicyPerReplica": {
+            "recommendedValue": true,
+            "explanation": "When enabled will allow you to specify a resource policy per replica, and not copy the source table policy to all replicas"
+          },
+          "@aws-cdk/aws-ec2:ec2SumTImeoutEnabled": {
+            "recommendedValue": true,
+            "explanation": "When enabled, initOptions.timeout and resourceSignalTimeout values will be summed together."
+          },
+          "@aws-cdk/aws-appsync:appSyncGraphQLAPIScopeLambdaPermission": {
+            "recommendedValue": true,
+            "explanation": "When enabled, a Lambda authorizer Permission created when using GraphqlApi will be properly scoped with a SourceArn."
+          },
+          "@aws-cdk/aws-rds:setCorrectValueForDatabaseInstanceReadReplicaInstanceResourceId": {
+            "recommendedValue": true,
+            "explanation": "When enabled, the value of property `instanceResourceId` in construct `DatabaseInstanceReadReplica` will be set to the correct value which is `DbiResourceId` instead of currently `DbInstanceArn`"
+          },
+          "@aws-cdk/core:cfnIncludeRejectComplexResourceUpdateCreatePolicyIntrinsics": {
+            "recommendedValue": true,
+            "explanation": "When enabled, CFN templates added with `cfn-include` will error if the template contains Resource Update or Create policies with CFN Intrinsics that include non-primitive values."
+          },
+          "@aws-cdk/aws-lambda-nodejs:sdkV3ExcludeSmithyPackages": {
+            "recommendedValue": true,
+            "explanation": "When enabled, both `@aws-sdk` and `@smithy` packages will be excluded from the Lambda Node.js 18.x runtime to prevent version mismatches in bundled applications."
+          },
+          "@aws-cdk/aws-stepfunctions-tasks:fixRunEcsTaskPolicy": {
+            "recommendedValue": true,
+            "explanation": "When enabled, the resource of IAM Run Ecs policy generated by SFN EcsRunTask will reference the definition, instead of constructing ARN."
+          },
+          "@aws-cdk/aws-ec2:bastionHostUseAmazonLinux2023ByDefault": {
+            "recommendedValue": true,
+            "explanation": "When enabled, the BastionHost construct will use the latest Amazon Linux 2023 AMI, instead of Amazon Linux 2."
+          },
+          "@aws-cdk/core:aspectStabilization": {
+            "recommendedValue": true,
+            "explanation": "When enabled, a stabilization loop will be run when invoking Aspects during synthesis.",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          },
+          "@aws-cdk/aws-route53-targets:userPoolDomainNameMethodWithoutCustomResource": {
+            "recommendedValue": true,
+            "explanation": "When enabled, use a new method for DNS Name of user pool domain target without creating a custom resource."
+          },
+          "@aws-cdk/aws-elasticloadbalancingV2:albDualstackWithoutPublicIpv4SecurityGroupRulesDefault": {
+            "recommendedValue": true,
+            "explanation": "When enabled, the default security group ingress rules will allow IPv6 ingress from anywhere"
+          },
+          "@aws-cdk/aws-iam:oidcRejectUnauthorizedConnections": {
+            "recommendedValue": true,
+            "explanation": "When enabled, the default behaviour of OIDC provider will reject unauthorized connections"
+          },
+          "@aws-cdk/core:enableAdditionalMetadataCollection": {
+            "recommendedValue": true,
+            "explanation": "When enabled, CDK will expand the scope of usage data collected to better inform CDK development and improve communication for security concerns and emerging issues."
+          },
+          "@aws-cdk/aws-lambda:createNewPoliciesWithAddToRolePolicy": {
+            "recommendedValue": false,
+            "explanation": "[Deprecated] When enabled, Lambda will create new inline policies with AddToRolePolicy instead of adding to the Default Policy Statement"
+          },
+          "@aws-cdk/aws-s3:setUniqueReplicationRoleName": {
+            "recommendedValue": true,
+            "explanation": "When enabled, CDK will automatically generate a unique role name that is used for s3 object replication."
+          },
+          "@aws-cdk/pipelines:reduceStageRoleTrustScope": {
+            "recommendedValue": true,
+            "explanation": "Remove the root account principal from Stage addActions trust policy",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          },
+          "@aws-cdk/aws-events:requireEventBusPolicySid": {
+            "recommendedValue": true,
+            "explanation": "When enabled, grantPutEventsTo() will use resource policies with Statement IDs for service principals."
+          },
+          "@aws-cdk/core:aspectPrioritiesMutating": {
+            "recommendedValue": true,
+            "explanation": "When set to true, Aspects added by the construct library on your behalf will be given a priority of MUTATING."
+          },
+          "@aws-cdk/aws-dynamodb:retainTableReplica": {
+            "recommendedValue": true,
+            "explanation": "When enabled, table replica will be default to the removal policy of source table unless specified otherwise."
+          },
+          "@aws-cdk/cognito:logUserPoolClientSecretValue": {
+            "recommendedValue": false,
+            "explanation": "When disabled, the value of the user pool client secret will not be logged in the custom resource lambda function logs."
+          },
+          "@aws-cdk/pipelines:reduceCrossAccountActionRoleTrustScope": {
+            "recommendedValue": true,
+            "explanation": "When enabled, scopes down the trust policy for the cross-account action role",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          },
+          "@aws-cdk/aws-stepfunctions:useDistributedMapResultWriterV2": {
+            "recommendedValue": true,
+            "explanation": "When enabled, the resultWriterV2 property of DistributedMap will be used insted of resultWriter"
+          },
+          "@aws-cdk/s3-notifications:addS3TrustKeyPolicyForSnsSubscriptions": {
+            "recommendedValue": true,
+            "explanation": "Add an S3 trust policy to a KMS key resource policy for SNS subscriptions."
+          },
+          "@aws-cdk/aws-ec2:requirePrivateSubnetsForEgressOnlyInternetGateway": {
+            "recommendedValue": true,
+            "explanation": "When enabled, the EgressOnlyGateway resource is only created if private subnets are defined in the dual-stack VPC."
+          },
+          "@aws-cdk/aws-ec2-alpha:useResourceIdForVpcV2Migration": {
+            "recommendedValue": false,
+            "explanation": "When enabled, use resource IDs for VPC V2 migration"
+          },
+          "@aws-cdk/aws-s3:publicAccessBlockedByDefault": {
+            "recommendedValue": true,
+            "explanation": "When enabled, setting any combination of options for BlockPublicAccess will automatically set true for any options not defined."
+          },
+          "@aws-cdk/aws-lambda:useCdkManagedLogGroup": {
+            "recommendedValue": true,
+            "explanation": "When enabled, CDK creates and manages loggroup for the lambda function"
+          },
+          "@aws-cdk/aws-elasticloadbalancingv2:networkLoadBalancerWithSecurityGroupByDefault": {
+            "recommendedValue": true,
+            "explanation": "When enabled, Network Load Balancer will be created with a security group by default."
+          },
+          "@aws-cdk/aws-stepfunctions-tasks:httpInvokeDynamicJsonPathEndpoint": {
+            "recommendedValue": true,
+            "explanation": "When enabled, allows using a dynamic apiEndpoint with JSONPath format in HttpInvoke tasks.",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          },
+          "@aws-cdk/aws-ecs-patterns:uniqueTargetGroupId": {
+            "recommendedValue": true,
+            "explanation": "When enabled, ECS patterns will generate unique target group IDs to prevent conflicts during load balancer replacement"
+          },
+          "@aws-cdk/aws-route53-patterns:useDistribution": {
+            "recommendedValue": true,
+            "explanation": "Use the `Distribution` resource instead of `CloudFrontWebDistribution`"
+          },
+          "@aws-cdk/core:automaticL1Traits": {
+            "recommendedValue": true,
+            "explanation": "Automatically use the default L1 traits for L1 constructs`",
+            "unconfiguredBehavesLike": {
+              "v2": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "minimumCliVersion": "2.1105.0"
+}
