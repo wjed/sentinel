@@ -1,0 +1,9 @@
+{
+  "authority": "https://cognito-idp.<<marker:0xbaba:0>>.amazonaws.com/<<marker:0xbaba:1>>",
+  "clientId": "<<marker:0xbaba:2>>",
+  "redirectUri": "https://<<marker:0xbaba:3>>/",
+  "logoutUri": "https://<<marker:0xbaba:4>>/",
+  "cognitoDomain": "https://sentinelnet.auth.<<marker:0xbaba:5>>.amazoncognito.com",
+  "scope": "openid email phone",
+  "profileApiUrl": "<<marker:0xbaba:6>>"
+}

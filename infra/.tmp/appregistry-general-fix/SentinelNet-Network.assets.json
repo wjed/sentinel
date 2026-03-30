@@ -1,0 +1,20 @@
+{
+  "version": "50.0.0",
+  "files": {
+    "c181a8164da5d7def242ff082a4d5f1fec4d6494f9243c4d7c99a76d99fe605c": {
+      "displayName": "SentinelNet-Network Template",
+      "source": {
+        "path": "SentinelNet-Network.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "current_account-current_region-c58352aa": {
+          "bucketName": "cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}",
+          "objectKey": "c181a8164da5d7def242ff082a4d5f1fec4d6494f9243c4d7c99a76d99fe605c.json",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-file-publishing-role-${AWS::AccountId}-${AWS::Region}"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}
