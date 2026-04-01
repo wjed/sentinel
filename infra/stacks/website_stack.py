@@ -120,8 +120,8 @@ function handler(event) {
                     cognito.OAuthScope.EMAIL,
                     cognito.OAuthScope.PHONE,
                 ],
-                callback_urls=[callback_url],
-                logout_urls=[callback_url],
+                callback_urls=[callback_url, "http://localhost:3000/"],
+                logout_urls=[callback_url, "http://localhost:3000/"],
             ),
             supported_identity_providers=[
                 cognito.UserPoolClientIdentityProvider.COGNITO,
