@@ -52,7 +52,7 @@ class HiveConstruct(Construct):
         # Add TheHive Container
         task_def.add_container(
             "TheHiveContainer",
-            image=ecs.ContainerImage.from_registry("strangebee/thehive:latest"),
+            image=ecs.ContainerImage.from_registry("strangebee/thehive:5.6.2"),
             port_mappings=[ecs.PortMapping(container_port=9000)],
             environment={"db.url": "http://127.0.0.1:9200"},
         )
