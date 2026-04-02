@@ -148,7 +148,7 @@ class BackendStack(Stack):
             user_data=user_data,
         )
 
-        # ── ALB with Cognito Auth ─────────────────────────────────────────────
+        # ── ALB ───────────────────────────────────────────────────────────────
         alb_sg = ec2.SecurityGroup(
             self, "AlbSG", vpc=vpc,
             description="SentinelNet ALB",
@@ -167,45 +167,18 @@ class BackendStack(Stack):
         # Allow ALB to reach EC2
         self.sg.connections.allow_from(alb, ec2.Port.tcp(9000))
 
-        # Create an ALB app client for Cognito auth (separate from website client)
-        # Use L1 CfnUserPoolClient to avoid circular dependency.
-        alb_callback = f"http://{alb.load_balancer_dns_name}/oauth2/idpresponse"
-        self._alb_client_cfn = cognito.CfnUserPoolClient(
-            self, "AlbClient",
-            user_pool_id=user_pool.user_pool_id,
-            generate_secret=True,
-            allowed_o_auth_flows=["code"],
-            allowed_o_auth_flows_user_pool_client=True,
-            allowed_o_auth_scopes=["openid", "email"],
-            callback_ur_ls=[alb_callback],
-            logout_ur_ls=[f"http://{alb.load_balancer_dns_name}/"],
-            supported_identity_providers=["COGNITO"],
-        )
-        alb_client_id = self._alb_client_cfn.ref
-
-        # TheHive listener with Cognito auth
+        # TheHive listener (HTTP port 80 -> port 9000 on EC2)
         listener = alb.add_listener("HttpListener", port=80)
-        listener.add_action(
-            "CognitoAuth",
-            action=AuthenticateCognitoAction(
-                user_pool=user_pool,
-                user_pool_client=cognito.UserPoolClient.from_user_pool_client_id(
-                    self, "AlbClientRef", alb_client_id),
-                user_pool_domain=user_pool_domain,
-                next=elbv2.ListenerAction.forward(
-                    [listener.add_targets(
-                        "TheHiveTarget",
-                        port=9000,
-                        protocol=elbv2.ApplicationProtocol.HTTP,
-                        targets=[targets.InstanceTarget(self.instance, 9000)],
-                        health_check=elbv2.HealthCheck(
-                            path="/",
-                            interval=Duration.seconds(60),
-                            healthy_threshold_count=2,
-                            unhealthy_threshold_count=5,
-                        ),
-                    )]
-                ),
+        listener.add_targets(
+            "TheHiveTarget",
+            port=9000,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            targets=[targets.InstanceTarget(self.instance, 9000)],
+            health_check=elbv2.HealthCheck(
+                path="/",
+                interval=Duration.seconds(60),
+                healthy_threshold_count=2,
+                unhealthy_threshold_count=5,
             ),
         )
 

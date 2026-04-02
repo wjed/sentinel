@@ -124,10 +124,10 @@ cdk deploy SentinelNet-Backend --require-approval never
 cd ..
 ```
 
-- **SentinelNet-Network** — VPC and subnets (center team). Deploy first.
-- **SentinelNet-UserData** — DynamoDB (profiles) and S3.
-- **SentinelNet-Website** — The site (S3 + CloudFront + Cognito + profile API). Use `--exclusively` to avoid export conflicts.
-- **SentinelNet-Backend** — ECS/Fargate (e.g. Grafana). Depends on Network; deploy after Network.
+- **SentinelNet-Network** — VPC and subnets (center team). Public subnets only, no NAT Gateway ($0/mo network fee).
+- **SentinelNet-UserData** — DynamoDB (profiles), S3 (profile pics), and **Cognito UserPool** (shared auth).
+- **SentinelNet-Website** — The site (S3 + CloudFront + Cognito app client + profile API).
+- **SentinelNet-Backend** — Single EC2 SOC backend (Wazuh, TheHive, Grafana) + ALB with Cognito + SQS/Lambda ingest pipeline.
 
 **If Network fails** with “Cannot delete export … in use by SentinelNet-Backend”, run the one-time fix from `infra/`: `./fix-network-export-conflict.sh` (see **infra/HOW-TO-DEPLOY.md**).
 
