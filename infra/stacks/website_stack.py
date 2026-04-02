@@ -1,32 +1,33 @@
 """
 Website Stack — S3 + CloudFront + Cognito for SentinelNet.
 
-Deploys the built React app to S3/CloudFront and creates a Cognito user pool
-with Hosted UI. Writes config.json so the app uses the correct Cognito IDs at runtime.
+Deploys the React app to S3/CloudFront, creates a Cognito user pool
+with Hosted UI, and optionally wires a profile API if UserDataStack
+is provided. Writes config.json so the frontend picks up Cognito IDs.
 
-If user_data_stack is passed, also creates a profile API (Lambda + HTTP API) and
-adds apiBaseUrl to config so the frontend can load/save user profiles.
+Deploy with: cdk deploy SentinelNet-Website --exclusively
 """
 
 import json
+import os
 from pathlib import Path
 from typing import Optional
 
-from aws_cdk import CfnOutput, Stack, RemovalPolicy
+from aws_cdk import CfnOutput, RemovalPolicy, Stack, Tags
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_s3_deployment as s3_deploy
 from aws_cdk import aws_cloudfront as cloudfront
+from aws_cdk.aws_cloudfront_origins import S3BucketOrigin
 from aws_cdk import aws_cognito as cognito
+from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_apigatewayv2 as apigwv2
 from aws_cdk.aws_apigatewayv2_integrations import HttpLambdaIntegration
 from aws_cdk.aws_apigatewayv2_authorizers import HttpJwtAuthorizer
-from aws_cdk.aws_cloudfront_origins import S3BucketOrigin
-from aws_cdk import aws_lambda as lambda_
 from constructs import Construct
 
 
 class WebsiteStack(Stack):
-    """S3 + CloudFront + Cognito. Optionally profile API when user_data_stack is provided."""
+    """S3 + CloudFront + Cognito. Profile API when user_data_stack is provided."""
 
     def __init__(
         self,
@@ -37,53 +38,44 @@ class WebsiteStack(Stack):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        Tags.of(self).add("Project", "SentinelNet")
+
         repo_root = Path(__file__).resolve().parents[2]
         frontend_dist = str(repo_root / "frontend" / "dist")
         profile_lambda_dir = str(repo_root / "infra" / "lambda" / "profile_api_py")
 
-        # --- S3 + CloudFront (order: need distribution URL for Cognito callback) ---
+        # ── S3 bucket ─────────────────────────────────────────────────────────
         bucket = s3.Bucket(
-            self,
-            "WebsiteBucket",
+            self, "WebsiteBucket",
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             removal_policy=RemovalPolicy.DESTROY,
             auto_delete_objects=True,
         )
 
-        origin = S3BucketOrigin.with_origin_access_control(bucket)
-
-        # SPA routing: rewrite only page-like requests to /index.html in a viewer-request function.
-        # Do NOT use 403/404 -> index.html error responses, or /assets/*.js would get HTML and break (wrong MIME).
-        spa_rewrite_code = """
-function handler(event) {
-    var request = event.request;
-    var uri = request.uri;
-    if (uri.endsWith('/')) {
-        request.uri = uri + 'index.html';
-    } else if (!uri.includes('.') && uri.indexOf('/assets/') !== 0) {
-        request.uri = '/index.html';
-    }
-    return request;
-}
-"""
+        # ── CloudFront ────────────────────────────────────────────────────────
         spa_rewrite = cloudfront.Function(
-            self,
-            "SpaRewrite",
-            code=cloudfront.FunctionCode.from_inline(spa_rewrite_code),
+            self, "SpaRewrite",
+            code=cloudfront.FunctionCode.from_inline(
+                "function handler(event) {"
+                "  var r = event.request;"
+                "  if (r.uri.endsWith('/')) r.uri += 'index.html';"
+                "  else if (!r.uri.includes('.') && r.uri.indexOf('/assets/') !== 0)"
+                "    r.uri = '/index.html';"
+                "  return r;"
+                "}"
+            ),
             runtime=cloudfront.FunctionRuntime.JS_2_0,
-            comment="Rewrite SPA routes to /index.html; leave /assets/* and other static paths unchanged.",
         )
 
         self.distribution = cloudfront.Distribution(
-            self,
-            "Distribution",
+            self, "Distribution",
             default_behavior=cloudfront.BehaviorOptions(
-                origin=origin,
+                origin=S3BucketOrigin.with_origin_access_control(bucket),
                 function_associations=[
                     cloudfront.FunctionAssociation(
                         function=spa_rewrite,
                         event_type=cloudfront.FunctionEventType.VIEWER_REQUEST,
-                    ),
+                    )
                 ],
             ),
             default_root_object="index.html",
@@ -92,21 +84,18 @@ function handler(event) {
         website_url = f"https://{self.distribution.distribution_domain_name}"
         callback_url = f"{website_url}/"
 
-        # --- Cognito: user pool + Hosted UI + app client ---
+        # ── Cognito ───────────────────────────────────────────────────────────
         user_pool = cognito.UserPool(
-            self,
-            "UserPool",
+            self, "UserPool",
             self_sign_up_enabled=True,
             sign_in_aliases=cognito.SignInAliases(email=True),
             auto_verify=cognito.AutoVerifiedAttrs(email=True),
             removal_policy=RemovalPolicy.DESTROY,
         )
 
-        domain = user_pool.add_domain(
+        user_pool.add_domain(
             "Domain",
-            cognito_domain=cognito.CognitoDomainOptions(
-                domain_prefix="sentinelnet",
-            ),
+            cognito_domain=cognito.CognitoDomainOptions(domain_prefix="sentinelnet"),
         )
 
         app_client = user_pool.add_client(
@@ -115,91 +104,73 @@ function handler(event) {
             generate_secret=False,
             o_auth=cognito.OAuthSettings(
                 flows=cognito.OAuthFlows(authorization_code_grant=True),
-                scopes=[
-                    cognito.OAuthScope.OPENID,
-                    cognito.OAuthScope.EMAIL,
-                    cognito.OAuthScope.PHONE,
-                ],
+                scopes=[cognito.OAuthScope.OPENID, cognito.OAuthScope.EMAIL],
                 callback_urls=[callback_url],
                 logout_urls=[callback_url],
             ),
             supported_identity_providers=[
-                cognito.UserPoolClientIdentityProvider.COGNITO,
+                cognito.UserPoolClientIdentityProvider.COGNITO
             ],
         )
 
         region = self.region
         cognito_domain_url = f"https://sentinelnet.auth.{region}.amazoncognito.com"
 
-        # Optional: profile API (Lambda + HTTP API) when UserData stack is provided
+        # ── Profile API (optional) ────────────────────────────────────────────
         api_base_url = None
-        if user_data_stack is not None and hasattr(user_data_stack, "profiles_table"):
+        if user_data_stack and hasattr(user_data_stack, "profiles_table"):
             profile_fn = lambda_.Function(
-                self,
-                "ProfileApi",
+                self, "ProfileApi",
                 runtime=lambda_.Runtime.PYTHON_3_12,
                 handler="handler.handler",
                 code=lambda_.Code.from_asset(profile_lambda_dir),
-                environment={
-                    "TABLE_NAME": user_data_stack.profiles_table.table_name,
-                },
+                environment={"TABLE_NAME": user_data_stack.profiles_table.table_name},
             )
             user_data_stack.profiles_table.grant_read_write_data(profile_fn)
 
-            issuer_url = f"https://cognito-idp.{region}.amazonaws.com/{user_pool.user_pool_id}"
-            authorizer = HttpJwtAuthorizer(
-                "CognitoAuthorizer",
-                issuer_url,
-                jwt_audience=[app_client.user_pool_client_id],
-            )
+            issuer = f"https://cognito-idp.{region}.amazonaws.com/{user_pool.user_pool_id}"
             http_api = apigwv2.HttpApi(
-                self,
-                "ProfileHttpApi",
+                self, "ProfileHttpApi",
                 cors_preflight=apigwv2.CorsPreflightOptions(
                     allow_origins=["*"],
-                    allow_methods=[apigwv2.CorsHttpMethod.GET, apigwv2.CorsHttpMethod.PATCH, apigwv2.CorsHttpMethod.OPTIONS],
+                    allow_methods=[
+                        apigwv2.CorsHttpMethod.GET,
+                        apigwv2.CorsHttpMethod.PATCH,
+                        apigwv2.CorsHttpMethod.OPTIONS,
+                    ],
                     allow_headers=["Authorization", "Content-Type"],
                 ),
-                default_authorizer=authorizer,
+                default_authorizer=HttpJwtAuthorizer(
+                    "CognitoAuth", issuer,
+                    jwt_audience=[app_client.user_pool_client_id],
+                ),
             )
-            integration = HttpLambdaIntegration("ProfileIntegration", profile_fn)
-            http_api.add_routes(path="/profile", methods=[apigwv2.HttpMethod.GET, apigwv2.HttpMethod.PATCH], integration=integration)
+            http_api.add_routes(
+                path="/profile",
+                methods=[apigwv2.HttpMethod.GET, apigwv2.HttpMethod.PATCH],
+                integration=HttpLambdaIntegration("ProfileIntegration", profile_fn),
+            )
             api_base_url = http_api.api_endpoint
 
-            CfnOutput(
-                self,
-                "ProfileApiUrl",
-                value=api_base_url,
-                description="Profile API base URL (for frontend config).",
-                export_name="SentinelNetProfileApiUrl",
-            )
-
-        # Runtime config for the frontend (so it uses this pool, not a hardcoded one)
-        runtime_config = {
+        # ── Runtime config.json ───────────────────────────────────────────────
+        config = {
             "authority": f"https://cognito-idp.{region}.amazonaws.com/{user_pool.user_pool_id}",
             "clientId": app_client.user_pool_client_id,
             "redirectUri": callback_url,
             "logoutUri": callback_url,
             "cognitoDomain": cognito_domain_url,
-            "scope": "openid email phone",
+            "scope": "openid email",
         }
         if api_base_url:
-            runtime_config["profileApiUrl"] = api_base_url.rstrip("/")
+            config["profileApiUrl"] = api_base_url.rstrip("/")
 
-        config_json = json.dumps(runtime_config, indent=2)
-
-        # Deploy frontend + config.json. Invalidate CloudFront so clients get new index.html
-        # and assets (avoids cached 404 / wrong MIME). Prune so old hashed assets are removed.
-        # Guard: skip asset deployment during `cdk synth` if the frontend hasn't been built yet.
-        # Run `npm run build` inside frontend/ before `cdk deploy` to produce the dist folder.
-        import os as _os
-        if _os.path.isdir(frontend_dist):
+        # ── Deploy frontend (skip if dist/ not built yet) ─────────────────────
+        if os.path.isdir(frontend_dist):
             s3_deploy.BucketDeployment(
-                self,
-                "DeployWebsite",
+                self, "DeployWebsite",
                 sources=[
                     s3_deploy.Source.asset(frontend_dist),
-                    s3_deploy.Source.data("config.json", config_json),
+                    s3_deploy.Source.data("config.json", json.dumps(config, indent=2)),
                 ],
                 destination_bucket=bucket,
                 distribution=self.distribution,
@@ -207,32 +178,15 @@ function handler(event) {
                 prune=True,
             )
 
-        # Outputs
-        CfnOutput(
-            self,
-            "WebsiteURL",
-            value=website_url,
-            description="Use this URL; add it to Cognito callback URLs (done by stack).",
-            export_name="SentinelNetWebsiteURL",
-        )
-        CfnOutput(
-            self,
-            "DistributionId",
-            value=self.distribution.distribution_id,
-            description="For cache invalidation: aws cloudfront create-invalidation --distribution-id <id> --paths '/*'",
-            export_name="SentinelNetWebsiteDistributionId",
-        )
-        CfnOutput(
-            self,
-            "CognitoUserPoolId",
-            value=user_pool.user_pool_id,
-            description="Cognito user pool ID (for reference).",
-            export_name="SentinelNetCognitoUserPoolId",
-        )
-        CfnOutput(
-            self,
-            "CognitoClientId",
-            value=app_client.user_pool_client_id,
-            description="Cognito app client ID (for reference).",
-            export_name="SentinelNetCognitoClientId",
-        )
+        # ── Outputs ───────────────────────────────────────────────────────────
+        CfnOutput(self, "WebsiteURL", value=website_url,
+                  export_name="SentinelNetWebsiteURL")
+        CfnOutput(self, "DistributionId", value=self.distribution.distribution_id,
+                  export_name="SentinelNetWebsiteDistributionId")
+        CfnOutput(self, "CognitoUserPoolId", value=user_pool.user_pool_id,
+                  export_name="SentinelNetCognitoUserPoolId")
+        CfnOutput(self, "CognitoClientId", value=app_client.user_pool_client_id,
+                  export_name="SentinelNetCognitoClientId")
+        if api_base_url:
+            CfnOutput(self, "ProfileApiUrl", value=api_base_url,
+                      export_name="SentinelNetProfileApiUrl")
