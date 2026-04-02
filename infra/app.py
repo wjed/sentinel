@@ -21,6 +21,11 @@ env = cdk.Environment(
     region=os.environ.get("CDK_DEFAULT_REGION"),
 )
 
+# Apply global tags for cost tracking
+cdk.Tags.of(app).add("Project", "SentinelNet")
+cdk.Tags.of(app).add("Owner", "MarvinsStarvin")
+cdk.Tags.of(app).add("Environment", "POC")
+
 # 1. Network - VPC
 network_stack = NetworkStack(app, "SentinelNet-Network", env=env)
 

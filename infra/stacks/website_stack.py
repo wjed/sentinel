@@ -39,8 +39,6 @@ class WebsiteStack(Stack):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        Tags.of(self).add("Project", "SentinelNet")
-
         repo_root = Path(__file__).resolve().parents[2]
         frontend_dist = str(repo_root / "frontend" / "dist")
         profile_lambda_dir = str(repo_root / "infra" / "lambda" / "profile_api_py")
