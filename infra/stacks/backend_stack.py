@@ -1,98 +1,81 @@
-from aws_cdk import CfnOutput, Stack
-from aws_cdk import aws_ec2 as ec2
-from constructs import Construct
+"""
+Backend Stack — Lightweight POC foundation for SentinelNet.
 
-from .constructs import (
-    HiveConstruct,
-    TelemetryConstruct,
-    RdsConstruct,
-    GrafanaConstruct,
-    WazuhConstruct,
-)
+Provides an empty ECS Cluster and a base Security Group so container
+images can be deployed into the VPC when ready.
+
+Future services (not deployed yet):
+  - Wazuh Manager (EC2)
+  - TheHive (EC2 + docker-compose)
+  - Grafana (Fargate)
+  - RDS MySQL (t4g.micro)
+
+Deploy with: cdk deploy SentinelNet-Backend
+"""
+
+from aws_cdk import CfnOutput, Stack, Tags
+from aws_cdk import aws_ec2 as ec2
+from aws_cdk import aws_ecs as ecs
+from constructs import Construct
 
 
 class BackendStack(Stack):
+    """Barebones ECS Cluster + Security Group — ready for images."""
+
     def __init__(
         self,
         scope: Construct,
         construct_id: str,
         vpc: ec2.Vpc,
-        private_subnet_ids: list,
-        internal_subnet_ids: list,
-        public_subnet_ids: list = None,  # For ECS/Grafana
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        azs = self.availability_zones
-        
-        private_subnets = [
-            ec2.Subnet.from_subnet_attributes(
-                self, f"PrivateSubnetRef{idx+1}",
-                subnet_id=subnet_id, availability_zone=azs[idx % len(azs)]
-            ) for idx, subnet_id in enumerate(private_subnet_ids)
-        ]
-        
-        internal_subnets = [
-            ec2.Subnet.from_subnet_attributes(
-                self, f"InternalSubnetRef{idx+1}",
-                subnet_id=subnet_id, availability_zone=azs[idx % len(azs)]
-            ) for idx, subnet_id in enumerate(internal_subnet_ids)
-        ]
+        Tags.of(self).add("Project", "SentinelNet")
 
-        # 1. Telemetry
-        telemetry = TelemetryConstruct(self, "Telemetry")
-
-        # 2. Wazuh
-        wazuh = WazuhConstruct(
-            self, "Wazuh",
+        # ── ECS Cluster ───────────────────────────────────────────────────────
+        self.cluster = ecs.Cluster(
+            self,
+            "Cluster",
             vpc=vpc,
-            private_subnets=private_subnets,
-            table=telemetry.table,
-            kms_key=telemetry.kms_key,
+            cluster_name="sentinel-poc",
+            container_insights_v2=ecs.ContainerInsights.DISABLED,
         )
 
-        # 3. RDS
-        rds_construct = RdsConstruct(
-            self, "Rds",
+        # ── Base Security Group ───────────────────────────────────────────────
+        # Wide-open inside the VPC for POC; lock down per-service later.
+        self.base_sg = ec2.SecurityGroup(
+            self,
+            "BaseSG",
             vpc=vpc,
-            internal_subnets=internal_subnets,
+            description="SentinelNet POC — allows all VPC-internal traffic",
+            allow_all_outbound=True,
+        )
+        self.base_sg.add_ingress_rule(
+            ec2.Peer.ipv4(vpc.vpc_cidr_block),
+            ec2.Port.all_traffic(),
+            "Allow all traffic from within the VPC",
         )
 
-        # 4. Grafana
-        if public_subnet_ids:
-            public_subnets = [
-                ec2.Subnet.from_subnet_attributes(
-                    self, f"PublicSubnetRef{idx+1}",
-                    subnet_id=subnet_id, availability_zone=azs[idx % len(azs)]
-                ) for idx, subnet_id in enumerate(public_subnet_ids)
-            ]
-
-            grafana = GrafanaConstruct(
-                self, "Grafana",
-                vpc=vpc,
-                public_subnets=public_subnets,
-            )
-
-            CfnOutput(self, "GrafanaEndpoint", value=grafana.lb_dns)
-
-        # 5. TheHive
-        hive = HiveConstruct(
-            self, "TheHive",
-            vpc=vpc,
-            private_subnets=private_subnets,
-            wazuh_alert_queue=wazuh.alert_queue,
+        # ── Outputs ───────────────────────────────────────────────────────────
+        CfnOutput(
+            self,
+            "ClusterName",
+            value=self.cluster.cluster_name,
+            description="ECS Cluster name — deploy images here.",
+            export_name="SentinelNetClusterName",
         )
-
-        # Expose Outputs
-        CfnOutput(self, "WazuhManagerPrivateIp", value=wazuh.instance.instance_private_ip)
-        CfnOutput(self, "HiveEndpoint", value=hive.lb_dns)
-        CfnOutput(self, "TelemetryTableName", value=telemetry.table.table_name)
-        CfnOutput(self, "WazuhAlertsQueueUrl", value=wazuh.alert_queue.queue_url)
-        CfnOutput(self, "WazuhAlertsQueueArn", value=wazuh.alert_queue.queue_arn)
-        CfnOutput(self, "WazuhAlertsDlqUrl", value=wazuh.alert_dlq.queue_url)
-        CfnOutput(self, "WazuhIngestLambdaName", value=wazuh.ingest_fn.function_name)
-        
-        CfnOutput(self, "RdsMySqlEndpoint", value=rds_construct.instance.db_instance_endpoint_address, export_name="SentinelNetRdsMySqlEndpoint")
-        CfnOutput(self, "RdsMySqlPort", value=rds_construct.instance.db_instance_endpoint_port, export_name="SentinelNetRdsMySqlPort")
-        CfnOutput(self, "RdsMySqlSecretArn", value=rds_construct.instance.secret.secret_arn, export_name="SentinelNetRdsMySqlSecretArn")
+        CfnOutput(
+            self,
+            "ClusterArn",
+            value=self.cluster.cluster_arn,
+            description="ECS Cluster ARN.",
+            export_name="SentinelNetClusterArn",
+        )
+        CfnOutput(
+            self,
+            "BaseSecurityGroupId",
+            value=self.base_sg.security_group_id,
+            description="Base SG for backend services.",
+            export_name="SentinelNetBaseSGId",
+        )
