@@ -1,10 +1,7 @@
 """
-Website Stack — S3 + CloudFront + Cognito for SentinelNet.
+Website Stack - S3 + CloudFront + Cognito client for SentinelNet.
 
-Deploys the React app to S3/CloudFront, creates a Cognito user pool
-with Hosted UI, and optionally wires a profile API if UserDataStack
-is provided. Writes config.json so the frontend picks up Cognito IDs.
-
+Uses the Cognito user pool from UserDataStack (no circular deps).
 Deploy with: cdk deploy SentinelNet-Website --exclusively
 """
 
@@ -27,13 +24,13 @@ from constructs import Construct
 
 
 class WebsiteStack(Stack):
-    """S3 + CloudFront + Cognito. Profile API when user_data_stack is provided."""
+    """S3 + CloudFront + Cognito app client. Profile API when user_data_stack provided."""
 
     def __init__(
         self,
         scope: Construct,
         construct_id: str,
-        user_data_stack: Optional[Stack] = None,
+        user_data_stack: Stack,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -43,6 +40,9 @@ class WebsiteStack(Stack):
         repo_root = Path(__file__).resolve().parents[2]
         frontend_dist = str(repo_root / "frontend" / "dist")
         profile_lambda_dir = str(repo_root / "infra" / "lambda" / "profile_api_py")
+
+        # Pull Cognito from UserDataStack
+        user_pool = user_data_stack.user_pool
 
         # ── S3 bucket ─────────────────────────────────────────────────────────
         bucket = s3.Bucket(
@@ -83,42 +83,30 @@ class WebsiteStack(Stack):
 
         website_url = f"https://{self.distribution.distribution_domain_name}"
         callback_url = f"{website_url}/"
-
-        # ── Cognito ───────────────────────────────────────────────────────────
-        user_pool = cognito.UserPool(
-            self, "UserPool",
-            self_sign_up_enabled=True,
-            sign_in_aliases=cognito.SignInAliases(email=True),
-            auto_verify=cognito.AutoVerifiedAttrs(email=True),
-            removal_policy=RemovalPolicy.DESTROY,
-        )
-
-        user_pool.add_domain(
-            "Domain",
-            cognito_domain=cognito.CognitoDomainOptions(domain_prefix="sentinelnet"),
-        )
-
-        app_client = user_pool.add_client(
-            "WebClient",
-            auth_flows=cognito.AuthFlow(user_srp=True),
-            generate_secret=False,
-            o_auth=cognito.OAuthSettings(
-                flows=cognito.OAuthFlows(authorization_code_grant=True),
-                scopes=[cognito.OAuthScope.OPENID, cognito.OAuthScope.EMAIL],
-                callback_urls=[callback_url],
-                logout_urls=[callback_url],
-            ),
-            supported_identity_providers=[
-                cognito.UserPoolClientIdentityProvider.COGNITO
-            ],
-        )
-
         region = self.region
+
+        # ── Cognito app client (for website) ──────────────────────────────────
+        # Use L1 CfnUserPoolClient to avoid cross-stack circular dependency.
+        # user_pool.add_client() would create a ref from UserData -> Website.
+        self._web_client_cfn = cognito.CfnUserPoolClient(
+            self, "WebClient",
+            user_pool_id=user_pool.user_pool_id,
+            explicit_auth_flows=["ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"],
+            generate_secret=False,
+            allowed_o_auth_flows=["code"],
+            allowed_o_auth_flows_user_pool_client=True,
+            allowed_o_auth_scopes=["openid", "email"],
+            callback_ur_ls=[callback_url, "http://localhost:5173/", "http://localhost:3000/"],
+            logout_ur_ls=[callback_url, "http://localhost:5173/", "http://localhost:3000/"],
+            supported_identity_providers=["COGNITO"],
+        )
+        web_client_id = self._web_client_cfn.ref
+
         cognito_domain_url = f"https://sentinelnet.auth.{region}.amazoncognito.com"
 
         # ── Profile API (optional) ────────────────────────────────────────────
         api_base_url = None
-        if user_data_stack and hasattr(user_data_stack, "profiles_table"):
+        if hasattr(user_data_stack, "profiles_table"):
             profile_fn = lambda_.Function(
                 self, "ProfileApi",
                 runtime=lambda_.Runtime.PYTHON_3_12,
@@ -142,7 +130,7 @@ class WebsiteStack(Stack):
                 ),
                 default_authorizer=HttpJwtAuthorizer(
                     "CognitoAuth", issuer,
-                    jwt_audience=[app_client.user_pool_client_id],
+                    jwt_audience=[web_client_id],
                 ),
             )
             http_api.add_routes(
@@ -155,7 +143,7 @@ class WebsiteStack(Stack):
         # ── Runtime config.json ───────────────────────────────────────────────
         config = {
             "authority": f"https://cognito-idp.{region}.amazonaws.com/{user_pool.user_pool_id}",
-            "clientId": app_client.user_pool_client_id,
+            "clientId": web_client_id,
             "redirectUri": callback_url,
             "logoutUri": callback_url,
             "cognitoDomain": cognito_domain_url,
@@ -164,7 +152,7 @@ class WebsiteStack(Stack):
         if api_base_url:
             config["profileApiUrl"] = api_base_url.rstrip("/")
 
-        # ── Deploy frontend (skip if dist/ not built yet) ─────────────────────
+        # ── Deploy frontend ───────────────────────────────────────────────────
         if os.path.isdir(frontend_dist):
             s3_deploy.BucketDeployment(
                 self, "DeployWebsite",
@@ -183,9 +171,7 @@ class WebsiteStack(Stack):
                   export_name="SentinelNetWebsiteURL")
         CfnOutput(self, "DistributionId", value=self.distribution.distribution_id,
                   export_name="SentinelNetWebsiteDistributionId")
-        CfnOutput(self, "CognitoUserPoolId", value=user_pool.user_pool_id,
-                  export_name="SentinelNetCognitoUserPoolId")
-        CfnOutput(self, "CognitoClientId", value=app_client.user_pool_client_id,
+        CfnOutput(self, "CognitoClientId", value=web_client_id,
                   export_name="SentinelNetCognitoClientId")
         if api_base_url:
             CfnOutput(self, "ProfileApiUrl", value=api_base_url,
