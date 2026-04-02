@@ -26,33 +26,31 @@ All services are managed in `/opt/sentinel/docker-compose.yml` on the EC2 instan
 
 The alert pipeline is designed to move alerts from the SOC manager (Wazuh) to a long-term, queryable storage layer (DynamoDB).
 
-### 1. Ingestion (SQS)
-Wazuh (on the EC2) is configured to push alerts to the **`sentinel-alerts` SQS queue**. This provides:
-- **Buffering**: If the Lambda ingest or DynamoDB table is busy, alerts wait in the queue.
-- **Retry Logic**: Failed ingestions go to a Dead Letter Queue (DLQ).
+### 1. Ingestion (Forwarder + SQS)
+Wazuh (on the EC2) is configured to push alerts to the **`sentinel-alerts` SQS queue**. 
+- **Forwarder**: A Python script (`wazuh_to_sqs.py`) runs as a systemd service on the EC2. It tails `/var/ossec/logs/alerts/alerts.json` and pushes new events to SQS.
+- **SQS Buffer**: Provides stability and retry logic if processing is delayed.
 
-### 2. Processing (Lambda)
-A Lambda function (`sentinel-wazuh-ingest`) is triggered by the SQS queue. It performs the following:
-- **Batch Processing**: Processes up to 10 alerts at a time for efficiency.
-- **Normalization**: Formats the JSON alert into a structure suitable for DynamoDB keys.
-- **TTL Injection**: Adds a `ttl` attribute (default 30 days) for automatic cleanup.
+### 2. Processing (Ingest Lambda)
+A Lambda function (`sentinel-wazuh-ingest`) is triggered by the SQS queue. It performs:
+- **Normalization**: Formats JSON alerts for DynamoDB.
+- **TTL Injection**: Adds a 30-day auto-cleanup.
 
-### 3. Storage (DynamoDB)
-The **`TelemetryTable`** is a DynamoDB table used for long-term alert storage.
-- **PK**: `ALERT#[YYYY-MM-DD]` (Allows daily partitioning).
-- **SK**: `[TIMESTAMP]#[ALERT_ID]` (Allows time-based sorting and uniqueness).
+### 3. Storage & Access (DynamoDB + Telemetry API)
+- **DynamoDB**: The `TelemetryTable` holds your alert history.
+- **Telemetry API**: A dedicated HTTP API Gateway + Lambda that provides the analyst dashboard with the latest alerts via `GET /alerts`.
 
 ---
 
 ## Connectivity & Auth
 
 ### Agent-to-Manager
-Wazuh agents (running on other machines) connect to the manager over ports **1514 (Events)** and **1515 (Registration)**. These ports are open to the VPC CIDR in the Security Group.
+Wazuh agents connect to the manager over ports **1514 (Events)** and **1515 (Registration)**. These are open to the VPC CIDR in the Security Group.
 
 ### Analyst-to-UI
-Analysts access TheHive and Grafana through the **Application Load Balancer (ALB)**.
-- **Auth**: For the POC, the ALB forwards direct HTTP traffic to the services. You will use the internal application logins (e.g., TheHive's `admin`/`secret` or your configured credentials).
-- **Routing**: Currently, the ALB routes all root traffic (port 80) to TheHive (port 9000). Grafana (port 3000) is accessible directly on the EC2 or can be added to the ALB via path-based routing.
+Analysts access the platform in two ways:
+1.  **Management Console**: Direct HTTP access to TheHive/Grafana via the **ALB**.
+2.  **SentinelNet Dashboard**: The React frontend (on CloudFront) which pulls live data from the **Telemetry API**.
 
 ---
 

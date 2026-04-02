@@ -1,6 +1,6 @@
 # SentinelNet
 
-A small web app: marketing pages (Home, Product, Pricing) + a dashboard you sign into with Cognito. It runs on AWS (S3 + CloudFront). JMU university project.
+A security operations platform: marketing pages (Home, Product, Pricing) + a dashboard with a **real-time SOC backend** (Wazuh, TheHive, Grafana). It runs on AWS (S3, CloudFront, EC2, Lambda). JMU university project.
 
 ---
 
@@ -9,9 +9,10 @@ A small web app: marketing pages (Home, Product, Pricing) + a dashboard you sign
 | Folder | What it is |
 |--------|------------|
 | **frontend/** | The website. React app. You edit code here. |
-| **infra/** | AWS deployment (CDK). One command deploys the site. |
+| **infra/** | AWS deployment (CDK). One command deploys the site and SOC. |
+| **backend/** | Lambda functions for alert ingestion and the Telemetry API. |
 
-That’s it. No backend server. Sign-in is AWS Cognito.
+That’s it. **SentinelNet** includes a full backend SOC running on a cost-optimized EC2 instance, with a dedicated SQS/Lambda alert ingestion pipeline.
 
 **Live site:** [https://d7lsgn7zae54e.cloudfront.net/](https://d7lsgn7zae54e.cloudfront.net/) (CloudFront). Sign-in and the dashboard work there.
 

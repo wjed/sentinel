@@ -22,6 +22,9 @@ from aws_cdk.aws_apigatewayv2_integrations import HttpLambdaIntegration
 from aws_cdk.aws_apigatewayv2_authorizers import HttpJwtAuthorizer
 from constructs import Construct
 
+if False:
+    from .backend_stack import BackendStack
+
 
 class WebsiteStack(Stack):
     """S3 + CloudFront + Cognito app client. Profile API when user_data_stack provided."""
@@ -31,6 +34,7 @@ class WebsiteStack(Stack):
         scope: Construct,
         construct_id: str,
         user_data_stack: Stack,
+        backend_stack: Stack,
         **kwargs,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -151,6 +155,9 @@ class WebsiteStack(Stack):
         }
         if api_base_url:
             config["profileApiUrl"] = api_base_url.rstrip("/")
+
+        if hasattr(backend_stack, "telemetry_api"):
+            config["telemetryApiUrl"] = backend_stack.telemetry_api.api_endpoint.rstrip("/")
 
         # ── Deploy frontend ───────────────────────────────────────────────────
         if os.path.isdir(frontend_dist):

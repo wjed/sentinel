@@ -29,9 +29,13 @@ graph TD
         ES[Elasticsearch]
     end
     
-    Wazuh --> SQS[SQS Alert Queue]
+    Wazuh --> FWD[Wazuh Forwarder Script]
+    FWD --> SQS[SQS Alert Queue]
     SQS --> Lambda[Ingest Lambda]
     Lambda --> DDB[DynamoDB Telemetry]
+    
+    User --> TAPI[Telemetry API]
+    TAPI --> DDB
     
     EC2 --> UserData[S3 / DynamoDB Profiles]
 ```
@@ -46,17 +50,20 @@ graph TD
 - **Security**: Access is restricted via Security Groups. The EC2 instance is only accessible via SSM (no open SSH port).
 
 ### 2. User Data & Auth (SentinelNet-UserData)
-- **Cognito**: A single User Pool shared by the Website and the Backend ALB.
+- **Cognito**: A single User Pool shared by the Website and Backend services.
 - **S3 Bucket**: Stores user profile pictures.
 - **DynamoDB**: Stores user profile metadata.
 
 ### 3. Website (SentinelNet-Website)
 - **Hosting**: S3 + CloudFront with an edge function for SPA routing.
 - **Profile API**: A small Lambda + API Gateway (HttpApi) for the dashboard to manage user profiles.
+- **Config**: Automatically generates `config.json` with the latest Telemetry and Profile API URLs.
 
 ### 4. Backend (SentinelNet-Backend)
 - **Compute**: One `t3.medium` EC2 instance.
-- **Containerization**: Services run as Docker containers using `docker-compose`. This avoids the complexity and "NotStabilized" errors often seen with multi-container Fargate tasks.
+- **Ingestion**: A Python forwarder script monitors `alerts.json` and pushes rule hits to an SQS queue for processing.
+- **Telemetry API**: A dedicated Lambda + HttpApi allows the dashboard to fetch real-time alerts from DynamoDB.
+- **Containerization**: Services run as Docker containers using `docker-compose`. This avoids the complexity of multi-container Fargate tasks.
 - **Auth**: For the POC, the ALB forwards direct HTTP traffic to the services (no Cognito auth at the LB level). Authentication is handled internally by the applications (TheHive, Grafana).
 
 ---

@@ -13,18 +13,25 @@ Deploy with: cdk deploy SentinelNet-Backend
 
 from pathlib import Path
 
-from aws_cdk import CfnOutput, Duration, RemovalPolicy, Stack, Tags
-from aws_cdk import aws_cognito as cognito
-from aws_cdk import aws_dynamodb as dynamodb
-from aws_cdk import aws_ec2 as ec2
-from aws_cdk import aws_elasticloadbalancingv2 as elbv2
-from aws_cdk import aws_elasticloadbalancingv2_targets as targets
-from aws_cdk.aws_elasticloadbalancingv2_actions import AuthenticateCognitoAction
-from aws_cdk import aws_iam as iam
-from aws_cdk import aws_kms as kms
-from aws_cdk import aws_lambda as lambda_
-from aws_cdk import aws_lambda_event_sources as events
-from aws_cdk import aws_sqs as sqs
+from aws_cdk import (
+    CfnOutput,
+    Duration,
+    RemovalPolicy,
+    Stack,
+    Tags,
+    aws_apigatewayv2 as apigwv2,
+    aws_apigatewayv2_integrations as integrations,
+    aws_cognito as cognito,
+    aws_dynamodb as dynamodb,
+    aws_ec2 as ec2,
+    aws_elasticloadbalancingv2 as elbv2,
+    aws_elasticloadbalancingv2_targets as targets,
+    aws_iam as iam,
+    aws_kms as kms,
+    aws_lambda as lambda_,
+    aws_lambda_event_sources as events,
+    aws_sqs as sqs,
+)
 from constructs import Construct
 
 
@@ -44,6 +51,44 @@ class BackendStack(Stack):
 
         repo_root = Path(__file__).resolve().parents[2]
         lambda_dir = str(repo_root / "backend" / "lambda" / "wazuh_ingest")
+
+        # ── Telemetry: DynamoDB + KMS ─────────────────────────────────────────
+        self.kms_key = kms.Key(
+            self, "TelemetryKey",
+            enable_key_rotation=True,
+            removal_policy=RemovalPolicy.DESTROY,
+        )
+
+        self.telemetry_table = dynamodb.Table(
+            self, "TelemetryTable",
+            partition_key=dynamodb.Attribute(
+                name="pk", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(
+                name="sk", type=dynamodb.AttributeType.STRING),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            encryption=dynamodb.TableEncryption.CUSTOMER_MANAGED,
+            encryption_key=self.kms_key,
+            removal_policy=RemovalPolicy.DESTROY,
+            time_to_live_attribute="ttl",
+        )
+
+        # ── SQS: Alert Queue + DLQ ───────────────────────────────────────────
+        self.alert_dlq = sqs.Queue(
+            self, "AlertDLQ",
+            queue_name="sentinel-alerts-dlq",
+            retention_period=Duration.days(14),
+            enforce_ssl=True,
+        )
+
+        self.alert_queue = sqs.Queue(
+            self, "AlertQueue",
+            queue_name="sentinel-alerts",
+            retention_period=Duration.days(4),
+            visibility_timeout=Duration.seconds(120),
+            dead_letter_queue=sqs.DeadLetterQueue(
+                queue=self.alert_dlq, max_receive_count=5),
+            enforce_ssl=True,
+        )
 
         # ── Security Group ────────────────────────────────────────────────────
         self.sg = ec2.SecurityGroup(
@@ -75,6 +120,9 @@ class BackendStack(Stack):
                     "AmazonSSMManagedInstanceCore"),
             ],
         )
+
+        # Grant EC2 permission to send to SQS
+        self.alert_queue.grant_send_messages(role)
 
         user_data = ec2.UserData.for_linux()
         user_data.add_commands(
@@ -135,6 +183,42 @@ class BackendStack(Stack):
             "COMPOSE_EOF",
             # Start services
             "cd /opt/sentinel && /usr/local/bin/docker-compose up -d",
+            # Install Wazuh-to-SQS forwarder
+            "yum install -y python3-pip",
+            "pip3 install boto3",
+            "cat > /usr/local/bin/wazuh_to_sqs.py << 'PY_EOF'",
+            "import json, time, boto3, os",
+            "sqs = boto3.client('sqs', region_name=os.environ.get('AWS_REGION', 'us-east-1'))",
+            "queue_url = os.environ.get('QUEUE_URL')",
+            "alerts_path = '/var/ossec/logs/alerts/alerts.json'",
+            "def forward():",
+            "    if not os.path.exists(alerts_path): return",
+            "    with open(alerts_path, 'r') as f:",
+            "        f.seek(0, 2)",
+            "        while True:",
+            "            line = f.readline()",
+            "            if not line: time.sleep(1); continue",
+            "            try:",
+            "                alert = json.loads(line)",
+            "                sqs.send_message(QueueUrl=queue_url, MessageBody=json.dumps(alert))",
+            "            except Exception as e: print(e)",
+            "if __name__ == '__main__': forward()",
+            "PY_EOF",
+            "chmod +x /usr/local/bin/wazuh_to_sqs.py",
+            # Create systemd service for forwarder
+            "cat > /etc/systemd/system/wazuh-forwarder.service << SERVICE_EOF",
+            "[Unit]",
+            "Description=Wazuh to SQS Forwarder",
+            "After=docker.service",
+            "[Service]",
+            "Type=simple",
+            f"Environment=QUEUE_URL={self.alert_queue.queue_url}",
+            f"Environment=AWS_REGION={self.region}",
+            "ExecStart=/usr/bin/python3 /usr/local/bin/wazuh_to_sqs.py",
+            "Restart=always",
+            "User=root",
+            "SERVICE_EOF",
+            "systemctl enable wazuh-forwarder && systemctl start wazuh-forwarder",
         )
 
         self.instance = ec2.Instance(
@@ -182,47 +266,6 @@ class BackendStack(Stack):
             ),
         )
 
-        # ── Telemetry: DynamoDB + KMS ─────────────────────────────────────────
-        self.kms_key = kms.Key(
-            self, "TelemetryKey",
-            enable_key_rotation=True,
-            removal_policy=RemovalPolicy.DESTROY,
-        )
-
-        self.telemetry_table = dynamodb.Table(
-            self, "TelemetryTable",
-            partition_key=dynamodb.Attribute(
-                name="pk", type=dynamodb.AttributeType.STRING),
-            sort_key=dynamodb.Attribute(
-                name="sk", type=dynamodb.AttributeType.STRING),
-            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-            encryption=dynamodb.TableEncryption.CUSTOMER_MANAGED,
-            encryption_key=self.kms_key,
-            removal_policy=RemovalPolicy.DESTROY,
-            time_to_live_attribute="ttl",
-        )
-
-        # ── SQS: Alert Queue + DLQ ───────────────────────────────────────────
-        self.alert_dlq = sqs.Queue(
-            self, "AlertDLQ",
-            queue_name="sentinel-alerts-dlq",
-            retention_period=Duration.days(14),
-            enforce_ssl=True,
-        )
-
-        self.alert_queue = sqs.Queue(
-            self, "AlertQueue",
-            queue_name="sentinel-alerts",
-            retention_period=Duration.days(4),
-            visibility_timeout=Duration.seconds(120),
-            dead_letter_queue=sqs.DeadLetterQueue(
-                queue=self.alert_dlq, max_receive_count=5),
-            enforce_ssl=True,
-        )
-
-        # Grant EC2 permission to send to SQS
-        self.alert_queue.grant_send_messages(role)
-
         # ── Lambda: SQS -> DynamoDB ───────────────────────────────────────────
         self.ingest_fn = lambda_.Function(
             self, "IngestFunction",
@@ -245,6 +288,35 @@ class BackendStack(Stack):
         self.telemetry_table.grant_write_data(self.ingest_fn)
         self.kms_key.grant_encrypt_decrypt(self.ingest_fn)
 
+        # ── Telemetry API ────────────────────────────────────────────────────
+        telemetry_api_dir = str(repo_root / "backend" / "lambda" / "telemetry_api")
+        self.telemetry_api_fn = lambda_.Function(
+            self, "TelemetryApiFunction",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="handler.handler",
+            code=lambda_.Code.from_asset(telemetry_api_dir),
+            environment={
+                "TABLE_NAME": self.telemetry_table.table_name,
+            },
+        )
+        self.telemetry_table.grant_read_data(self.telemetry_api_fn)
+        self.kms_key.grant_decrypt(self.telemetry_api_fn)
+
+        self.telemetry_api = apigwv2.HttpApi(
+            self, "TelemetryHttpApi",
+            cors_preflight=apigwv2.CorsPreflightOptions(
+                allow_methods=[apigwv2.CorsHttpMethod.GET, apigwv2.CorsHttpMethod.OPTIONS],
+                allow_origins=["*"],
+            ),
+        )
+
+        self.telemetry_api.add_routes(
+            path="/alerts",
+            methods=[apigwv2.HttpMethod.GET],
+            integration=integrations.HttpLambdaIntegration(
+                "TelemetryIntegration", self.telemetry_api_fn),
+        )
+
         # ── Outputs ───────────────────────────────────────────────────────────
         CfnOutput(self, "InstanceId", value=self.instance.instance_id)
         CfnOutput(self, "ALBEndpoint", value=alb.load_balancer_dns_name,
@@ -252,3 +324,5 @@ class BackendStack(Stack):
         CfnOutput(self, "TelemetryTableName",
                   value=self.telemetry_table.table_name)
         CfnOutput(self, "AlertQueueUrl", value=self.alert_queue.queue_url)
+        CfnOutput(self, "TelemetryApiUrl", value=self.telemetry_api.api_endpoint)
+        CfnOutput(self, "ManagerPublicIP", value=self.instance.instance_public_ip)
