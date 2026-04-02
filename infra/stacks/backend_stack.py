@@ -48,7 +48,7 @@ class BackendStack(Stack):
             self,
             "BaseSG",
             vpc=vpc,
-            description="SentinelNet POC — allows all VPC-internal traffic",
+            description="SentinelNet POC - allows all VPC-internal traffic",
             allow_all_outbound=True,
         )
         self.base_sg.add_ingress_rule(
