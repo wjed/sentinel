@@ -125,10 +125,10 @@ cdk deploy SentinelNet-Backend --require-approval never
 cd ..
 ```
 
-- **SentinelNet-Network** — VPC and subnets (center team). Public subnets only, no NAT Gateway ($0/mo network fee).
-- **SentinelNet-UserData** — DynamoDB (profiles), S3 (profile pics), and **Cognito UserPool** (shared auth).
-- **SentinelNet-Website** — The site (S3 + CloudFront + Cognito app client + profile API).
-- **SentinelNet-Backend** — Single EC2 SOC backend (Wazuh, TheHive, Grafana) + ALB with Cognito + SQS/Lambda ingest pipeline.
+- **SentinelNet-Network** — VPC and subnets (center team). Public subnets only, no NAT Gateway.
+- **SentinelNet-UserData** — DynamoDB (profiles), S3 (profile pictures), and **Cognito UserPool** (shared auth).
+- **SentinelNet-Website** — The React frontend (S3 + CloudFront) and the Profile API.
+- **SentinelNet-Backend** — Full SOC suite (Wazuh, TheHive 5, Cassandra, Elasticsearch) on a **`t3.large`** (8GB RAM) instance + SQS/Lambda alert pipeline. See **SOC_SERVICES.md** for service details.
 
 **If Network fails** with “Cannot delete export … in use by SentinelNet-Backend”, run the one-time fix from `infra/`: `./fix-network-export-conflict.sh` (see **infra/HOW-TO-DEPLOY.md**).
 
