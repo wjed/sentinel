@@ -4,41 +4,38 @@ This document describes the services running on the backend and how they interac
 
 ## Backend SOC Services (Single-Instance t3.medium)
 
-The Backend SOC is consolidated into a single EC2 instance for cost-efficiency. It runs the following services via `docker-compose`:
+The Backend SOC is consolidated into a single **t3.medium** EC2 instance (4GB RAM) for extreme cost-efficiency. To fit all services, a **"Memory Diet"** is applied to the Java-based components:
 
-| Service | Port | Description |
-|---------|------|-------------|
-| **Wazuh Manager** | 1515 | Centralized log ingestion, agent registration, and alerting. |
-| **TheHive 5** | 9000 | Case management system for triaging alerts into incidents. |
-| **Grafana** | 3000 | Visualization and dashboarding for security metrics. |
-| **Elasticsearch** | 9200 | Search and analytics engine supporting TheHive internals. |
+| Service | Memory Limit | Description |
+|---------|--------------|-------------|
+| **Wazuh Manager** | ~1.2 GB | Centralized log ingestion and alerting. |
+| **TheHive 5** | 768 MB Heap | Case management system. |
+| **Elasticsearch** | 512 MB Heap | Search engine supporting TheHive. |
+| **Cassandra** | 512 MB Heap | Database supporting TheHive. |
+| **Grafana** | 256 MB | Visualization dashboard. |
 
 ### Configuration (docker-compose)
 
-All services are managed in `/opt/sentinel/docker-compose.yml` on the EC2 instance. Data is persisted in Docker volumes:
-- `wazuh_data`
-- `thehive_db`
-- `grafana_data`
+All services are managed in `/opt/sentinel/docker-compose.yml`. Data is persisted in Docker volumes. A **4GB Swap File** is configured on the host to handle memory spikes.
 
 ---
 
 ## The Alert Pipeline
 
-The alert pipeline is designed to move alerts from the SOC manager (Wazuh) to a long-term, queryable storage layer (DynamoDB).
+The alert pipeline is designed to move alerts from the SOC manager (Wazuh) to a long-term, cost-effective storage layer (**S3 Data Lake**).
 
 ### 1. Ingestion (Forwarder + SQS)
 Wazuh (on the EC2) is configured to push alerts to the **`sentinel-alerts` SQS queue**. 
 - **Forwarder**: A Python script (`wazuh_to_sqs.py`) runs as a systemd service on the EC2. It tails `/var/ossec/logs/alerts/alerts.json` and pushes new events to SQS.
-- **SQS Buffer**: Provides stability and retry logic if processing is delayed.
 
 ### 2. Processing (Ingest Lambda)
 A Lambda function (`sentinel-wazuh-ingest`) is triggered by the SQS queue. It performs:
-- **Normalization**: Formats JSON alerts for DynamoDB.
-- **TTL Injection**: Adds a 30-day auto-cleanup.
+- **Normalization**: Formats JSON alerts for storage.
+- **S3 Upload**: Saves each alert as an individual JSON file in the **Alerts Data Lake**.
 
-### 3. Storage & Access (DynamoDB + Telemetry API)
-- **DynamoDB**: The `TelemetryTable` holds your alert history.
-- **Telemetry API**: A dedicated HTTP API Gateway + Lambda that provides the analyst dashboard with the latest alerts via `GET /alerts`.
+### 3. Storage & Access (S3 + Telemetry API)
+- **S3 Data Lake**: The `AlertsDataLake` bucket holds your alert history with a **1-day lifecycle rule** (automatic deletion).
+- **Telemetry API**: A dedicated HTTP API Gateway + Lambda that fetches the latest 50 alerts from S3 for the analyst dashboard.
 
 ---
 
@@ -71,4 +68,4 @@ sudo docker-compose restart thehive
 ### Logs & Monitoring
 - **EC2 Instance Logs**: Available in CloudWatch via the CloudWatch Agent. High-priority errors and critical events are filtered and forwarded to the `/sentinelnet/soc/errors` log group with a **1-day retention policy**.
 - **Lambda Logs**: Ingest and API Lambda functions log to CloudWatch with a **1-day retention policy** to minimize storage costs.
-- **Alert History**: All normalized alerts are stored in **DynamoDB** with a **30-day TTL** (auto-cleanup).
+- **Alert History**: Alerts are stored as JSON in **S3** with a **1-day expiration** rule.

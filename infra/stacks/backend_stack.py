@@ -31,6 +31,7 @@ from aws_cdk import (
     aws_lambda as lambda_,
     aws_lambda_event_sources as events,
     aws_logs as logs,
+    aws_s3 as s3,
     aws_sqs as sqs,
 )
 from constructs import Construct
@@ -51,24 +52,19 @@ class BackendStack(Stack):
         repo_root = Path(__file__).resolve().parents[2]
         lambda_dir = str(repo_root / "backend" / "lambda" / "wazuh_ingest")
 
-        # ── Telemetry: DynamoDB + KMS ─────────────────────────────────────────
-        self.kms_key = kms.Key(
-            self, "TelemetryKey",
-            enable_key_rotation=True,
+        # ── Telemetry: S3 Data Lake (Replacing DynamoDB) ──────────────────────
+        self.alerts_bucket = s3.Bucket(
+            self, "AlertsDataLake",
             removal_policy=RemovalPolicy.DESTROY,
-        )
-
-        self.telemetry_table = dynamodb.Table(
-            self, "TelemetryTable",
-            partition_key=dynamodb.Attribute(
-                name="pk", type=dynamodb.AttributeType.STRING),
-            sort_key=dynamodb.Attribute(
-                name="sk", type=dynamodb.AttributeType.STRING),
-            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
-            encryption=dynamodb.TableEncryption.CUSTOMER_MANAGED,
-            encryption_key=self.kms_key,
-            removal_policy=RemovalPolicy.DESTROY,
-            time_to_live_attribute="ttl",
+            auto_delete_objects=True,
+            encryption=s3.BucketEncryption.S3_MANAGED,
+            enforce_ssl=True,
+            lifecycle_rules=[
+                s3.LifecycleRule(
+                    expiration=Duration.days(1),
+                    id="AlertExpiration"
+                )
+            ]
         )
 
         # ── SQS: Alert Queue + DLQ ───────────────────────────────────────────
@@ -172,8 +168,8 @@ class BackendStack(Stack):
             "    hostname: cassandra",
             "    restart: unless-stopped",
             "    environment:",
-            "      - MAX_HEAP_SIZE=1G",
-            "      - HEAP_NEWSIZE=200M",
+            "      - MAX_HEAP_SIZE=512M",
+            "      - HEAP_NEWSIZE=100M",
             "    volumes:",
             "      - /opt/sentinel/data/cassandra:/var/lib/cassandra",
             "",
@@ -183,7 +179,7 @@ class BackendStack(Stack):
             "    restart: unless-stopped",
             "    environment:",
             '      - "discovery.type=single-node"',
-            '      - "ES_JAVA_OPTS=-Xms1G -Xmx1G"',
+            '      - "ES_JAVA_OPTS=-Xms512M -Xmx512M"',
             "    ulimits:",
             "      memlock:",
             "        soft: -1",
@@ -201,7 +197,7 @@ class BackendStack(Stack):
             "    ports:",
             '      - "9000:9000"',
             "    environment:",
-            "      - JAVA_OPTS=-Xms1G -Xmx1G",
+            "      - JAVA_OPTS=-Xms768M -Xmx768M",
             "    volumes:",
             "      - /opt/sentinel/conf/thehive.conf:/etc/thehive/application.conf",
             "      - thehive_data:/opt/thp/thehive/files",
@@ -321,7 +317,7 @@ class BackendStack(Stack):
 
         self.instance = ec2.Instance(
             self, "SOCInstance",
-            instance_type=ec2.InstanceType("t3.large"),
+            instance_type=ec2.InstanceType("t3.medium"),
             machine_image=ec2.MachineImage.latest_amazon_linux2(),
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
@@ -375,8 +371,7 @@ class BackendStack(Stack):
             memory_size=256,
             log_retention=logs.RetentionDays.ONE_DAY,
             environment={
-                "TABLE_NAME": self.telemetry_table.table_name,
-                "RETENTION_DAYS": "30",
+                "ALERTS_BUCKET_NAME": self.alerts_bucket.bucket_name,
             },
         )
 
@@ -384,8 +379,7 @@ class BackendStack(Stack):
         self.ingest_fn.add_event_source(
             events.SqsEventSource(self.alert_queue, batch_size=10,
                                   report_batch_item_failures=True))
-        self.telemetry_table.grant_write_data(self.ingest_fn)
-        self.kms_key.grant_encrypt_decrypt(self.ingest_fn)
+        self.alerts_bucket.grant_put(self.ingest_fn)
 
         # ── Telemetry API ────────────────────────────────────────────────────
         telemetry_api_dir = str(repo_root / "backend" / "lambda" / "telemetry_api")
@@ -396,11 +390,10 @@ class BackendStack(Stack):
             code=lambda_.Code.from_asset(telemetry_api_dir),
             log_retention=logs.RetentionDays.ONE_DAY,
             environment={
-                "TABLE_NAME": self.telemetry_table.table_name,
+                "ALERTS_BUCKET_NAME": self.alerts_bucket.bucket_name,
             },
         )
-        self.telemetry_table.grant_read_data(self.telemetry_api_fn)
-        self.kms_key.grant_decrypt(self.telemetry_api_fn)
+        self.alerts_bucket.grant_read(self.telemetry_api_fn)
 
         self.telemetry_api = apigwv2.HttpApi(
             self, "TelemetryHttpApi",
@@ -421,8 +414,8 @@ class BackendStack(Stack):
         CfnOutput(self, "InstanceId", value=self.instance.instance_id)
         CfnOutput(self, "ALBEndpoint", value=alb.load_balancer_dns_name,
                   export_name="SentinelNetALBEndpoint")
-        CfnOutput(self, "TelemetryTableName",
-                  value=self.telemetry_table.table_name)
+        CfnOutput(self, "AlertsBucketName",
+                  value=self.alerts_bucket.bucket_name)
         CfnOutput(self, "AlertQueueUrl", value=self.alert_queue.queue_url)
         CfnOutput(self, "TelemetryApiUrl", value=self.telemetry_api.api_endpoint)
         CfnOutput(self, "ManagerPublicIP", value=self.instance.instance_public_ip)

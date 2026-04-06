@@ -22,7 +22,7 @@ graph TD
     User --> ALB[ALB / Cognito Auth]
     ALB --> EC2[SOC EC2 Instance]
     
-    subgraph "SOC EC2 (t3.large)"
+    subgraph "SOC EC2 (t3.medium)"
         Wazuh[Wazuh Manager]
         TheHive[TheHive 5]
         Cassandra[Cassandra DB]
@@ -33,10 +33,10 @@ graph TD
     Wazuh --> FWD[Wazuh Forwarder Script]
     FWD --> SQS[SQS Alert Queue]
     SQS --> Lambda[Ingest Lambda]
-    Lambda --> DDB[DynamoDB Telemetry]
+    Lambda --> ALRT[S3 Alert Data Lake]
     
     User --> TAPI[Telemetry API]
-    TAPI --> DDB
+    TAPI --> ALRT
     
     EC2 --> UserData[S3 / DynamoDB Profiles]
 ```
@@ -61,11 +61,11 @@ graph TD
 - **Config**: Automatically generates `config.json` with the latest Telemetry and Profile API URLs.
 
 ### 4. Backend (SentinelNet-Backend)
-- **Compute**: One **`t3.large`** EC2 instance (8GB RAM). 
-- **Memory Safety**: A **4GB Swap File** and strict JVM heap limits (1GB each) are applied to ensure multiple heavy services (Wazuh, ES, Cassandra) remain stable.
-- **Ingestion**: A Python forwarder script monitors `alerts.json` and pushes rule hits to an SQS queue for processing.
-- **TheHive 5 Stack**: Includes **Cassandra** (Database) and **Elasticsearch** (Search Index) sidecars to provide a full incident response capability.
-- **Telemetry API**: A dedicated Lambda + HttpApi allows the dashboard to fetch real-time alerts from DynamoDB.
+- **Compute**: One **`t3.medium`** EC2 instance (4GB RAM). 
+- **Memory Diet**: A **4GB Swap File** and strict JVM heap limits (512MB for Cassandra/ES, 768MB for TheHive) are applied to ensure multiple heavy services remain stable within the 4GB limits.
+- **Ingestion**: A Python forwarder script monitors `alerts.json` and pushes rule hits to an SQS queue.
+- **TheHive 5 Stack**: Includes **Cassandra** and **Elasticsearch** containers running in a "low-memory mode".
+- **Telemetry API**: A dedicated Lambda + HttpApi allows the dashboard to fetch the latest alerts from the **S3 Data Lake**.
 - **Containerization**: Services run as Docker containers using `docker-compose`. This avoids the complexity of multi-container Fargate tasks.
 - **Auth**: For the POC, the ALB forwards direct HTTP traffic to the services (no Cognito auth at the LB level). Authentication is handled internally by the applications (TheHive, Grafana).
 

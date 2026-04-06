@@ -1,13 +1,10 @@
 import json
 import os
 import boto3
-from boto3.dynamodb.conditions import Key
 
-TABLE_NAME = os.environ["TABLE_NAME"]
-REGION = os.environ.get("AWS_REGION", "us-east-1")
+BUCKET_NAME = os.environ["ALERTS_BUCKET_NAME"]
+s3 = boto3.client("s3")
 
-dynamodb = boto3.resource("dynamodb", region_name=REGION)
-table = dynamodb.Table(TABLE_NAME)
 
 def json_response(body, status_code=200):
     return {
@@ -21,20 +18,41 @@ def json_response(body, status_code=200):
         "body": json.dumps(body),
     }
 
+
 def handler(event, context):
+    """List 50 most recent alerts from S3 and return content to Dashboard."""
     if event.get("httpMethod") == "OPTIONS":
         return json_response({}, 200)
 
     try:
-        # Scan for last 50 items (POC simple approach)
-        # In production, we would use a GSI or query by date
-        response = table.scan(Limit=50)
-        items = response.get("Items", [])
+        # List alerts (sortable by Key: alerts/YYYY-MM-DD/HH-MM-SS-<uuid>.json)
+        response = s3.list_objects_v2(
+            Bucket=BUCKET_NAME, 
+            Prefix="alerts/",
+            MaxKeys=100
+        )
         
-        # Sort items by timestamp (sk) descending
-        items.sort(key=lambda x: x.get("sk", ""), reverse=True)
+        contents = response.get("Contents", [])
+        if not contents:
+            return json_response([])
+
+        # Sort by Key Descending (latest first)
+        contents.sort(key=lambda x: x["Key"], reverse=True)
         
-        return json_response(items)
+        # Pull the latest 50 alerts
+        latest_50 = contents[:50]
+        results = []
+        
+        for obj in latest_50:
+            try:
+                res = s3.get_object(Bucket=BUCKET_NAME, Key=obj["Key"])
+                data = json.loads(res["Body"].read().decode("utf-8"))
+                results.append(data)
+            except Exception as e:
+                print(f"Failed to read {obj['Key']}: {e}")
+
+        return json_response(results)
+
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"Error fetching alerts: {e}")
         return json_response({"error": str(e)}, 500)

@@ -128,7 +128,7 @@ cd ..
 - **SentinelNet-Network** — VPC and subnets (center team). Public subnets only, no NAT Gateway.
 - **SentinelNet-UserData** — DynamoDB (profiles), S3 (profile pictures), and **Cognito UserPool** (shared auth).
 - **SentinelNet-Website** — The React frontend (S3 + CloudFront) and the Profile API.
-- **SentinelNet-Backend** — Full SOC suite (Wazuh, TheHive 5, Cassandra, Elasticsearch) on a **`t3.large`** (8GB RAM) instance + SQS/Lambda alert pipeline. See **SOC_SERVICES.md** for service details.
+- **SentinelNet-Backend** — Full SOC suite (Wazuh, TheHive 5, Cassandra, Elasticsearch) on a cost-optimized **`t3.medium`** (4GB RAM) instance + SQS/Lambda/S3 alert data lake. See **SOC_SERVICES.md** for service details.
 
 **If Network fails** with “Cannot delete export … in use by SentinelNet-Backend”, run the one-time fix from `infra/`: `./fix-network-export-conflict.sh` (see **infra/HOW-TO-DEPLOY.md**).
 
