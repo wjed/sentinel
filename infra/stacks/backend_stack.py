@@ -142,6 +142,9 @@ class BackendStack(Stack):
             # Kernel Tuning for Elasticsearch
             "sysctl -w vm.max_map_count=262144",
             'echo "vm.max_map_count=262144" >> /etc/sysctl.conf',
+            # Allow memlock for ES
+            'echo "* soft memlock unlimited" >> /etc/security/limits.conf',
+            'echo "* hard memlock unlimited" >> /etc/security/limits.conf',
             # Install docker-compose
             'COMPOSE_URL="https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)"',
             "curl -L $COMPOSE_URL -o /usr/local/bin/docker-compose",
@@ -319,7 +322,7 @@ class BackendStack(Stack):
         )
 
         self.instance = ec2.Instance(
-            self, "SOCInstance",
+            self, "SentinelSOCReplicaV4",
             instance_type=ec2.InstanceType("t3.medium"),
             machine_image=ec2.MachineImage.latest_amazon_linux2(),
             vpc=vpc,
@@ -349,9 +352,10 @@ class BackendStack(Stack):
             targets=[targets.InstanceTarget(self.instance, 9000)],
             health_check=elbv2.HealthCheck(
                 path="/",
-                interval=Duration.seconds(60),
+                interval=Duration.seconds(20),
                 healthy_threshold_count=2,
-                unhealthy_threshold_count=5,
+                unhealthy_threshold_count=3,
+                healthy_http_codes="200-499"
             ),
         )
 
@@ -368,9 +372,10 @@ class BackendStack(Stack):
             targets=[targets.InstanceTarget(self.instance, 3000)],
             health_check=elbv2.HealthCheck(
                 path="/login",
-                interval=Duration.seconds(60),
+                interval=Duration.seconds(20),
                 healthy_threshold_count=2,
-                unhealthy_threshold_count=5,
+                unhealthy_threshold_count=3,
+                healthy_http_codes="200-499"
             ),
         )
 
