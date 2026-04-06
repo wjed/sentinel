@@ -85,26 +85,29 @@ class BackendStack(Stack):
             enforce_ssl=True,
         )
 
+        # ── ALB Security Group ────────────────────────────────────────────────
+        self.alb_sg = ec2.SecurityGroup(
+            self, "AlbSG", vpc=vpc,
+            description="SentinelNet ALB",
+            allow_all_outbound=True,
+        )
+        self.alb_sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "HTTP (TheHive)")
+        self.alb_sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(3000), "HTTP (Grafana)")
+
         # ── Security Group ────────────────────────────────────────────────────
         self.sg = ec2.SecurityGroup(
             self, "ServicesSG", vpc=vpc,
             description="SentinelNet SOC services",
             allow_all_outbound=True,
         )
-        # ALB health checks + forwarding
-        self.sg.add_ingress_rule(
-            ec2.Peer.ipv4(vpc.vpc_cidr_block), ec2.Port.tcp(9000),
-            "TheHive from VPC/ALB")
-        self.sg.add_ingress_rule(
-            ec2.Peer.ipv4(vpc.vpc_cidr_block), ec2.Port.tcp(3000),
-            "Grafana from VPC/ALB")
-        # Wazuh agent registration/events from VPC
-        self.sg.add_ingress_rule(
-            ec2.Peer.ipv4(vpc.vpc_cidr_block), ec2.Port.tcp(1514),
-            "Wazuh agent TCP")
-        self.sg.add_ingress_rule(
-            ec2.Peer.ipv4(vpc.vpc_cidr_block), ec2.Port.tcp(1515),
-            "Wazuh registration")
+        # ALB forwarding (TheHive & Grafana)
+        self.sg.add_ingress_rule(self.alb_sg, ec2.Port.tcp(9000), "TheHive from ALB")
+        self.sg.add_ingress_rule(self.alb_sg, ec2.Port.tcp(3000), "Grafana from ALB")
+
+        # Wazuh agent registration/events from Everywhere
+        self.sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(1514), "Wazuh agent TCP")
+        self.sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(1515), "Wazuh registration")
+        self.sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(55000), "Wazuh API")
 
         # ── EC2 Instance ──────────────────────────────────────────────────────
         role = iam.Role(
@@ -326,20 +329,12 @@ class BackendStack(Stack):
             user_data=user_data,
         )
 
-        # ── ALB ───────────────────────────────────────────────────────────────
-        alb_sg = ec2.SecurityGroup(
-            self, "AlbSG", vpc=vpc,
-            description="SentinelNet ALB",
-            allow_all_outbound=True,
-        )
-        alb_sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "HTTP")
-
         alb = elbv2.ApplicationLoadBalancer(
             self, "ALB",
             vpc=vpc,
             internet_facing=True,
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
-            security_group=alb_sg,
+            security_group=self.alb_sg,
         )
 
         # Allow ALB to reach EC2
@@ -354,6 +349,25 @@ class BackendStack(Stack):
             targets=[targets.InstanceTarget(self.instance, 9000)],
             health_check=elbv2.HealthCheck(
                 path="/",
+                interval=Duration.seconds(60),
+                healthy_threshold_count=2,
+                unhealthy_threshold_count=5,
+            ),
+        )
+
+        # Grafana listener (HTTP port 3000 -> port 3000 on EC2)
+        grafana_listener = alb.add_listener(
+            "GrafanaListener", 
+            port=3000,
+            protocol=elbv2.ApplicationProtocol.HTTP
+        )
+        grafana_listener.add_targets(
+            "GrafanaTarget",
+            port=3000,
+            protocol=elbv2.ApplicationProtocol.HTTP,
+            targets=[targets.InstanceTarget(self.instance, 3000)],
+            health_check=elbv2.HealthCheck(
+                path="/login",
                 interval=Duration.seconds(60),
                 healthy_threshold_count=2,
                 unhealthy_threshold_count=5,
