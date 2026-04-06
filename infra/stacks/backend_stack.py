@@ -151,8 +151,8 @@ class BackendStack(Stack):
             "chmod +x /usr/local/bin/docker-compose",
             # Create directories
             "mkdir -p /opt/sentinel/conf",
-            "mkdir -p /opt/sentinel/data/cassandra /opt/sentinel/data/elasticsearch",
-            "chown -R 1000:1000 /opt/sentinel/data/elasticsearch",
+            "mkdir -p /opt/sentinel/data/cassandra /opt/sentinel/data/elasticsearch /opt/sentinel/data/wazuh_logs",
+            "chown -R 1000:1000 /opt/sentinel/data/elasticsearch /opt/sentinel/data/wazuh_logs",
             # Create TheHive Config
             "cat > /opt/sentinel/conf/thehive.conf << 'THEHIVE_EOF'",
             'db.janusgraph.backend = "cql"',
@@ -217,9 +217,9 @@ class BackendStack(Stack):
             '      - "1515:1515"',
             '      - "55000:55000"',
             "    volumes:",
-            "      - wazuh_data:/var/ossec/data",
-            "      - wazuh_etc:/var/ossec/etc",
-            "      - wazuh_logs:/var/ossec/logs",
+            "      - /opt/sentinel/data/wazuh_data:/var/ossec/data",
+            "      - /opt/sentinel/data/wazuh_etc:/var/ossec/etc",
+            "      - /opt/sentinel/data/wazuh_logs:/var/ossec/logs",
             "",
             "  grafana:",
             "    image: grafana/grafana:latest",
@@ -232,9 +232,6 @@ class BackendStack(Stack):
             "      - grafana_data:/var/lib/grafana",
             "",
             "volumes:",
-            "  wazuh_data:",
-            "  wazuh_etc:",
-            "  wazuh_logs:",
             "  thehive_data:",
             "  grafana_data:",
             "COMPOSE_EOF",
@@ -247,7 +244,7 @@ class BackendStack(Stack):
             "import json, time, boto3, os",
             "sqs = boto3.client('sqs', region_name=os.environ.get('AWS_REGION', 'us-east-1'))",
             "queue_url = os.environ.get('QUEUE_URL')",
-            "alerts_path = '/var/ossec/logs/alerts/alerts.json'",
+            "alerts_path = '/opt/sentinel/data/wazuh_logs/alerts/alerts.json'",
             "def forward():",
             "    if not os.path.exists(alerts_path): return",
             "    with open(alerts_path, 'r') as f:",
@@ -330,6 +327,13 @@ class BackendStack(Stack):
             security_group=self.sg,
             role=role,
             user_data=user_data,
+            associate_public_ip_address=True,
+            block_devices=[
+                ec2.BlockDevice(
+                    device_name="/dev/xvda",
+                    volume=ec2.BlockDeviceVolume.ebs(20, volume_type=ec2.EbsDeviceVolumeType.GP3)
+                )
+            ]
         )
 
         alb = elbv2.ApplicationLoadBalancer(
