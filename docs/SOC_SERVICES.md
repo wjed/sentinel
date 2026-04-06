@@ -69,5 +69,6 @@ sudo docker-compose restart thehive
 ```
 
 ### Logs & Monitoring
-- **EC2 Instance Logs**: Available in CloudWatch via the CloudWatch Agent.
-- **Ingest Lambda Logs**: Available in CloudWatch logs for the `sentinel-wazuh-ingest` function.
+- **EC2 Instance Logs**: Available in CloudWatch via the CloudWatch Agent. High-priority errors and critical events are filtered and forwarded to the `/sentinelnet/soc/errors` log group with a **1-day retention policy**.
+- **Lambda Logs**: Ingest and API Lambda functions log to CloudWatch with a **1-day retention policy** to minimize storage costs.
+- **Alert History**: All normalized alerts are stored in **DynamoDB** with a **30-day TTL** (auto-cleanup).

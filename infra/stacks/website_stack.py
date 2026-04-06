@@ -18,6 +18,7 @@ from aws_cdk.aws_cloudfront_origins import S3BucketOrigin
 from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_apigatewayv2 as apigwv2
+from aws_cdk import aws_logs as logs
 from aws_cdk.aws_apigatewayv2_integrations import HttpLambdaIntegration
 from aws_cdk.aws_apigatewayv2_authorizers import HttpJwtAuthorizer
 from constructs import Construct
@@ -114,6 +115,7 @@ class WebsiteStack(Stack):
                 runtime=lambda_.Runtime.PYTHON_3_12,
                 handler="handler.handler",
                 code=lambda_.Code.from_asset(profile_lambda_dir),
+                log_retention=logs.RetentionDays.ONE_DAY,
                 environment={"TABLE_NAME": user_data_stack.profiles_table.table_name},
             )
             user_data_stack.profiles_table.grant_read_write_data(profile_fn)

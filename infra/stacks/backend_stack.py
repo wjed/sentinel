@@ -30,6 +30,7 @@ from aws_cdk import (
     aws_kms as kms,
     aws_lambda as lambda_,
     aws_lambda_event_sources as events,
+    aws_logs as logs,
     aws_sqs as sqs,
 )
 from constructs import Construct
@@ -116,6 +117,8 @@ class BackendStack(Stack):
             managed_policies=[
                 iam.ManagedPolicy.from_aws_managed_policy_name(
                     "AmazonSSMManagedInstanceCore"),
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    "CloudWatchAgentServerPolicy"),
             ],
         )
 
@@ -271,6 +274,49 @@ class BackendStack(Stack):
             "User=root",
             "SERVICE_EOF",
             "systemctl enable wazuh-forwarder && systemctl start wazuh-forwarder",
+            # CloudWatch Integration (Errors Only)
+            "yum install -y amazon-cloudwatch-agent",
+            "touch /var/log/sentinel_errors.log",
+            "chmod 666 /var/log/sentinel_errors.log",
+            # Create Filter Service
+            "cat > /usr/local/bin/log_filter.sh << 'FILTER_EOF'",
+            "#!/bin/bash",
+            "tail -F /var/log/messages /var/ossec/logs/ossec.log /var/lib/docker/containers/*/*.log 2>/dev/null | grep --line-buffered -Ei 'ERROR|CRITICAL|FAIL' >> /var/log/sentinel_errors.log",
+            "FILTER_EOF",
+            "chmod +x /usr/local/bin/log_filter.sh",
+            # Register Filter as Systemd Service
+            "cat > /etc/systemd/system/sentinel-log-filter.service << SERVICE_EOF",
+            "[Unit]",
+            "Description=SentinelNet Log Error Filter",
+            "After=docker.service",
+            "[Service]",
+            "Type=simple",
+            "ExecStart=/bin/bash /usr/local/bin/log_filter.sh",
+            "Restart=always",
+            "User=root",
+            "SERVICE_EOF",
+            "systemctl enable sentinel-log-filter && systemctl start sentinel-log-filter",
+            # Configure CloudWatch Agent
+            "cat > /opt/aws/amazon-cloudwatch-agent/bin/config.json << 'CW_EOF'",
+            "{",
+            '  "logs": {',
+            '    "logs_collected": {',
+            '      "files": {',
+            '        "collect_list": [',
+            "          {",
+            '            "file_path": "/var/log/sentinel_errors.log",',
+            '            "log_group_name": "/sentinelnet/soc/errors",',
+            '            "log_stream_name": "{instance_id}",',
+            '            "retention_in_days": 1',
+            "          }",
+            "        ]",
+            "      }",
+            "    }",
+            "  }",
+            "}",
+            "CW_EOF",
+            # Start CloudWatch Agent
+            "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s",
         )
 
         self.instance = ec2.Instance(
@@ -327,6 +373,7 @@ class BackendStack(Stack):
             code=lambda_.Code.from_asset(lambda_dir),
             timeout=Duration.seconds(60),
             memory_size=256,
+            log_retention=logs.RetentionDays.ONE_DAY,
             environment={
                 "TABLE_NAME": self.telemetry_table.table_name,
                 "RETENTION_DAYS": "30",
@@ -347,6 +394,7 @@ class BackendStack(Stack):
             runtime=lambda_.Runtime.PYTHON_3_12,
             handler="handler.handler",
             code=lambda_.Code.from_asset(telemetry_api_dir),
+            log_retention=logs.RetentionDays.ONE_DAY,
             environment={
                 "TABLE_NAME": self.telemetry_table.table_name,
             },
