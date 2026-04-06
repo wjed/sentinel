@@ -4,18 +4,21 @@
 
 ---
 
-## What to put here
-
-- **Architecture overview** — How frontend, backend, and infra connect; data flow and security boundaries.
-- **SOC workflows** — How incidents move from ingestion → correlation → escalation → dashboard.
-- **API contracts** — Endpoints, request/response shapes (or links to OpenAPI/specs if you keep them elsewhere).
-- **Team handoffs** — Who owns what, interfaces between frontend/backend/infra, and how to run things locally or in a shared env.
+## 🏗 High-Level Architecture
+- **[Architecture Overview (POC)](ARCHITECTURE_POC.md)** — VPC, costs, components, and logical data flow.
+- **[SOC Services & Pipeline](SOC_SERVICES.md)** — Wazuh, TheHive, Grafana, and the SQS/Lambda ingest pipeline.
+- **[Cognito Setup](COGNITO-SETUP.md)** — Authentication and user pool deployment details.
 
 ---
 
-## Where to do what
+## 🛠 Features & Workflows
+- **[Data Storage](architecture/Data_Storage.md)** — Details on DynamoDB tables and structures.
+- **[Escalation Logic](architecture/Escalation_Logic.md)** — How alerts are promoted to cases (WIP).
 
-- **Explain the system** → Add a markdown file (e.g. `architecture.md`, `workflows.md`) and link to it from the root README or from team READMEs.
-- **Diagrams** → Add images or Mermaid snippets in markdown so they live in the repo and stay next to the docs.
+---
+
+## ⚙️ Developer Documentation
+- **[Root README](../README.md)** — Main project overview and deploy steps.
+- **[Infra: Deploy Guide](../infra/README.md)** — Deep dive into AWS CDK and deployment order.
 
 Keeping everything here makes it easy for new team members and graders to find “how it works” in one place.
