@@ -4,7 +4,7 @@ This document describes the services running on the backend and how they interac
 
 ## Backend SOC Services (Single-Instance t3.medium)
 
-The Backend SOC is consolidated into a single **t3.medium** EC2 instance (4GB RAM) for extreme cost-efficiency. To fit all services, a **"Memory Diet"** is applied to the Java-based components:
+The Backend SOC is consolidated into a single **t3.medium** EC2 instance (4GB RAM / **20GB GP3 SSD**) for extreme cost-efficiency. To fit all services, a **"Memory Diet"** is applied to the Java-based components:
 
 | Service | Memory Limit | Description |
 |---------|--------------|-------------|
@@ -14,9 +14,16 @@ The Backend SOC is consolidated into a single **t3.medium** EC2 instance (4GB RA
 | **Cassandra** | 512 MB Heap | Database supporting TheHive. |
 | **Grafana** | 256 MB | Visualization dashboard. |
 
-### Configuration (docker-compose)
-
 All services are managed in `/opt/sentinel/docker-compose.yml`. Data is persisted in Docker volumes. A **4GB Swap File** is configured on the host to handle memory spikes.
+
+### 🌐 Credentials & Live Dashboards
+
+| Service | Protocol | Default Credentials | Path |
+|---------|----------|---------------------|------|
+| **TheHive 5** | HTTP (Port 80) | `admin` / `thehive1234` | `/` |
+| **Grafana** | HTTP (Port 3000) | `admin` / `sentinel` | `/login` |
+| **Wazuh API** | HTTPS (Port 55000)| `wazuh` / `Wazuh123!` | `/` |
+| **Sentinel Dashboard** | HTTPS | (Cognito SSO) | (CloudFront URL) |
 
 ---
 

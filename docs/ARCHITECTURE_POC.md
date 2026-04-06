@@ -61,7 +61,7 @@ graph TD
 - **Config**: Automatically generates `config.json` with the latest Telemetry and Profile API URLs.
 
 ### 4. Backend (SentinelNet-Backend)
-- **Compute**: One **`t3.medium`** EC2 instance (4GB RAM). 
+- **Compute**: One **`t3.medium`** EC2 instance (4GB RAM) with a **20GB GP3 SSD**. 
 - **Memory Diet**: A **4GB Swap File** and strict JVM heap limits (512MB for Cassandra/ES, 768MB for TheHive) are applied to ensure multiple heavy services remain stable within the 4GB limits.
 - **Ingestion**: A Python forwarder script monitors `alerts.json` and pushes rule hits to an SQS queue.
 - **TheHive 5 Stack**: Includes **Cassandra** and **Elasticsearch** containers running in a "low-memory mode".

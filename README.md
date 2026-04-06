@@ -128,7 +128,7 @@ cd ..
 - **SentinelNet-Network** — VPC and subnets (center team). Public subnets only, no NAT Gateway.
 - **SentinelNet-UserData** — DynamoDB (profiles), S3 (profile pictures), and **Cognito UserPool** (shared auth).
 - **SentinelNet-Website** — The React frontend (S3 + CloudFront) and the Profile API.
-- **SentinelNet-Backend** — Full SOC suite (Wazuh, TheHive 5, Cassandra, Elasticsearch) on a cost-optimized **`t3.medium`** (4GB RAM) instance + SQS/Lambda/S3 alert data lake. See **SOC_SERVICES.md** for service details.
+- **SentinelNet-Backend** — Full SOC suite (Wazuh, TheHive 5, Cassandra, Elasticsearch) on a cost-optimized **`t3.medium`** (4GB RAM / **20GB GP3 SSD**) instance + **4GB Swap** and SQS/Lambda/S3 alert data lake. See **SOC_SERVICES.md** for service details.
 
 **If Network fails** with “Cannot delete export … in use by SentinelNet-Backend”, run the one-time fix from `infra/`: `./fix-network-export-conflict.sh` (see **infra/HOW-TO-DEPLOY.md**).
 
@@ -143,6 +143,17 @@ When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https:/
 - [ ] First time only: `cd infra` → `pip install -r requirements.txt` → `cdk bootstrap`
 - [ ] `cd infra` → deploy **Network**, then **UserData**, then **Website** (with `--exclusively` on Website)
 - [ ] Copy **WebsiteURL** from the output
+
+---
+
+### 🌐 Live Dashboard Access (POC Default)
+
+| Tool | Access URL | Default Credentials |
+| :--- | :--- | :--- |
+| **Analyist Portal** | [https://d2p6585asnlov5.cloudfront.net](https://d2p6585asnlov5.cloudfront.net) | (Use Cognito) |
+| **TheHive 5** | `http://Sentin-ALBAE-K-123456789.elb.amazonaws.com` (Check ALB Output) | `admin` / `thehive1234` |
+| **Grafana** | `http://[ALB-DNS-Name]:3000` | `admin` / `sentinel` |
+| **Wazuh Agent** | Port **1514** (TCP) | (Public IP Registration) |
 
 ---
 
