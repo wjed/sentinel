@@ -228,6 +228,8 @@ class BackendStack(Stack):
             '      - "3000:3000"',
             "    environment:",
             "      - GF_SECURITY_ADMIN_PASSWORD=sentinel",
+            "      - GF_SERVER_ROOT_URL=https://%(domain)s/grafana/",
+            "      - GF_SERVER_SERVE_FROM_SUB_PATH=true",
             "    volumes:",
             "      - grafana_data:/var/lib/grafana",
             "",
@@ -336,7 +338,7 @@ class BackendStack(Stack):
             ]
         )
 
-        alb = elbv2.ApplicationLoadBalancer(
+        self.alb = elbv2.ApplicationLoadBalancer(
             self, "ALB",
             vpc=vpc,
             internet_facing=True,
@@ -345,10 +347,10 @@ class BackendStack(Stack):
         )
 
         # Allow ALB to reach EC2
-        self.sg.connections.allow_from(alb, ec2.Port.tcp(9000))
+        self.sg.connections.allow_from(self.alb, ec2.Port.tcp(9000))
 
         # TheHive listener (HTTP port 80 -> port 9000 on EC2)
-        listener = alb.add_listener("HttpListener", port=80)
+        listener = self.alb.add_listener("HttpListener", port=80)
         listener.add_targets(
             "TheHiveTarget",
             port=9000,
@@ -364,7 +366,7 @@ class BackendStack(Stack):
         )
 
         # Grafana listener (HTTP port 3000 -> port 3000 on EC2)
-        grafana_listener = alb.add_listener(
+        grafana_listener = self.alb.add_listener(
             "GrafanaListener", 
             port=3000,
             protocol=elbv2.ApplicationProtocol.HTTP
@@ -435,7 +437,7 @@ class BackendStack(Stack):
 
         # ── Outputs ───────────────────────────────────────────────────────────
         CfnOutput(self, "InstanceId", value=self.instance.instance_id)
-        CfnOutput(self, "ALBEndpoint", value=alb.load_balancer_dns_name,
+        CfnOutput(self, "ALBEndpoint", value=self.alb.load_balancer_dns_name,
                   export_name="SentinelNetALBEndpoint")
         CfnOutput(self, "AlertsBucketName",
                   value=self.alerts_bucket.bucket_name)
