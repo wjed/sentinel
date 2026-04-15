@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
+import { useAuth } from 'react-oidc-context'
 import { getResolvedConfig } from '../auth/resolvedConfig'
+import { hasAllowedGroup } from '../auth/access'
 
 function SeverityBadge({ level }) {
   let color = 'var(--text-dim)'
@@ -26,6 +28,7 @@ function SeverityBadge({ level }) {
 }
 
 export default function Alerts() {
+  const auth = useAuth()
   const [alerts, setAlerts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -33,13 +36,17 @@ export default function Alerts() {
   const fetchAlerts = async () => {
     const config = getResolvedConfig()
     const apiUrl = config?.telemetryApiUrl
-    if (!apiUrl) {
+    const token = auth.user?.access_token ?? auth.user?.id_token
+    if (!apiUrl || !token || !hasAllowedGroup(auth.user)) {
       setLoading(false)
       return
     }
 
     try {
-      const response = await fetch(`${apiUrl}/alerts`)
+      const response = await fetch(`${apiUrl}/alerts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (response.status === 403) throw new Error('Access denied')
       if (!response.ok) throw new Error('Failed to fetch alerts')
       const data = await response.json()
       setAlerts(Array.isArray(data) ? data : [])
@@ -53,10 +60,11 @@ export default function Alerts() {
   }
 
   useEffect(() => {
+    if (!auth.isAuthenticated) return
     fetchAlerts()
     const interval = setInterval(fetchAlerts, 10000) // Polling every 10s for POC
     return () => clearInterval(interval)
-  }, [])
+  }, [auth.isAuthenticated, auth.user])
 
   return (
     <div className="page-wrap">

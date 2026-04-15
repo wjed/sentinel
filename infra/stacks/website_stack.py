@@ -128,6 +128,13 @@ class WebsiteStack(Stack):
         web_client_id = self._web_client_cfn.ref
 
         cognito_domain_url = f"https://sentinelnet.auth.{region}.amazoncognito.com"
+        issuer = f"https://cognito-idp.{region}.amazonaws.com/{user_pool.user_pool_id}"
+        allowed_groups = getattr(
+            user_data_stack,
+            "allowed_console_groups",
+            ["SentinelNetAdmins", "SentinelNetAnalysts", "SentinelNetViewers"],
+        )
+        allowed_groups_csv = ",".join(allowed_groups)
 
         # ── Profile API (optional) ────────────────────────────────────────────
         api_base_url = None
@@ -138,11 +145,13 @@ class WebsiteStack(Stack):
                 handler="handler.handler",
                 code=lambda_.Code.from_asset(profile_lambda_dir),
                 log_retention=logs.RetentionDays.ONE_DAY,
-                environment={"TABLE_NAME": user_data_stack.profiles_table.table_name},
+                environment={
+                    "TABLE_NAME": user_data_stack.profiles_table.table_name,
+                    "ALLOWED_GROUPS": allowed_groups_csv,
+                },
             )
             user_data_stack.profiles_table.grant_read_write_data(profile_fn)
 
-            issuer = f"https://cognito-idp.{region}.amazonaws.com/{user_pool.user_pool_id}"
             http_api = apigwv2.HttpApi(
                 self, "ProfileHttpApi",
                 cors_preflight=apigwv2.CorsPreflightOptions(
@@ -166,6 +175,34 @@ class WebsiteStack(Stack):
             )
             api_base_url = http_api.api_endpoint
 
+        telemetry_api_base_url = None
+        if hasattr(backend_stack, "telemetry_api_fn"):
+            backend_stack.telemetry_api_fn.add_environment(
+                "ALLOWED_GROUPS", allowed_groups_csv
+            )
+            telemetry_api = apigwv2.HttpApi(
+                self, "TelemetryHttpApi",
+                cors_preflight=apigwv2.CorsPreflightOptions(
+                    allow_origins=["*"],
+                    allow_methods=[
+                        apigwv2.CorsHttpMethod.GET,
+                        apigwv2.CorsHttpMethod.OPTIONS,
+                    ],
+                    allow_headers=["Authorization", "Content-Type"],
+                ),
+                default_authorizer=HttpJwtAuthorizer(
+                    "TelemetryCognitoAuth", issuer,
+                    jwt_audience=[web_client_id],
+                ),
+            )
+            telemetry_api.add_routes(
+                path="/alerts",
+                methods=[apigwv2.HttpMethod.GET],
+                integration=HttpLambdaIntegration(
+                    "TelemetryIntegration", backend_stack.telemetry_api_fn),
+            )
+            telemetry_api_base_url = telemetry_api.api_endpoint
+
         # ── Runtime config.json ───────────────────────────────────────────────
         config = {
             "authority": f"https://cognito-idp.{region}.amazonaws.com/{user_pool.user_pool_id}",
@@ -174,12 +211,13 @@ class WebsiteStack(Stack):
             "logoutUri": callback_url,
             "cognitoDomain": cognito_domain_url,
             "scope": "openid email",
+            "allowedGroups": allowed_groups,
         }
         if api_base_url:
             config["profileApiUrl"] = api_base_url.rstrip("/")
 
-        if hasattr(backend_stack, "telemetry_api"):
-            config["telemetryApiUrl"] = backend_stack.telemetry_api.api_endpoint.rstrip("/")
+        if telemetry_api_base_url:
+            config["telemetryApiUrl"] = telemetry_api_base_url.rstrip("/")
 
         # ── Deploy frontend ───────────────────────────────────────────────────
         if os.path.isdir(frontend_dist):
@@ -205,3 +243,6 @@ class WebsiteStack(Stack):
         if api_base_url:
             CfnOutput(self, "ProfileApiUrl", value=api_base_url,
                       export_name="SentinelNetProfileApiUrl")
+        if telemetry_api_base_url:
+            CfnOutput(self, "TelemetryApiUrl", value=telemetry_api_base_url,
+                      export_name="SentinelNetTelemetryApiUrl")

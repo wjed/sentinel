@@ -3,7 +3,7 @@ Backend Stack - Single EC2 running SOC services via docker-compose.
 
 Resources:
   - EC2 (t3.medium, public subnet) running Wazuh + TheHive + Grafana
-  - ALB (internet-facing) with Cognito auth in front of TheHive
+  - ALB (internet-facing) routing to TheHive + Grafana
   - DynamoDB telemetry table + KMS key for alert storage
   - SQS alert queue + DLQ for Wazuh alert ingestion
   - Lambda function (SQS -> DynamoDB)
@@ -407,6 +407,8 @@ class BackendStack(Stack):
         self.alerts_bucket.grant_put(self.ingest_fn)
 
         # ── Telemetry API ────────────────────────────────────────────────────
+        # Created as an authenticated HTTP API in WebsiteStack, sharing the
+        # same Cognito app client as the CloudFront frontend.
         telemetry_api_dir = str(repo_root / "backend" / "lambda" / "telemetry_api")
         self.telemetry_api_fn = lambda_.Function(
             self, "TelemetryApiFunction",
@@ -420,11 +422,15 @@ class BackendStack(Stack):
         )
         self.alerts_bucket.grant_read(self.telemetry_api_fn)
 
+        # Transitional compatibility: the currently deployed Website stack
+        # imports this backend API endpoint. Keep it until Website is deployed
+        # from the ACL branch, then remove this legacy API in a follow-up deploy.
         self.telemetry_api = apigwv2.HttpApi(
             self, "TelemetryHttpApi",
             cors_preflight=apigwv2.CorsPreflightOptions(
                 allow_methods=[apigwv2.CorsHttpMethod.GET, apigwv2.CorsHttpMethod.OPTIONS],
                 allow_origins=["*"],
+                allow_headers=["Authorization", "Content-Type"],
             ),
         )
 
@@ -443,4 +449,10 @@ class BackendStack(Stack):
                   value=self.alerts_bucket.bucket_name)
         CfnOutput(self, "AlertQueueUrl", value=self.alert_queue.queue_url)
         CfnOutput(self, "TelemetryApiUrl", value=self.telemetry_api.api_endpoint)
+        CfnOutput(
+            self,
+            "ExportsOutputFnGetAttTelemetryHttpApiECE39854ApiEndpointC1D6BBB1",
+            value=self.telemetry_api.api_endpoint,
+            export_name="SentinelNet-Backend:ExportsOutputFnGetAttTelemetryHttpApiECE39854ApiEndpointC1D6BBB1",
+        )
         CfnOutput(self, "ManagerPublicIP", value=self.instance.instance_public_ip)
