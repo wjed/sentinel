@@ -3,7 +3,7 @@ Backend Stack - Single EC2 running SOC services via docker-compose.
 
 Resources:
   - EC2 (t3.medium, public subnet) running Wazuh + TheHive + Grafana
-  - ALB (internet-facing) with Cognito auth in front of TheHive
+  - ALB (internet-facing) routing to TheHive + Grafana
   - DynamoDB telemetry table + KMS key for alert storage
   - SQS alert queue + DLQ for Wazuh alert ingestion
   - Lambda function (SQS -> DynamoDB)
@@ -19,8 +19,6 @@ from aws_cdk import (
     RemovalPolicy,
     Stack,
     Tags,
-    aws_apigatewayv2 as apigwv2,
-    aws_apigatewayv2_integrations as integrations,
     aws_cognito as cognito,
     aws_dynamodb as dynamodb,
     aws_ec2 as ec2,
@@ -405,6 +403,8 @@ class BackendStack(Stack):
         self.alerts_bucket.grant_put(self.ingest_fn)
 
         # ── Telemetry API ────────────────────────────────────────────────────
+        # Created as an authenticated HTTP API in WebsiteStack, sharing the
+        # same Cognito app client as the CloudFront frontend.
         telemetry_api_dir = str(repo_root / "backend" / "lambda" / "telemetry_api")
         self.telemetry_api_fn = lambda_.Function(
             self, "TelemetryApiFunction",
@@ -418,21 +418,6 @@ class BackendStack(Stack):
         )
         self.alerts_bucket.grant_read(self.telemetry_api_fn)
 
-        self.telemetry_api = apigwv2.HttpApi(
-            self, "TelemetryHttpApi",
-            cors_preflight=apigwv2.CorsPreflightOptions(
-                allow_methods=[apigwv2.CorsHttpMethod.GET, apigwv2.CorsHttpMethod.OPTIONS],
-                allow_origins=["*"],
-            ),
-        )
-
-        self.telemetry_api.add_routes(
-            path="/alerts",
-            methods=[apigwv2.HttpMethod.GET],
-            integration=integrations.HttpLambdaIntegration(
-                "TelemetryIntegration", self.telemetry_api_fn),
-        )
-
         # ── Outputs ───────────────────────────────────────────────────────────
         CfnOutput(self, "InstanceId", value=self.instance.instance_id)
         CfnOutput(self, "ALBEndpoint", value=alb.load_balancer_dns_name,
@@ -440,5 +425,4 @@ class BackendStack(Stack):
         CfnOutput(self, "AlertsBucketName",
                   value=self.alerts_bucket.bucket_name)
         CfnOutput(self, "AlertQueueUrl", value=self.alert_queue.queue_url)
-        CfnOutput(self, "TelemetryApiUrl", value=self.telemetry_api.api_endpoint)
         CfnOutput(self, "ManagerPublicIP", value=self.instance.instance_public_ip)
