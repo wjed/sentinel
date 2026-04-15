@@ -42,6 +42,12 @@
   --space-block: 2rem;
 }
 
+body.compact-mode {
+  --space-section: 3rem;
+  --space-block: 1.25rem;
+  --nav-height: 52px;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

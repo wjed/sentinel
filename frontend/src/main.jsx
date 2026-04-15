@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from 'react-oidc-context'
 import App from './App'
+import { SettingsProvider } from './contexts/SettingsContext'
 import { getOidcConfig } from './auth/config'
 import { setResolvedConfig } from './auth/resolvedConfig'
 import './index.css'
@@ -18,9 +19,11 @@ function renderApp(oidcConfig) {
 
   ReactDOM.createRoot(root).render(
     <AuthProvider {...oidcConfig} onSigninCallback={onSigninCallback}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <SettingsProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </SettingsProvider>
     </AuthProvider>
   )
 }

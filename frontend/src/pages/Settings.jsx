@@ -1,5 +1,6 @@
 import DevAdvice from '../components/DevAdvice'
 import { useState } from 'react'
+import { useSettings } from '../contexts/SettingsContext'
 
 // ─── Reusable form primitives ─────────────────────────────────────────────────
 
@@ -152,15 +153,10 @@ function StatusDot({ ok }) {
 // ─── Tab: General ─────────────────────────────────────────────────────────────
 
 function GeneralTab() {
-  const [form, setForm] = useState({
-    orgName: 'SentinelNet SOC',
-    timezone: 'UTC',
-    dateFormat: 'YYYY-MM-DD',
-    dataRetention: '90',
-    telemetryUrl: '',
-  })
+  const { settings, updateSetting } = useSettings()
+  const form = settings.general
   const [saved, setSaved] = useState(false)
-  const set = (key) => (e) => { setForm(f => ({ ...f, [key]: e.target.value })); setSaved(false) }
+  const set = (key) => (e) => { updateSetting('general', key, e.target.value); setSaved(false) }
   const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2500) }
   const selectStyle = { ...inputStyle, cursor: 'pointer' }
 
@@ -218,13 +214,11 @@ function GeneralTab() {
 // ─── Tab: Notifications ───────────────────────────────────────────────────────
 
 function NotificationsTab() {
-  const [prefs, setPrefs] = useState({
-    alertsEnabled: true, digestEnabled: false, emailEnabled: false, slackEnabled: false,
-    emailAddress: '', slackWebhook: '', minSeverity: '7', digestFrequency: 'daily',
-  })
+  const { settings, updateSetting } = useSettings()
+  const prefs = settings.notifications
   const [saved, setSaved] = useState(false)
-  const toggle = (key) => setPrefs(p => ({ ...p, [key]: !p[key] }))
-  const set = (key) => (e) => { setPrefs(p => ({ ...p, [key]: e.target.value })); setSaved(false) }
+  const toggle = (key) => updateSetting('notifications', key, !prefs[key])
+  const set = (key) => (e) => { updateSetting('notifications', key, e.target.value); setSaved(false) }
   const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2500) }
   const selectStyle = { ...inputStyle, cursor: 'pointer' }
 
@@ -300,14 +294,19 @@ function NotificationsTab() {
 // ─── Tab: Integrations ────────────────────────────────────────────────────────
 
 function IntegrationsTab() {
-  const [wazuh, setWazuh] = useState({ url: '', user: '', pass: '', connected: false, testing: false })
-  const [grafana, setGrafana] = useState({ url: '', token: '', connected: false })
-  const [geoip, setGeoip] = useState({ key: '' })
+  const { settings, setCategoryConfig } = useSettings()
+  const wazuh = settings.integrations.wazuh
+  const grafana = settings.integrations.grafana
+  const geoip = settings.integrations.geoip
   const [saved, setSaved] = useState(false)
 
+  const updateWazuh = (updater) => setCategoryConfig('integrations', i => ({ ...i, wazuh: typeof updater === 'function' ? updater(i.wazuh) : updater }))
+  const updateGrafana = (updater) => setCategoryConfig('integrations', i => ({ ...i, grafana: typeof updater === 'function' ? updater(i.grafana) : updater }))
+  const updateGeoip = (updater) => setCategoryConfig('integrations', i => ({ ...i, geoip: typeof updater === 'function' ? updater(i.geoip) : updater }))
+
   const testWazuh = () => {
-    setWazuh(w => ({ ...w, testing: true }))
-    setTimeout(() => setWazuh(w => ({ ...w, testing: false, connected: !!w.url })), 1400)
+    updateWazuh(w => ({ ...w, testing: true }))
+    setTimeout(() => updateWazuh(w => ({ ...w, testing: false, connected: !!w.url })), 1400)
   }
 
   const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2500) }
@@ -356,19 +355,19 @@ function IntegrationsTab() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
           <Field label="Manager URL">
             <input style={inputStyle} placeholder="https://wazuh.yourorg.com"
-              value={wazuh.url} onChange={e => setWazuh(w => ({ ...w, url: e.target.value, connected: false }))}
+              value={wazuh.url} onChange={e => updateWazuh(w => ({ ...w, url: e.target.value, connected: false }))}
               onFocus={e => e.target.style.borderColor = 'var(--accent)'}
               onBlur={e => e.target.style.borderColor = 'var(--border)'} />
           </Field>
           <Field label="API Username">
             <input style={inputStyle} placeholder="wazuh-api"
-              value={wazuh.user} onChange={e => setWazuh(w => ({ ...w, user: e.target.value }))}
+              value={wazuh.user} onChange={e => updateWazuh(w => ({ ...w, user: e.target.value }))}
               onFocus={e => e.target.style.borderColor = 'var(--accent)'}
               onBlur={e => e.target.style.borderColor = 'var(--border)'} />
           </Field>
           <Field label="API Password">
             <input style={inputStyle} type="password" placeholder="••••••••"
-              value={wazuh.pass} onChange={e => setWazuh(w => ({ ...w, pass: e.target.value }))}
+              value={wazuh.pass} onChange={e => updateWazuh(w => ({ ...w, pass: e.target.value }))}
               onFocus={e => e.target.style.borderColor = 'var(--accent)'}
               onBlur={e => e.target.style.borderColor = 'var(--border)'} />
           </Field>
@@ -376,17 +375,17 @@ function IntegrationsTab() {
       </IntegrationCard>
 
       <IntegrationCard name="Grafana" description="Dashboard embed — visualizations and telemetry graphs"
-        logo="📊" connected={grafana.connected} onTest={() => setGrafana(g => ({ ...g, connected: !!g.url }))}>
+        logo="📊" connected={grafana.connected} onTest={() => updateGrafana(g => ({ ...g, connected: !!g.url }))}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
           <Field label="Grafana URL">
             <input style={inputStyle} placeholder="https://grafana.yourorg.com"
-              value={grafana.url} onChange={e => setGrafana(g => ({ ...g, url: e.target.value, connected: false }))}
+              value={grafana.url} onChange={e => updateGrafana(g => ({ ...g, url: e.target.value, connected: false }))}
               onFocus={e => e.target.style.borderColor = 'var(--accent)'}
               onBlur={e => e.target.style.borderColor = 'var(--border)'} />
           </Field>
           <Field label="Service Account Token" hint="Read-only token for embedding dashboards.">
             <input style={inputStyle} type="password" placeholder="glsa_••••••••"
-              value={grafana.token} onChange={e => setGrafana(g => ({ ...g, token: e.target.value }))}
+              value={grafana.token} onChange={e => updateGrafana(g => ({ ...g, token: e.target.value }))}
               onFocus={e => e.target.style.borderColor = 'var(--accent)'}
               onBlur={e => e.target.style.borderColor = 'var(--border)'} />
           </Field>
@@ -397,7 +396,7 @@ function IntegrationsTab() {
         logo="🌐" connected={false}>
         <Field label="License Key" hint="Get a free GeoLite2 key from maxmind.com.">
           <input style={inputStyle} type="password" placeholder="••••••••••••••••"
-            value={geoip.key} onChange={e => setGeoip({ key: e.target.value })}
+            value={geoip.key} onChange={e => updateGeoip(g => ({ ...g, key: e.target.value }))}
             onFocus={e => e.target.style.borderColor = 'var(--accent)'}
             onBlur={e => e.target.style.borderColor = 'var(--border)'} />
         </Field>
@@ -413,13 +412,11 @@ function IntegrationsTab() {
 // ─── Tab: Appearance ──────────────────────────────────────────────────────────
 
 function AppearanceTab() {
-  const [prefs, setPrefs] = useState({
-    compactMode: false, showDevAdvice: true, sidebarDefaultCollapsed: false,
-    accentColor: 'purple', tableRowDensity: 'comfortable', liveClockEnabled: true,
-  })
+  const { settings, updateSetting } = useSettings()
+  const prefs = settings.appearance
   const [saved, setSaved] = useState(false)
-  const toggle = (key) => setPrefs(p => ({ ...p, [key]: !p[key] }))
-  const set = (key) => (e) => { setPrefs(p => ({ ...p, [key]: e.target.value })); setSaved(false) }
+  const toggle = (key) => updateSetting('appearance', key, !prefs[key])
+  const set = (key) => (e) => { updateSetting('appearance', key, e.target.value); setSaved(false) }
   const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2500) }
 
   const ACCENTS = [
@@ -439,7 +436,7 @@ function AppearanceTab() {
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           {ACCENTS.map(opt => (
             <button key={opt.id}
-              onClick={() => { setPrefs(p => ({ ...p, accentColor: opt.id })); setSaved(false) }}
+              onClick={() => { updateSetting('appearance', 'accentColor', opt.id); setSaved(false) }}
               title={opt.id}
               style={{
                 width: 32, height: 32, borderRadius: '50%', background: opt.color,
@@ -618,13 +615,6 @@ export default function Settings() {
               Platform configuration and preferences
             </p>
           </div>
-          <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: '0.6rem', padding: '0.25rem 0.6rem',
-            background: 'var(--accent-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
-            color: 'var(--accent)',
-          }}>
-            LOCAL · CHANGES NOT PERSISTED
-          </span>
         </div>
 
         {/* Tab bar */}
