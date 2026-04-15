@@ -3,15 +3,6 @@ import { useAuth } from 'react-oidc-context'
 import { getResolvedConfig } from '../auth/resolvedConfig'
 import { hasAllowedGroup } from '../auth/access'
 
-// ─── Severity helpers ─────────────────────────────────────────────────────────
-
-function severityLabel(level) {
-  if (level >= 12) return { label: 'Critical', color: '#ef4444' }
-  if (level >= 7)  return { label: 'High',     color: '#eab308' }
-  if (level >= 3)  return { label: 'Medium',   color: '#a78bfa' }
-  return                  { label: 'Low',      color: '#22c55e' }
-}
-
 function SeverityBadge({ level }) {
   const { label, color } = severityLabel(level)
   return (
@@ -141,34 +132,14 @@ function AlertVolumeChart({ counts }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function Alerts() {
-<<<<<<< HEAD
-  const [liveAlerts, setLiveAlerts] = useState([])
-  const [loading, setLoading]       = useState(true)
-  const [error, setError]           = useState(null)
-  const [filters, setFilters]       = useState({
-    severity: 'All Severities',
-    agent:    'All Agents',
-    ruleId:   '',
-    range:    'Last 24h',
-  })
-=======
   const auth = useAuth()
   const [alerts, setAlerts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
->>>>>>> 205ccb0b90376f5a19c8ece78ac68459c44db6ae
 
   const fetchAlerts = async () => {
     const config = getResolvedConfig()
     const apiUrl = config?.telemetryApiUrl
-<<<<<<< HEAD
-    if (!apiUrl) { setLoading(false); return }
-    try {
-      const res = await fetch(`${apiUrl}/alerts`)
-      if (!res.ok) throw new Error('Failed to fetch alerts')
-      const data = await res.json()
-      setLiveAlerts(Array.isArray(data) ? data : [])
-=======
     const token = auth.user?.access_token ?? auth.user?.id_token
     if (!apiUrl || !token || !hasAllowedGroup(auth.user)) {
       setLoading(false)
@@ -183,7 +154,6 @@ export default function Alerts() {
       if (!response.ok) throw new Error('Failed to fetch alerts')
       const data = await response.json()
       setAlerts(Array.isArray(data) ? data : [])
->>>>>>> 205ccb0b90376f5a19c8ece78ac68459c44db6ae
       setError(null)
     } catch (err) {
       console.error(err)
@@ -196,28 +166,9 @@ export default function Alerts() {
   useEffect(() => {
     if (!auth.isAuthenticated) return
     fetchAlerts()
-<<<<<<< HEAD
-    const iv = setInterval(fetchAlerts, 10000)
-    return () => clearInterval(iv)
-  }, [])
-=======
     const interval = setInterval(fetchAlerts, 10000) // Polling every 10s for POC
     return () => clearInterval(interval)
   }, [auth.isAuthenticated, auth.user])
->>>>>>> 205ccb0b90376f5a19c8ece78ac68459c44db6ae
-
-  // Use live data when available, fall back to mock
-  const source = liveAlerts.length > 0 ? liveAlerts : MOCK_ALERTS
-
-  const filtered = source.filter(a => {
-    const level = a.level || a.rule?.level || 0
-    if (filters.severity !== 'All Severities' && severityLabel(level).label !== filters.severity) return false
-    if (filters.agent !== 'All Agents' && a.agent?.name !== filters.agent) return false
-    if (filters.ruleId && !(a.rule?.id || '').includes(filters.ruleId)) return false
-    return true
-  })
-
-  const totalToday = HOURLY_COUNTS.reduce((a, b) => a + b, 0)
 
   return (
     <div className="page-wrap">
