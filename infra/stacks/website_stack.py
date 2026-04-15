@@ -14,7 +14,7 @@ from aws_cdk import CfnOutput, RemovalPolicy, Stack, Tags
 from aws_cdk import aws_s3 as s3
 from aws_cdk import aws_s3_deployment as s3_deploy
 from aws_cdk import aws_cloudfront as cloudfront
-from aws_cdk.aws_cloudfront_origins import S3BucketOrigin
+from aws_cdk.aws_cloudfront_origins import S3BucketOrigin, HttpOrigin
 from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_apigatewayv2 as apigwv2
@@ -82,6 +82,28 @@ class WebsiteStack(Stack):
                 ],
             ),
             default_root_object="index.html",
+        )
+
+        grafana_origin = HttpOrigin(
+            backend_stack.alb.load_balancer_dns_name,
+            http_port=3000,
+            protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY
+        )
+
+        self.distribution.add_behavior(
+            "/grafana",
+            origin=grafana_origin,
+            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
+        )
+
+        self.distribution.add_behavior(
+            "/grafana/*",
+            origin=grafana_origin,
+            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
         )
 
         website_url = f"https://{self.distribution.distribution_domain_name}"
