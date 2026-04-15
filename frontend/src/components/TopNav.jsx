@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from 'react-oidc-context'
 import { signOut } from '../auth/signOut'
 import { getProfile } from '../api/profile'
+import { hasAllowedGroup } from '../auth/access'
 
 const ShieldIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -72,13 +73,17 @@ export default function TopNav() {
   const [accountOpen, setAccountOpen] = useState(false)
   const [profileIcon, setProfileIcon] = useState(null)
   const accountRef = useRef(null)
+  const canAccessConsole = auth.isAuthenticated && hasAllowedGroup(auth.user)
 
   useEffect(() => {
-    if (!auth.user) return
+    if (!auth.user || !canAccessConsole) {
+      setProfileIcon(null)
+      return
+    }
     getProfile(auth.user).then((p) => {
       if (p?.avatarIcon) setProfileIcon(p.avatarIcon)
     })
-  }, [auth.user])
+  }, [auth.user, canAccessConsole])
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -114,7 +119,7 @@ export default function TopNav() {
       }}
     >
       <Link
-        to={auth.isAuthenticated ? '/dashboard' : '/'}
+        to={canAccessConsole ? '/dashboard' : '/'}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -139,7 +144,7 @@ export default function TopNav() {
             {label}
           </NavLink>
         ))}
-        {!auth.isLoading && auth.isAuthenticated && (
+        {!auth.isLoading && auth.isAuthenticated && canAccessConsole && (
           <>
             {consoleNavLinks.map(({ to, label }) => (
               <NavLink
@@ -226,6 +231,25 @@ export default function TopNav() {
                 </div>
               )}
             </div>
+          </>
+        )}
+        {!auth.isLoading && auth.isAuthenticated && !canAccessConsole && (
+          <>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '0.5rem 0.75rem' }}>
+              Access pending
+            </span>
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{
+                marginLeft: '0.25rem',
+                padding: '0.5rem 1rem',
+                fontSize: '0.875rem',
+              }}
+              onClick={() => signOut(auth)}
+            >
+              Sign out
+            </button>
           </>
         )}
         {!auth.isLoading && !auth.isAuthenticated && (

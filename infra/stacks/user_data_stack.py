@@ -54,6 +54,34 @@ class UserDataStack(Stack):
             cognito_domain=cognito.CognitoDomainOptions(domain_prefix="sentinelnet"),
         )
 
+        self.allowed_console_groups = [
+            "SentinelNetAdmins",
+            "SentinelNetAnalysts",
+            "SentinelNetViewers",
+        ]
+
+        cognito.CfnUserPoolGroup(
+            self, "AdminsGroup",
+            user_pool_id=self.user_pool.user_pool_id,
+            group_name="SentinelNetAdmins",
+            description="Full SentinelNet console access.",
+            precedence=1,
+        )
+        cognito.CfnUserPoolGroup(
+            self, "AnalystsGroup",
+            user_pool_id=self.user_pool.user_pool_id,
+            group_name="SentinelNetAnalysts",
+            description="SentinelNet analyst console access.",
+            precedence=2,
+        )
+        cognito.CfnUserPoolGroup(
+            self, "ViewersGroup",
+            user_pool_id=self.user_pool.user_pool_id,
+            group_name="SentinelNetViewers",
+            description="Read-only SentinelNet console access.",
+            precedence=3,
+        )
+
         # ── Outputs ───────────────────────────────────────────────────────────
         CfnOutput(self, "ProfilesTableName",
                   value=self.profiles_table.table_name,
@@ -64,3 +92,6 @@ class UserDataStack(Stack):
         CfnOutput(self, "CognitoUserPoolId",
                   value=self.user_pool.user_pool_id,
                   export_name="SentinelNetCognitoUserPoolId")
+        CfnOutput(self, "AllowedConsoleGroups",
+                  value=",".join(self.allowed_console_groups),
+                  export_name="SentinelNetAllowedConsoleGroups")

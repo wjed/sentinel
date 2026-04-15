@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
+import { useAuth } from 'react-oidc-context'
 import { getResolvedConfig } from '../auth/resolvedConfig'
+import { hasAllowedGroup } from '../auth/access'
 
 // ─── Severity helpers ─────────────────────────────────────────────────────────
 
@@ -139,6 +141,7 @@ function AlertVolumeChart({ counts }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function Alerts() {
+<<<<<<< HEAD
   const [liveAlerts, setLiveAlerts] = useState([])
   const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState(null)
@@ -148,16 +151,39 @@ export default function Alerts() {
     ruleId:   '',
     range:    'Last 24h',
   })
+=======
+  const auth = useAuth()
+  const [alerts, setAlerts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+>>>>>>> 205ccb0b90376f5a19c8ece78ac68459c44db6ae
 
   const fetchAlerts = async () => {
     const config = getResolvedConfig()
     const apiUrl = config?.telemetryApiUrl
+<<<<<<< HEAD
     if (!apiUrl) { setLoading(false); return }
     try {
       const res = await fetch(`${apiUrl}/alerts`)
       if (!res.ok) throw new Error('Failed to fetch alerts')
       const data = await res.json()
       setLiveAlerts(Array.isArray(data) ? data : [])
+=======
+    const token = auth.user?.access_token ?? auth.user?.id_token
+    if (!apiUrl || !token || !hasAllowedGroup(auth.user)) {
+      setLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/alerts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (response.status === 403) throw new Error('Access denied')
+      if (!response.ok) throw new Error('Failed to fetch alerts')
+      const data = await response.json()
+      setAlerts(Array.isArray(data) ? data : [])
+>>>>>>> 205ccb0b90376f5a19c8ece78ac68459c44db6ae
       setError(null)
     } catch (err) {
       console.error(err)
@@ -168,10 +194,17 @@ export default function Alerts() {
   }
 
   useEffect(() => {
+    if (!auth.isAuthenticated) return
     fetchAlerts()
+<<<<<<< HEAD
     const iv = setInterval(fetchAlerts, 10000)
     return () => clearInterval(iv)
   }, [])
+=======
+    const interval = setInterval(fetchAlerts, 10000) // Polling every 10s for POC
+    return () => clearInterval(interval)
+  }, [auth.isAuthenticated, auth.user])
+>>>>>>> 205ccb0b90376f5a19c8ece78ac68459c44db6ae
 
   // Use live data when available, fall back to mock
   const source = liveAlerts.length > 0 ? liveAlerts : MOCK_ALERTS
