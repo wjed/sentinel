@@ -19,6 +19,8 @@ from aws_cdk import (
     RemovalPolicy,
     Stack,
     Tags,
+    aws_apigatewayv2 as apigwv2,
+    aws_apigatewayv2_integrations as integrations,
     aws_cognito as cognito,
     aws_dynamodb as dynamodb,
     aws_ec2 as ec2,
@@ -420,6 +422,25 @@ class BackendStack(Stack):
         )
         self.alerts_bucket.grant_read(self.telemetry_api_fn)
 
+        # Transitional compatibility: the currently deployed Website stack
+        # imports this backend API endpoint. Keep it until Website is deployed
+        # from the ACL branch, then remove this legacy API in a follow-up deploy.
+        self.telemetry_api = apigwv2.HttpApi(
+            self, "TelemetryHttpApi",
+            cors_preflight=apigwv2.CorsPreflightOptions(
+                allow_methods=[apigwv2.CorsHttpMethod.GET, apigwv2.CorsHttpMethod.OPTIONS],
+                allow_origins=["*"],
+                allow_headers=["Authorization", "Content-Type"],
+            ),
+        )
+
+        self.telemetry_api.add_routes(
+            path="/alerts",
+            methods=[apigwv2.HttpMethod.GET],
+            integration=integrations.HttpLambdaIntegration(
+                "TelemetryIntegration", self.telemetry_api_fn),
+        )
+
         # ── Outputs ───────────────────────────────────────────────────────────
         CfnOutput(self, "InstanceId", value=self.instance.instance_id)
         CfnOutput(self, "ALBEndpoint", value=self.alb.load_balancer_dns_name,
@@ -427,4 +448,11 @@ class BackendStack(Stack):
         CfnOutput(self, "AlertsBucketName",
                   value=self.alerts_bucket.bucket_name)
         CfnOutput(self, "AlertQueueUrl", value=self.alert_queue.queue_url)
+        CfnOutput(self, "TelemetryApiUrl", value=self.telemetry_api.api_endpoint)
+        CfnOutput(
+            self,
+            "ExportsOutputFnGetAttTelemetryHttpApiECE39854ApiEndpointC1D6BBB1",
+            value=self.telemetry_api.api_endpoint,
+            export_name="SentinelNet-Backend:ExportsOutputFnGetAttTelemetryHttpApiECE39854ApiEndpointC1D6BBB1",
+        )
         CfnOutput(self, "ManagerPublicIP", value=self.instance.instance_public_ip)
