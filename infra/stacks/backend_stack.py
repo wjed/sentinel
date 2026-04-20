@@ -49,6 +49,8 @@ class BackendStack(Stack):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        client_id = self.node.try_get_context("cognito_client_id")
+
         repo_root = Path(__file__).resolve().parents[2]
         lambda_dir = str(repo_root / "backend" / "lambda" / "wazuh_ingest")
 
@@ -230,6 +232,15 @@ class BackendStack(Stack):
             "      - GF_SECURITY_ADMIN_PASSWORD=sentinel",
             "      - GF_SERVER_ROOT_URL=https://%(domain)s/grafana/",
             "      - GF_SERVER_SERVE_FROM_SUB_PATH=true",
+            "      - GF_AUTH_GENERIC_OAUTH_ENABLED=true",
+            "      - GF_AUTH_GENERIC_OAUTH_NAME=SentinelNet SSO",
+            "      - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP=true",
+            "      - GF_AUTH_GENERIC_OAUTH_USE_PKCE=true",
+            "      - GF_AUTH_GENERIC_OAUTH_SCOPES=openid email profile",
+            f"      - GF_AUTH_GENERIC_OAUTH_CLIENT_ID={client_id}",
+            f"      - GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://sentinelnet.auth.{self.region}.amazoncognito.com/oauth2/authorize",
+            f"      - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://sentinelnet.auth.{self.region}.amazoncognito.com/oauth2/token",
+            f"      - GF_AUTH_GENERIC_OAUTH_API_URL=https://sentinelnet.auth.{self.region}.amazoncognito.com/oauth2/userInfo",
             "    volumes:",
             "      - grafana_data:/var/lib/grafana",
             "",
