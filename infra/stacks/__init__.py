@@ -1,6 +1,4 @@
-"""
-SentinelNet CDK — website, user data, network, and backend stacks.
-"""
+"""SentinelNet CDK stacks."""
 
 from stacks.website_stack import WebsiteStack
 from stacks.user_data_stack import UserDataStack

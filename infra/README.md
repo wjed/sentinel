@@ -27,7 +27,7 @@ You run **all** `cdk` commands from **this directory** (`infra/`). Not from the 
 | **SentinelNet-Network** | `stacks/network_stack.py` | **VPC** with public, private, and internal subnets. Outputs VPC ID and subnet IDs. Backend uses this VPC. |
 | **SentinelNet-UserData** | `stacks/user_data_stack.py` | **DynamoDB** (profiles) and **S3** bucket. No Lambda here — just storage. |
 | **SentinelNet-Website** | `stacks/website_stack.py` | **Live site**: S3 + CloudFront, **Cognito**, and **profile API** (Lambda + API Gateway) using the UserData table. Writes `config.json` for the frontend. |
-| **SentinelNet-Backend** | `stacks/backend_stack.py` | **ECS/Fargate** (e.g. Grafana) and an internal ALB. Uses Network’s VPC and private subnets. |
+| **SentinelNet-Backend** | `stacks/backend_stack.py` | **SOC EC2**: t3.medium running Wazuh, TheHive 5, etc. + SQS/Lambda/S3 alert data lake. |
 
 **Dependencies:** Website uses UserData (profile API). Backend uses Network (VPC + private subnets). **Backend does not deploy Network** — you deploy Network first, then Backend.
 
@@ -64,7 +64,7 @@ Don’t run `cdk deploy` without approval. The main repo README explains the wor
 - **VPC / subnets:** Edit `stacks/network_stack.py`.
 - **DynamoDB / S3 for user data:** Edit `stacks/user_data_stack.py`.
 - **Site, CloudFront, Cognito, profile API:** Edit `stacks/website_stack.py`. Profile API Lambda: `lambda/profile_api_py/handler.py`.
-- **ECS/Fargate (Backend):** Edit `stacks/backend_stack.py`.
+- **SOC EC2 (Backend):** Edit `stacks/backend_stack.py`. Contains Docker settings and alert pipeline.
 - **New stack:** Add a new file in `stacks/`, extend `Stack`, then in `app.py` instantiate it (e.g. `SomethingStack(app, "SentinelNet-Something", env=env)`).
 
 ---

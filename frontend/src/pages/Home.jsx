@@ -67,8 +67,8 @@ export default function Home() {
         <h2 className="section-title">Pricing</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem', maxWidth: 900, margin: '0 auto' }}>
           {[
-            { name: 'Starter', price: '$0', desc: 'Free for small teams — up to 5 users' },
-            { name: 'Professional', price: '$299/mo', desc: 'Growing teams — case management & honeypot' },
+            { name: 'Starter', price: '$129', desc: 'Up to 5 users — SIEM & log ingestion' },
+            { name: 'Professional', price: '$799', desc: 'Up to 25 users — case management & honeypot' },
             { name: 'Enterprise', price: 'Custom', desc: 'Full SOC, custom integrations & SLA' },
           ].map((tier) => (
             <div key={tier.name} className="feature-card" style={{ padding: '1.5rem' }}>

@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 """
-SentinelNet — CDK app: Network, UserData, Website, Backend.
+SentinelNet - CDK app.
 
 Deploy order: Network -> UserData -> Website (--exclusively) -> Backend.
-Backend does not deploy Network; it depends on Network (VPC + private subnets).
-Use infra/deploy-all.sh to deploy all, or infra/fix-network-export-conflict.sh
-if Network fails with "export in use by SentinelNet-Backend".
+Cognito lives in UserData so both Website and Backend can reference it.
 """
 
 import os
@@ -23,17 +21,31 @@ env = cdk.Environment(
     region=os.environ.get("CDK_DEFAULT_REGION"),
 )
 
-user_data_stack = UserDataStack(app, "SentinelNet-UserData", env=env)
-WebsiteStack(app, "SentinelNet-Website", env=env, user_data_stack=user_data_stack)
+# Apply global tags for cost tracking
+cdk.Tags.of(app).add("Project", "SentinelNet")
+cdk.Tags.of(app).add("Owner", "MarvinsStarvin")
+cdk.Tags.of(app).add("Environment", "POC")
+
+# 1. Network - VPC
 network_stack = NetworkStack(app, "SentinelNet-Network", env=env)
-BackendStack(
+
+# 2. User data - DynamoDB + S3 + Cognito (shared)
+user_data_stack = UserDataStack(app, "SentinelNet-UserData", env=env)
+
+# 3. Backend - EC2 + ALB + Cognito auth + alert pipeline
+backend_stack = BackendStack(
     app,
     "SentinelNet-Backend",
     env=env,
     vpc=network_stack.vpc,
-    private_subnet_ids=network_stack.private_subnet_ids,
-    internal_subnet_ids=network_stack.internal_subnet_ids,
-    public_subnet_ids=network_stack.public_subnet_ids,
+    user_pool=user_data_stack.user_pool,
+    user_pool_domain=user_data_stack.user_pool_domain,
+)
+
+# 4. Website - S3 + CloudFront + Cognito client
+website_stack = WebsiteStack(
+    app, "SentinelNet-Website", env=env, user_data_stack=user_data_stack,
+    backend_stack=backend_stack
 )
 
 app.synth()

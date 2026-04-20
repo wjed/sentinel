@@ -10,8 +10,14 @@ import './index.css'
 function renderApp(oidcConfig) {
   const root = document.getElementById('root')
   if (!root) return
+
+  const onSigninCallback = () => {
+    window.history.replaceState({}, document.title, window.location.pathname)
+    window.location.assign('/dashboard')
+  }
+
   ReactDOM.createRoot(root).render(
-    <AuthProvider {...oidcConfig}>
+    <AuthProvider {...oidcConfig} onSigninCallback={onSigninCallback}>
       <BrowserRouter>
         <App />
       </BrowserRouter>

@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from 'react-oidc-context'
 import { signOut } from '../auth/signOut'
 import { getProfile } from '../api/profile'
+import { hasAllowedGroup } from '../auth/access'
 
 const ShieldIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -69,24 +70,23 @@ const navDropdownItemStyle = {
 export default function TopNav() {
   const auth = useAuth()
   const location = useLocation()
-  const [consoleOpen, setConsoleOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
   const [profileIcon, setProfileIcon] = useState(null)
-  const consoleRef = useRef(null)
   const accountRef = useRef(null)
-
-  const isConsolePath = consoleNavLinks.some(({ to }) => location.pathname === to || location.pathname.startsWith(to + '/'))
+  const canAccessConsole = auth.isAuthenticated && hasAllowedGroup(auth.user)
 
   useEffect(() => {
-    if (!auth.user) return
+    if (!auth.user || !canAccessConsole) {
+      setProfileIcon(null)
+      return
+    }
     getProfile(auth.user).then((p) => {
       if (p?.avatarIcon) setProfileIcon(p.avatarIcon)
     })
-  }, [auth.user])
+  }, [auth.user, canAccessConsole])
 
   useEffect(() => {
     function handleClickOutside(e) {
-      if (consoleRef.current && !consoleRef.current.contains(e.target)) setConsoleOpen(false)
       if (accountRef.current && !accountRef.current.contains(e.target)) setAccountOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -119,7 +119,7 @@ export default function TopNav() {
       }}
     >
       <Link
-        to="/"
+        to={canAccessConsole ? '/dashboard' : '/'}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -134,7 +134,7 @@ export default function TopNav() {
         SentinelNet
       </Link>
       <nav style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        {publicNavLinks.map(({ to, label }) => (
+        {!auth.isLoading && !auth.isAuthenticated && publicNavLinks.map(({ to, label }) => (
           <NavLink
             key={to}
             to={to}
@@ -144,49 +144,22 @@ export default function TopNav() {
             {label}
           </NavLink>
         ))}
-        {!auth.isLoading && auth.isAuthenticated && (
+        {!auth.isLoading && auth.isAuthenticated && canAccessConsole && (
           <>
-            <div ref={consoleRef} style={{ position: 'relative', display: 'inline-block' }}>
-              <button
-                type="button"
-                className={isConsolePath ? 'nav-active' : ''}
-                onClick={() => { setAccountOpen(false); setConsoleOpen((o) => !o) }}
-                style={{
-                  ...linkStyle(isConsolePath),
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  minWidth: '5.5rem',
-                }}
+            {consoleNavLinks.map(({ to, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) => isActive ? 'nav-active' : ''}
+                style={({ isActive }) => linkStyle(isActive)}
               >
-                Console
-                <ChevronDown />
-              </button>
-              {consoleOpen && (
-                <div data-nav-dropdown style={navDropdownStyle}>
-                  {consoleNavLinks.map(({ to, label }) => (
-                    <Link
-                      key={to}
-                      to={to}
-                      style={{
-                        ...navDropdownItemStyle,
-                        color: location.pathname === to ? 'var(--accent)' : undefined,
-                        fontWeight: location.pathname === to ? 600 : 500,
-                      }}
-                      onClick={() => setConsoleOpen(false)}
-                    >
-                      {label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+                {label}
+              </NavLink>
+            ))}
             <div ref={accountRef} style={{ position: 'relative', display: 'inline-block', marginLeft: '0.25rem' }}>
               <button
                 type="button"
-                onClick={() => { setConsoleOpen(false); setAccountOpen((o) => !o) }}
+                onClick={() => setAccountOpen((o) => !o)}
                 className="top-nav-account-trigger"
                 style={{
                   display: 'inline-flex',
@@ -258,6 +231,25 @@ export default function TopNav() {
                 </div>
               )}
             </div>
+          </>
+        )}
+        {!auth.isLoading && auth.isAuthenticated && !canAccessConsole && (
+          <>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '0.5rem 0.75rem' }}>
+              Access pending
+            </span>
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{
+                marginLeft: '0.25rem',
+                padding: '0.5rem 1rem',
+                fontSize: '0.875rem',
+              }}
+              onClick={() => signOut(auth)}
+            >
+              Sign out
+            </button>
           </>
         )}
         {!auth.isLoading && !auth.isAuthenticated && (

@@ -2,17 +2,17 @@ export default function Pricing() {
   const tiers = [
     {
       name: 'Starter',
-      price: '$0',
-      period: 'Free for small teams',
+      price: '$129',
+      period: 'per month',
       features: ['Up to 5 users', 'SIEM & log ingestion', 'Basic dashboards', '7-day retention', 'Email support'],
-      cta: 'Get started',
+      cta: 'Start 1-week free trial',
     },
     {
       name: 'Professional',
-      price: '$299',
+      price: '$799',
       period: 'per month',
       features: ['Up to 25 users', 'Everything in Starter', 'Case management', 'Honeypot analytics', '90-day retention', 'SLA & priority support'],
-      cta: 'Start free trial',
+      cta: 'Start 1-week free trial',
     },
     {
       name: 'Enterprise',
