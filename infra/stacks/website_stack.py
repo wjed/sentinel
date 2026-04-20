@@ -22,7 +22,19 @@ from aws_cdk.aws_apigatewayv2_integrations import HttpLambdaIntegration
 from aws_cdk.aws_apigatewayv2_authorizers import HttpJwtAuthorizer
 from aws_cdk.aws_cloudfront_origins import S3BucketOrigin
 from aws_cdk import aws_lambda as lambda_
+from aws_cdk import aws_certificatemanager as acm
+from aws_cdk import aws_route53 as route53
+from aws_cdk import aws_route53_targets as route53_targets
 from constructs import Construct
+
+
+DOMAIN_NAME = "sentinelnetsolutions.com"
+ALT_DOMAIN_NAMES = [f"www.{DOMAIN_NAME}"]
+HOSTED_ZONE_ID = "Z02031801QLNS1AIUFNZK"
+CERTIFICATE_ARN = (
+    "arn:aws:acm:us-east-1:639418629910:certificate/"
+    "bf203c8d-de82-4701-869e-114d59a41756"
+)
 
 
 class WebsiteStack(Stack):
@@ -74,6 +86,17 @@ function handler(event) {
             comment="Rewrite SPA routes to /index.html; leave /assets/* and other static paths unchanged.",
         )
 
+        # Reuse the existing hosted zone and ACM cert (cert is in us-east-1, as CloudFront requires).
+        hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
+            self,
+            "HostedZone",
+            hosted_zone_id=HOSTED_ZONE_ID,
+            zone_name=DOMAIN_NAME,
+        )
+        certificate = acm.Certificate.from_certificate_arn(
+            self, "SiteCertificate", CERTIFICATE_ARN
+        )
+
         self.distribution = cloudfront.Distribution(
             self,
             "Distribution",
@@ -87,9 +110,36 @@ function handler(event) {
                 ],
             ),
             default_root_object="index.html",
+            domain_names=[DOMAIN_NAME, *ALT_DOMAIN_NAMES],
+            certificate=certificate,
         )
 
-        website_url = f"https://{self.distribution.distribution_domain_name}"
+        # Alias apex and www to the CloudFront distribution.
+        cloudfront_target = route53.RecordTarget.from_alias(
+            route53_targets.CloudFrontTarget(self.distribution)
+        )
+        route53.ARecord(
+            self, "AliasApex", zone=hosted_zone, target=cloudfront_target
+        )
+        route53.AaaaRecord(
+            self, "AliasApexAAAA", zone=hosted_zone, target=cloudfront_target
+        )
+        route53.ARecord(
+            self,
+            "AliasWww",
+            zone=hosted_zone,
+            record_name="www",
+            target=cloudfront_target,
+        )
+        route53.AaaaRecord(
+            self,
+            "AliasWwwAAAA",
+            zone=hosted_zone,
+            record_name="www",
+            target=cloudfront_target,
+        )
+
+        website_url = f"https://{DOMAIN_NAME}"
         callback_url = f"{website_url}/"
 
         # --- Cognito: user pool + Hosted UI + app client ---
