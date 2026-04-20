@@ -120,7 +120,7 @@ class WebsiteStack(Stack):
             generate_secret=False,
             allowed_o_auth_flows=["code"],
             allowed_o_auth_flows_user_pool_client=True,
-            allowed_o_auth_scopes=["openid", "email"],
+            allowed_o_auth_scopes=["openid", "email", "profile"],
             callback_ur_ls=[callback_url, "http://localhost:5173/", "http://localhost:3000/", f"{website_url}/grafana/login/generic_oauth"],
             logout_ur_ls=[callback_url, "http://localhost:5173/", "http://localhost:3000/"],
             supported_identity_providers=["COGNITO"],
