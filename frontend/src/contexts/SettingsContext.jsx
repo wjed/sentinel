@@ -67,7 +67,7 @@ export function SettingsProvider({ children }) {
 
   // Apply Appearance preferences
   useEffect(() => {
-    const { compactMode, accentColor } = settings.appearance
+    const { compactMode, accentColor, tableRowDensity } = settings.appearance
 
     if (compactMode) {
       document.body.classList.add('compact-mode')
@@ -83,7 +83,13 @@ export function SettingsProvider({ children }) {
     root.style.setProperty('--primary', colors.accent)
     root.style.setProperty('--primary-dim', colors.primaryDim)
     root.style.setProperty('--primary-bg', colors.primaryBg)
-  }, [settings.appearance.compactMode, settings.appearance.accentColor])
+
+    if (tableRowDensity) {
+      document.body.setAttribute('data-table-density', tableRowDensity)
+    } else {
+      document.body.removeAttribute('data-table-density')
+    }
+  }, [settings.appearance.compactMode, settings.appearance.accentColor, settings.appearance.tableRowDensity])
 
   const updateSetting = (category, key, value) => {
     setSettings(prev => ({
