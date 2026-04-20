@@ -3,6 +3,13 @@ import { useAuth } from 'react-oidc-context'
 import { getResolvedConfig } from '../auth/resolvedConfig'
 import { hasAllowedGroup } from '../auth/access'
 
+function severityLabel(level) {
+  if (level >= 12) return { label: 'CRIT', color: '#ef4444' }
+  if (level >= 7)  return { label: 'HIGH', color: '#eab308' }
+  if (level >= 4)  return { label: 'MED',  color: '#3b82f6' }
+  return { label: 'LOW', color: '#22c55e' }
+}
+
 function SeverityBadge({ level }) {
   const { label, color } = severityLabel(level)
   return (
@@ -136,6 +143,24 @@ export default function Alerts() {
   const [alerts, setAlerts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [filters, setFilters] = useState({ severity: 'All Severities', agent: 'All Agents', ruleId: '', range: 'Last 24h' })
+
+  const liveAlerts = alerts
+  const source = liveAlerts.length > 0 ? liveAlerts : MOCK_ALERTS
+  const totalToday = source.length
+
+  const filtered = source.filter(a => {
+    const level = a.level || a.rule?.level || 0
+    if (filters.severity !== 'All Severities') {
+      if (filters.severity === 'Critical' && level < 12) return false
+      if (filters.severity === 'High' && (level < 7 || level >= 12)) return false
+      if (filters.severity === 'Medium' && (level < 4 || level >= 7)) return false
+      if (filters.severity === 'Low' && level >= 4) return false
+    }
+    if (filters.agent !== 'All Agents' && a.agent?.name !== filters.agent) return false
+    if (filters.ruleId && !String(a.rule?.id || '').includes(filters.ruleId)) return false
+    return true
+  })
 
   const fetchAlerts = async () => {
     const config = getResolvedConfig()
