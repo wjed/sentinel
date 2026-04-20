@@ -18,15 +18,10 @@ const defaultSettings = {
     minSeverity: '7',
     digestFrequency: 'daily',
   },
-  integrations: {
-    wazuh: { url: '', user: '', pass: '', connected: false, testing: false },
-    grafana: { url: '', token: '', connected: false },
-    geoip: { key: '' },
-  },
   appearance: {
     compactMode: false,
     showDevAdvice: true,
-    sidebarDefaultCollapsed: false,
+    autoHideTopNav: false,
     accentColor: 'purple',
     tableRowDensity: 'comfortable',
     liveClockEnabled: true,
@@ -57,7 +52,6 @@ export function SettingsProvider({ children }) {
         return {
           general: { ...defaultSettings.general, ...parsed.general },
           notifications: { ...defaultSettings.notifications, ...parsed.notifications },
-          integrations: { ...defaultSettings.integrations, ...parsed.integrations },
           appearance: { ...defaultSettings.appearance, ...parsed.appearance },
         }
       }

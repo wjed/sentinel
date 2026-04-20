@@ -291,124 +291,6 @@ function NotificationsTab() {
   )
 }
 
-// ─── Tab: Integrations ────────────────────────────────────────────────────────
-
-function IntegrationsTab() {
-  const { settings, setCategoryConfig } = useSettings()
-  const wazuh = settings.integrations.wazuh
-  const grafana = settings.integrations.grafana
-  const geoip = settings.integrations.geoip
-  const [saved, setSaved] = useState(false)
-
-  const updateWazuh = (updater) => setCategoryConfig('integrations', i => ({ ...i, wazuh: typeof updater === 'function' ? updater(i.wazuh) : updater }))
-  const updateGrafana = (updater) => setCategoryConfig('integrations', i => ({ ...i, grafana: typeof updater === 'function' ? updater(i.grafana) : updater }))
-  const updateGeoip = (updater) => setCategoryConfig('integrations', i => ({ ...i, geoip: typeof updater === 'function' ? updater(i.geoip) : updater }))
-
-  const testWazuh = () => {
-    updateWazuh(w => ({ ...w, testing: true }))
-    setTimeout(() => updateWazuh(w => ({ ...w, testing: false, connected: !!w.url })), 1400)
-  }
-
-  const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2500) }
-
-  function IntegrationCard({ name, description, logo, connected, onTest, testing, children }) {
-    return (
-      <SettingsCard>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: children ? '1.25rem' : 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 'var(--radius-sm)',
-              background: 'var(--bg)', border: '1px solid var(--border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem',
-            }}>{logo}</div>
-            <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-bright)', marginBottom: '0.15rem' }}>{name}</div>
-              <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>{description}</div>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <StatusDot ok={connected} />
-            {onTest && (
-              <button onClick={onTest} disabled={testing} style={{
-                padding: '0.3rem 0.75rem', background: 'var(--bg)',
-                border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
-                color: testing ? 'var(--text-dim)' : 'var(--text-muted)',
-                fontSize: '0.6rem', fontFamily: 'var(--font-mono)', fontWeight: 600,
-                letterSpacing: '0.06em', cursor: testing ? 'default' : 'pointer', textTransform: 'uppercase',
-              }}>
-                {testing ? 'Testing…' : 'Test'}
-              </button>
-            )}
-          </div>
-        </div>
-        {children}
-      </SettingsCard>
-    )
-  }
-
-  return (
-    <>
-      <SectionHeader title="Integrations" description="Connect external services and data sources to the platform." />
-
-      <IntegrationCard name="Wazuh Manager" description="SIEM / HIDS — agent management and alert source"
-        logo="🛡️" connected={wazuh.connected} onTest={testWazuh} testing={wazuh.testing}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-          <Field label="Manager URL">
-            <input style={inputStyle} placeholder="https://wazuh.yourorg.com"
-              value={wazuh.url} onChange={e => updateWazuh(w => ({ ...w, url: e.target.value, connected: false }))}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-          </Field>
-          <Field label="API Username">
-            <input style={inputStyle} placeholder="wazuh-api"
-              value={wazuh.user} onChange={e => updateWazuh(w => ({ ...w, user: e.target.value }))}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-          </Field>
-          <Field label="API Password">
-            <input style={inputStyle} type="password" placeholder="••••••••"
-              value={wazuh.pass} onChange={e => updateWazuh(w => ({ ...w, pass: e.target.value }))}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-          </Field>
-        </div>
-      </IntegrationCard>
-
-      <IntegrationCard name="Grafana" description="Dashboard embed — visualizations and telemetry graphs"
-        logo="📊" connected={grafana.connected} onTest={() => updateGrafana(g => ({ ...g, connected: !!g.url }))}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-          <Field label="Grafana URL">
-            <input style={inputStyle} placeholder="https://grafana.yourorg.com"
-              value={grafana.url} onChange={e => updateGrafana(g => ({ ...g, url: e.target.value, connected: false }))}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-          </Field>
-          <Field label="Service Account Token" hint="Read-only token for embedding dashboards.">
-            <input style={inputStyle} type="password" placeholder="glsa_••••••••"
-              value={grafana.token} onChange={e => updateGrafana(g => ({ ...g, token: e.target.value }))}
-              onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-              onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-          </Field>
-        </div>
-      </IntegrationCard>
-
-      <IntegrationCard name="MaxMind GeoIP" description="IP geolocation — country / ASN enrichment on alerts"
-        logo="🌐" connected={false}>
-        <Field label="License Key" hint="Get a free GeoLite2 key from maxmind.com.">
-          <input style={inputStyle} type="password" placeholder="••••••••••••••••"
-            value={geoip.key} onChange={e => updateGeoip(g => ({ ...g, key: e.target.value }))}
-            onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-            onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-        </Field>
-      </IntegrationCard>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <SaveButton onClick={handleSave} saved={saved} />
-      </div>
-    </>
-  )
-}
-
 // ─── Tab: Appearance ──────────────────────────────────────────────────────────
 
 function AppearanceTab() {
@@ -456,8 +338,8 @@ function AppearanceTab() {
         <CardLabel>Layout</CardLabel>
         <Toggle checked={prefs.compactMode} onChange={() => toggle('compactMode')}
           label="Compact Mode" description="Reduce padding and spacing throughout the UI." />
-        <Toggle checked={prefs.sidebarDefaultCollapsed} onChange={() => toggle('sidebarDefaultCollapsed')}
-          label="Collapse Sidebar by Default" description="Start with the sidebar collapsed on page load." />
+        <Toggle checked={prefs.autoHideTopNav} onChange={() => toggle('autoHideTopNav')}
+          label="Auto-hide Top Navigation" description="Automatically hide the top navigation bar when scrolling down." />
         <Toggle checked={prefs.liveClockEnabled} onChange={() => toggle('liveClockEnabled')}
           label="Live Clock in Header" description="Show a live UTC clock in the top navigation bar." />
         <div style={{ paddingTop: '0.75rem' }}>
@@ -494,7 +376,6 @@ function DangerTab() {
 
   const actions = [
     { id: 'flush-logs', label: 'Flush Alert Log', description: 'Permanently delete all stored alert records. This cannot be undone.', buttonLabel: 'Flush Logs' },
-    { id: 'reset-integrations', label: 'Reset All Integrations', description: 'Disconnect and clear credentials for all configured integrations.', buttonLabel: 'Reset Integrations' },
     { id: 'delete-all', label: 'Delete All Data', description: `Wipe all platform data — logs, incidents, assets, and settings. Type "${CONFIRM_PHRASE}" to confirm.`, buttonLabel: 'Delete Everything' },
   ]
 
@@ -589,7 +470,6 @@ function DangerTab() {
 const TABS = [
   { id: 'general',       label: 'General' },
   { id: 'notifications', label: 'Notifications' },
-  { id: 'integrations',  label: 'Integrations' },
   { id: 'appearance',    label: 'Appearance' },
   { id: 'danger',        label: 'Danger Zone' },
 ]
@@ -600,7 +480,6 @@ export default function Settings() {
   const tabContent = {
     general:       <GeneralTab />,
     notifications: <NotificationsTab />,
-    integrations:  <IntegrationsTab />,
     appearance:    <AppearanceTab />,
     danger:        <DangerTab />,
   }

@@ -75,7 +75,28 @@ export default function TopNav() {
   const accountRef = useRef(null)
   const { settings } = useSettings()
   const liveClockEnabled = settings.appearance?.liveClockEnabled
+  const autoHideTopNav = settings.appearance?.autoHideTopNav
   const [utcTime, setUtcTime] = useState('')
+  const [navVisible, setNavVisible] = useState(true)
+  const lastScrollY = useRef(0)
+
+  useEffect(() => {
+    if (!autoHideTopNav) {
+      setNavVisible(true)
+      return
+    }
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
+        setNavVisible(false)
+      } else {
+        setNavVisible(true)
+      }
+      lastScrollY.current = currentScrollY
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [autoHideTopNav])
 
   useEffect(() => {
     if (!liveClockEnabled) return
@@ -115,6 +136,8 @@ export default function TopNav() {
       style={{
         position: 'sticky',
         top: 0,
+        transform: navVisible ? 'translateY(0)' : 'translateY(-100%)',
+        transition: 'transform 0.3s ease-in-out',
         zIndex: 100,
         height: 'var(--nav-height)',
         background: 'var(--bg-card)',
