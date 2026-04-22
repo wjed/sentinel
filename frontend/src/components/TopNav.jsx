@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from 'react-oidc-context'
 import { signOut } from '../auth/signOut'
 import { getProfile } from '../api/profile'
+import { useSettings } from '../contexts/SettingsContext'
 import { hasAllowedGroup } from '../auth/access'
 
 const ShieldIcon = () => (
@@ -73,7 +74,39 @@ export default function TopNav() {
   const [accountOpen, setAccountOpen] = useState(false)
   const [profileIcon, setProfileIcon] = useState(null)
   const accountRef = useRef(null)
+  const { settings } = useSettings()
+  const liveClockEnabled = settings.appearance?.liveClockEnabled
+  const autoHideTopNav = settings.appearance?.autoHideTopNav
+  const [utcTime, setUtcTime] = useState('')
+  const [navVisible, setNavVisible] = useState(true)
+  const lastScrollY = useRef(0)
   const canAccessConsole = auth.isAuthenticated && hasAllowedGroup(auth.user)
+
+  useEffect(() => {
+    if (!autoHideTopNav) {
+      setNavVisible(true)
+      return
+    }
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+      if (currentScrollY > lastScrollY.current && currentScrollY > 60) {
+        setNavVisible(false)
+      } else {
+        setNavVisible(true)
+      }
+      lastScrollY.current = currentScrollY
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [autoHideTopNav])
+
+  useEffect(() => {
+    if (!liveClockEnabled) return
+    const formatTime = () => new Date().toISOString().substring(11, 19) + ' UTC'
+    setUtcTime(formatTime())
+    const interval = setInterval(() => setUtcTime(formatTime()), 1000)
+    return () => clearInterval(interval)
+  }, [liveClockEnabled])
 
   useEffect(() => {
     if (!auth.user || !canAccessConsole) {
@@ -108,6 +141,8 @@ export default function TopNav() {
       style={{
         position: 'sticky',
         top: 0,
+        transform: navVisible ? 'translateY(0)' : 'translateY(-100%)',
+        transition: 'transform 0.3s ease-in-out',
         zIndex: 100,
         height: 'var(--nav-height)',
         background: 'var(--bg-card)',
@@ -156,6 +191,17 @@ export default function TopNav() {
                 {label}
               </NavLink>
             ))}
+            
+            {liveClockEnabled && (
+              <div style={{
+                fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)',
+                marginLeft: '0.5rem', padding: '0.25rem 0.5rem', background: 'var(--bg)',
+                border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)'
+              }}>
+                {utcTime}
+              </div>
+            )}
+
             <div ref={accountRef} style={{ position: 'relative', display: 'inline-block', marginLeft: '0.25rem' }}>
               <button
                 type="button"
