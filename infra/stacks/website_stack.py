@@ -111,16 +111,15 @@ class WebsiteStack(Stack):
             certificate=certificate,
         )
 
-        alb_origin = HttpOrigin(
-            "api.sentinelnetsolutions.com",
-            http_port=80,
-            https_port=443,
-            protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY
+        grafana_origin = HttpOrigin(
+            backend_stack.alb.load_balancer_dns_name,
+            http_port=3000,
+            protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY
         )
 
         self.distribution.add_behavior(
             "/grafana",
-            origin=alb_origin,
+            origin=grafana_origin,
             viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
             origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
@@ -128,31 +127,7 @@ class WebsiteStack(Stack):
 
         self.distribution.add_behavior(
             "/grafana/*",
-            origin=alb_origin,
-            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
-        )
-
-        self.distribution.add_behavior(
-            "/thehive",
-            origin=alb_origin,
-            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
-        )
-
-        self.distribution.add_behavior(
-            "/oauth2/idpresponse",
-            origin=alb_origin,
-            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
-            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
-        )
-
-        self.distribution.add_behavior(
-            "/thehive/*",
-            origin=alb_origin,
+            origin=grafana_origin,
             viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
             origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
