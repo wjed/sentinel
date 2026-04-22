@@ -166,3 +166,39 @@ When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https:/
 - **“Cannot delete export … in use by SentinelNet-Backend”** (when deploying Network) → Run the one-time fix: from `infra/`, run `./fix-network-export-conflict.sh`. Then deploy as usual.
 
 More detail: **infra/HOW-TO-DEPLOY.md**.
+
+---
+
+## Access Management Terminal
+
+SentinelNet now includes an admin-only **Access Management Terminal** at `/admin/access`.
+
+- It is a terminal-style UI, but it is **not** a real shell and does **not** execute OS commands.
+- It translates a small approved command set into structured API requests backed by Cognito admin APIs.
+- Cognito groups remain the source of truth for access:
+  - `SentinelNetAdmins`
+  - `SentinelNetAnalysts`
+  - `SentinelNetViewers`
+- Only users in `SentinelNetAdmins` can access the page or call the admin access API.
+
+Supported commands:
+
+- `help`
+- `list-users`
+- `get-user <email-or-username>`
+- `grant-access <email-or-username> <Admins|Analysts|Viewers>`
+- `revoke-access <email-or-username> <Admins|Analysts|Viewers>`
+- `list-groups`
+- `whoami`
+- `clear`
+
+New Lambda environment variables:
+
+- `USER_POOL_ID`
+- `ADMIN_GROUP_NAME`
+- `ANALYST_GROUP_NAME`
+- `VIEWER_GROUP_NAME`
+
+Deployment note:
+
+- Redeploy `SentinelNet-Website` after building the frontend so CloudFront gets the new page, runtime config, and the new admin access HTTP API.

@@ -5,6 +5,7 @@ import { signOut } from '../auth/signOut'
 import { getProfile } from '../api/profile'
 import { useSettings } from '../contexts/SettingsContext'
 import { hasAllowedGroup } from '../auth/access'
+import { ADMIN_GROUP } from '../auth/groups'
 
 const ShieldIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -81,6 +82,10 @@ export default function TopNav() {
   const [navVisible, setNavVisible] = useState(true)
   const lastScrollY = useRef(0)
   const canAccessConsole = auth.isAuthenticated && hasAllowedGroup(auth.user)
+  const isAdmin = auth.isAuthenticated && hasAllowedGroup(auth.user, [ADMIN_GROUP])
+  const visibleConsoleLinks = isAdmin
+    ? [...consoleNavLinks, { to: '/admin/access', label: 'Access Terminal' }]
+    : consoleNavLinks
 
   useEffect(() => {
     if (!autoHideTopNav) {
@@ -181,7 +186,7 @@ export default function TopNav() {
         ))}
         {!auth.isLoading && auth.isAuthenticated && canAccessConsole && (
           <>
-            {consoleNavLinks.map(({ to, label }) => (
+            {visibleConsoleLinks.map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
