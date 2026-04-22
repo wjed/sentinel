@@ -109,15 +109,16 @@ class WebsiteStack(Stack):
             certificate=certificate,
         )
 
-        grafana_origin = HttpOrigin(
-            backend_stack.alb.load_balancer_dns_name,
-            http_port=3000,
-            protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY
+        alb_origin = HttpOrigin(
+            "api.sentinelnetsolutions.com",
+            http_port=80,
+            https_port=443,
+            protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY
         )
 
         self.distribution.add_behavior(
             "/grafana",
-            origin=grafana_origin,
+            origin=alb_origin,
             viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
             origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
@@ -125,7 +126,31 @@ class WebsiteStack(Stack):
 
         self.distribution.add_behavior(
             "/grafana/*",
-            origin=grafana_origin,
+            origin=alb_origin,
+            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
+        )
+
+        self.distribution.add_behavior(
+            "/thehive",
+            origin=alb_origin,
+            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
+        )
+
+        self.distribution.add_behavior(
+            "/oauth2/idpresponse",
+            origin=alb_origin,
+            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
+            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
+        )
+
+        self.distribution.add_behavior(
+            "/thehive/*",
+            origin=alb_origin,
             viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
             origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
@@ -170,8 +195,8 @@ class WebsiteStack(Stack):
             generate_secret=False,
             allowed_o_auth_flows=["code"],
             allowed_o_auth_flows_user_pool_client=True,
-            allowed_o_auth_scopes=["openid", "email", "profile"],
-            callback_ur_ls=[callback_url, "http://localhost:5173/", "http://localhost:3000/", f"{website_url}/grafana/login/generic_oauth"],
+            allowed_o_auth_scopes=["openid", "email"],
+            callback_ur_ls=[callback_url, "http://localhost:5173/", "http://localhost:3000/"],
             logout_ur_ls=[callback_url, "http://localhost:5173/", "http://localhost:3000/"],
             supported_identity_providers=["COGNITO"],
         )

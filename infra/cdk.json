@@ -13,7 +13,6 @@
   "context": {
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,
-    "@aws-cdk/core:target-partitions": ["aws"],
-    "cognito_client_id": "REPLACE_WITH_ACTUAL_CLIENT_ID"
+    "@aws-cdk/core:target-partitions": ["aws"]
   }
 }
