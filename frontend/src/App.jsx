@@ -14,6 +14,8 @@ import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import Account from './pages/Account'
 import Login from './pages/Login'
+import AdminAccessTerminal from './pages/AdminAccessTerminal'
+import { ADMIN_GROUP } from './auth/groups'
 
 export default function App() {
   return (
@@ -32,6 +34,7 @@ export default function App() {
         <Route path="reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
         <Route path="settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+        <Route path="admin/access" element={<ProtectedRoute requiredGroups={[ADMIN_GROUP]}><AdminAccessTerminal /></ProtectedRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

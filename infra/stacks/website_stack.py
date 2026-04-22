@@ -17,6 +17,7 @@ from aws_cdk import aws_cloudfront as cloudfront
 from aws_cdk.aws_cloudfront_origins import S3BucketOrigin, HttpOrigin
 from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_lambda as lambda_
+from aws_cdk import aws_iam as iam
 from aws_cdk import aws_apigatewayv2 as apigwv2
 from aws_cdk import aws_logs as logs
 from aws_cdk.aws_apigatewayv2_integrations import HttpLambdaIntegration
@@ -43,6 +44,7 @@ class WebsiteStack(Stack):
         repo_root = Path(__file__).resolve().parents[2]
         frontend_dist = str(repo_root / "frontend" / "dist")
         profile_lambda_dir = str(repo_root / "infra" / "lambda" / "profile_api_py")
+        admin_access_lambda_dir = str(repo_root / "infra" / "lambda" / "admin_access_api_py")
 
         # Pull Cognito from UserDataStack
         user_pool = user_data_stack.user_pool
@@ -175,6 +177,80 @@ class WebsiteStack(Stack):
             )
             api_base_url = http_api.api_endpoint
 
+        admin_access_api_base_url = None
+        admin_access_fn = lambda_.Function(
+            self, "AdminAccessApi",
+            runtime=lambda_.Runtime.PYTHON_3_12,
+            handler="handler.handler",
+            code=lambda_.Code.from_asset(admin_access_lambda_dir),
+            log_retention=logs.RetentionDays.ONE_DAY,
+            environment={
+                "USER_POOL_ID": user_pool.user_pool_id,
+                "ADMIN_GROUP_NAME": allowed_groups[0],
+                "ANALYST_GROUP_NAME": allowed_groups[1],
+                "VIEWER_GROUP_NAME": allowed_groups[2],
+            },
+        )
+        admin_access_fn.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "cognito-idp:AdminAddUserToGroup",
+                    "cognito-idp:AdminRemoveUserFromGroup",
+                    "cognito-idp:AdminGetUser",
+                    "cognito-idp:AdminListGroupsForUser",
+                    "cognito-idp:ListUsers",
+                ],
+                resources=[user_pool.user_pool_arn],
+            )
+        )
+        admin_access_api = apigwv2.HttpApi(
+            self, "AdminAccessHttpApi",
+            cors_preflight=apigwv2.CorsPreflightOptions(
+                allow_origins=["*"],
+                allow_methods=[
+                    apigwv2.CorsHttpMethod.GET,
+                    apigwv2.CorsHttpMethod.POST,
+                    apigwv2.CorsHttpMethod.OPTIONS,
+                ],
+                allow_headers=["Authorization", "Content-Type"],
+            ),
+            default_authorizer=HttpJwtAuthorizer(
+                "AdminAccessCognitoAuth", issuer,
+                jwt_audience=[web_client_id],
+            ),
+        )
+        admin_access_api.add_routes(
+            path="/admin/access/groups",
+            methods=[apigwv2.HttpMethod.GET],
+            integration=HttpLambdaIntegration("AdminAccessGroupsIntegration", admin_access_fn),
+        )
+        admin_access_api.add_routes(
+            path="/admin/access/whoami",
+            methods=[apigwv2.HttpMethod.GET],
+            integration=HttpLambdaIntegration("AdminAccessWhoamiIntegration", admin_access_fn),
+        )
+        admin_access_api.add_routes(
+            path="/admin/access/users",
+            methods=[apigwv2.HttpMethod.GET],
+            integration=HttpLambdaIntegration("AdminAccessUsersIntegration", admin_access_fn),
+        )
+        admin_access_api.add_routes(
+            path="/admin/access/users/{identifier}",
+            methods=[apigwv2.HttpMethod.GET],
+            integration=HttpLambdaIntegration("AdminAccessUserIntegration", admin_access_fn),
+        )
+        admin_access_api.add_routes(
+            path="/admin/access/grant",
+            methods=[apigwv2.HttpMethod.POST],
+            integration=HttpLambdaIntegration("AdminAccessGrantIntegration", admin_access_fn),
+        )
+        admin_access_api.add_routes(
+            path="/admin/access/revoke",
+            methods=[apigwv2.HttpMethod.POST],
+            integration=HttpLambdaIntegration("AdminAccessRevokeIntegration", admin_access_fn),
+        )
+        admin_access_api_base_url = admin_access_api.api_endpoint
+
         telemetry_api_base_url = None
         if hasattr(backend_stack, "telemetry_api_fn"):
             backend_stack.telemetry_api_fn.add_environment(
@@ -218,6 +294,8 @@ class WebsiteStack(Stack):
 
         if telemetry_api_base_url:
             config["telemetryApiUrl"] = telemetry_api_base_url.rstrip("/")
+        if admin_access_api_base_url:
+            config["adminAccessApiUrl"] = admin_access_api_base_url.rstrip("/")
 
         # ── Deploy frontend ───────────────────────────────────────────────────
         if os.path.isdir(frontend_dist):
@@ -246,3 +324,6 @@ class WebsiteStack(Stack):
         if telemetry_api_base_url:
             CfnOutput(self, "TelemetryApiUrl", value=telemetry_api_base_url,
                       export_name="SentinelNetTelemetryApiUrl")
+        if admin_access_api_base_url:
+            CfnOutput(self, "AdminAccessApiUrl", value=admin_access_api_base_url,
+                      export_name="SentinelNetAdminAccessApiUrl")

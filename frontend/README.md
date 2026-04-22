@@ -16,6 +16,7 @@ React + Vite app. Dark theme. Marketing pages (Home, Product, Pricing, About) pl
 | **`src/components/`** | Reusable UI: **TopNav** (logo + nav + Console dropdown + Account dropdown), **Footer**, **PublicLayout** (TopNav + page content + Footer), **ProtectedRoute** (redirects to login if not signed in), **DevAdvice** (the “How to build this” boxes on console pages). |
 | **`src/auth/`** | Cognito sign-in: **config.js** (pool ID, client ID, redirect URLs — uses `config.json` when deployed), **resolvedConfig.js** (runtime config from `config.json`), **signOut.js**. |
 | **`src/api/`** | API clients. **profile.js** talks to the profile API (get profile, update profile — display name, avatar icon, job, bio). |
+| **`src/admin/`** | Access Management Terminal parser logic and tests. Keeps the command surface limited to approved admin operations. |
 | **`index.html`** | The one HTML file. Loads `main.jsx`. |
 | **`package.json`** | Dependencies and scripts. **Do not** delete or rename scripts; the deploy process runs `npm run build`. |
 
@@ -38,8 +39,10 @@ There is **no** `Layout.jsx` with a sidebar. The layout is: **TopNav** at the to
 - **`/reports`** — Reports (protected)  
 - **`/settings`** — Settings (protected)  
 - **`/account`** — Account / profile (protected; edit display name, icon, job, bio)
+- **`/admin/access`** — Access Management Terminal (protected; admin-only)
 
 Protected = you must be signed in; otherwise you’re sent to login.
+Admin-only = you must also be in `SentinelNetAdmins`.
 
 ---
 
@@ -83,6 +86,8 @@ npm run dev
 - **Add reusable UI** — Put it in `src/components/` and import it where needed.
 - **Change colors / fonts** — Edit `:root` and other rules in `src/index.css`.
 - **Call a new API** — Add a client in `src/api/` (like `profile.js`) and use it from the page or component that needs it.
+
+The Access Management Terminal intentionally does not pass raw commands to the backend. The frontend parser validates supported commands first, then maps them to explicit REST calls against the admin access API.
 
 ---
 
