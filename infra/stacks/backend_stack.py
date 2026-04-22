@@ -21,16 +21,20 @@ from aws_cdk import (
     Tags,
     aws_apigatewayv2 as apigwv2,
     aws_apigatewayv2_integrations as integrations,
+    aws_certificatemanager as acm,
     aws_cognito as cognito,
     aws_dynamodb as dynamodb,
     aws_ec2 as ec2,
     aws_elasticloadbalancingv2 as elbv2,
+    aws_elasticloadbalancingv2_actions as elb_actions,
     aws_elasticloadbalancingv2_targets as targets,
     aws_iam as iam,
     aws_kms as kms,
     aws_lambda as lambda_,
     aws_lambda_event_sources as events,
     aws_logs as logs,
+    aws_route53 as route53,
+    aws_route53_targets as route53_targets,
     aws_s3 as s3,
     aws_sqs as sqs,
 )
@@ -91,8 +95,7 @@ class BackendStack(Stack):
             description="SentinelNet ALB",
             allow_all_outbound=True,
         )
-        self.alb_sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "HTTP (TheHive)")
-        self.alb_sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(3000), "HTTP (Grafana)")
+        self.alb_sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(443), "HTTPS (ALB)")
 
         # ── Security Group ────────────────────────────────────────────────────
         self.sg = ec2.SecurityGroup(
@@ -155,6 +158,8 @@ class BackendStack(Stack):
             "chown -R 1000:1000 /opt/sentinel/data/elasticsearch /opt/sentinel/data/wazuh_logs",
             # Create TheHive Config
             "cat > /opt/sentinel/conf/thehive.conf << 'THEHIVE_EOF'",
+            'play.http.context = "/thehive"',
+            'application.baseUrl = "https://sentinelnetsolutions.com/thehive"',
             'db.janusgraph.backend = "cql"',
             'db.janusgraph.hostname = ["cassandra"]',
             'db.janusgraph.cql.cluster-name = "thp"',
@@ -230,6 +235,7 @@ class BackendStack(Stack):
             "      - GF_SECURITY_ADMIN_PASSWORD=sentinel",
             "      - GF_SERVER_ROOT_URL=https://%(domain)s/grafana/",
             "      - GF_SERVER_SERVE_FROM_SUB_PATH=true",
+
             "    volumes:",
             "      - grafana_data:/var/lib/grafana",
             "",
@@ -346,44 +352,54 @@ class BackendStack(Stack):
             security_group=self.alb_sg,
         )
 
+        # ── Route 53 & ACM for ALB ──────────────────────────────────────────
+        hosted_zone = route53.HostedZone.from_hosted_zone_attributes(
+            self, "HostedZone",
+            hosted_zone_id="Z02031801QLNS1AIUFNZK",
+            zone_name="sentinelnetsolutions.com"
+        )
+        alb_domain = "api.sentinelnetsolutions.com"
+
+        alb_cert = acm.Certificate(
+            self, "AlbCert",
+            domain_name=alb_domain,
+            validation=acm.CertificateValidation.from_dns(hosted_zone)
+        )
+
+        route53.ARecord(
+            self, "AlbAliasRecord",
+            zone=hosted_zone,
+            record_name="api",
+            target=route53.RecordTarget.from_alias(route53_targets.LoadBalancerTarget(self.alb))
+        )
+
+        alb_client = user_pool.add_client(
+            "AlbClient",
+            generate_secret=True,
+            o_auth=cognito.OAuthSettings(
+                flows=cognito.OAuthFlows(authorization_code_grant=True),
+                scopes=[cognito.OAuthScope.OPENID, cognito.OAuthScope.EMAIL, cognito.OAuthScope.PROFILE],
+                callback_urls=[
+                    f"https://{alb_domain}/oauth2/idpresponse",
+                    "https://sentinelnetsolutions.com/oauth2/idpresponse"
+                ]
+            )
+        )
+
         # Allow ALB to reach EC2
         self.sg.connections.allow_from(self.alb, ec2.Port.tcp(9000))
+        self.sg.connections.allow_from(self.alb, ec2.Port.tcp(3000))
 
-        # TheHive listener (HTTP port 80 -> port 9000 on EC2)
-        listener = self.alb.add_listener("HttpListener", port=80)
-        listener.add_targets(
-            "TheHiveTarget",
-            port=9000,
-            protocol=elbv2.ApplicationProtocol.HTTP,
-            targets=[targets.InstanceTarget(self.instance, 9000)],
-            health_check=elbv2.HealthCheck(
-                path="/",
-                interval=Duration.seconds(20),
-                healthy_threshold_count=2,
-                unhealthy_threshold_count=3,
-                healthy_http_codes="200-499"
-            ),
+        https_listener = self.alb.add_listener(
+            "HttpsListener", port=443, certificates=[alb_cert],
+            default_action=elbv2.ListenerAction.fixed_response(404, content_type="text/plain", message_body="Not Found")
         )
 
-        # Grafana listener (HTTP port 3000 -> port 3000 on EC2)
-        grafana_listener = self.alb.add_listener(
-            "GrafanaListener", 
-            port=3000,
-            protocol=elbv2.ApplicationProtocol.HTTP
-        )
-        grafana_listener.add_targets(
-            "GrafanaTarget",
-            port=3000,
-            protocol=elbv2.ApplicationProtocol.HTTP,
-            targets=[targets.InstanceTarget(self.instance, 3000)],
-            health_check=elbv2.HealthCheck(
-                path="/login",
-                interval=Duration.seconds(20),
-                healthy_threshold_count=2,
-                unhealthy_threshold_count=3,
-                healthy_http_codes="200-499"
-            ),
-        )
+        thehive_tg = elbv2.ApplicationTargetGroup(self, "TheHiveTG", vpc=vpc, port=9000, protocol=elbv2.ApplicationProtocol.HTTP, targets=[targets.InstanceTarget(self.instance, 9000)], health_check=elbv2.HealthCheck(path="/", interval=Duration.seconds(20), healthy_threshold_count=2, unhealthy_threshold_count=3, healthy_http_codes="200-499"))
+        grafana_tg = elbv2.ApplicationTargetGroup(self, "GrafanaTG", vpc=vpc, port=3000, protocol=elbv2.ApplicationProtocol.HTTP, targets=[targets.InstanceTarget(self.instance, 3000)], health_check=elbv2.HealthCheck(path="/login", interval=Duration.seconds(20), healthy_threshold_count=2, unhealthy_threshold_count=3, healthy_http_codes="200-499"))
+
+        https_listener.add_action("TheHiveAuth", priority=10, conditions=[elbv2.ListenerCondition.path_patterns(["/thehive", "/thehive/*"])], action=elb_actions.AuthenticateCognitoAction(user_pool=user_pool, user_pool_client=alb_client, user_pool_domain=user_pool_domain, next=elbv2.ListenerAction.forward([thehive_tg])))
+        https_listener.add_action("GrafanaAuth", priority=20, conditions=[elbv2.ListenerCondition.path_patterns(["/grafana", "/grafana/*"])], action=elb_actions.AuthenticateCognitoAction(user_pool=user_pool, user_pool_client=alb_client, user_pool_domain=user_pool_domain, next=elbv2.ListenerAction.forward([grafana_tg])))
 
         # ── Lambda: SQS -> DynamoDB ───────────────────────────────────────────
         self.ingest_fn = lambda_.Function(
