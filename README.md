@@ -141,7 +141,7 @@ When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https:/
 - [ ] AWS credentials set (Step 1) or already configured
 - [ ] `cd frontend` → `npm install` → `npm run build` → `cd ..`
 - [ ] First time only: `cd infra` → `pip install -r requirements.txt` → `cdk bootstrap`
-- [ ] `cd infra` → deploy **Network**, then **UserData**, then **Website** (with `--exclusively` on Website)
+- [ ] `cd infra` → deploy **Network**, then **UserData**, then **Website** (with `--exclusively` on Website), then **Backend**
 - [ ] Copy **WebsiteURL** from the output
 
 ---
@@ -150,7 +150,7 @@ When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https:/
 
 | Tool | Access URL | Default Credentials |
 | :--- | :--- | :--- |
-| **Analyist Portal** | [https://d2p6585asnlov5.cloudfront.net](https://d2p6585asnlov5.cloudfront.net) | (Use Cognito) |
+| **Analyst Portal** | [https://d2p6585asnlov5.cloudfront.net](https://d2p6585asnlov5.cloudfront.net) | (Use Cognito) |
 | **TheHive 5** | `http://Sentin-ALBAE-K-123456789.elb.amazonaws.com` (Check ALB Output) | `admin` / `thehive1234` |
 | **Grafana** | `http://[ALB-DNS-Name]:3000` | `admin` / `sentinel` |
 | **Wazuh Agent** | Port **1514** (TCP) | (Public IP Registration) |

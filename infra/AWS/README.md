@@ -5,9 +5,9 @@ This directory contains the authoritative documentation, architecture diagrams, 
 ## 1. Architecture Overview: The Multi-Tenant "Pool" Model
 The platform follows a **three-tier architecture** consisting of frontend, backend, and center components. To support a B2B SaaS model efficiently, we utilize a **Hybrid Pool Model** for client isolation.
 
-* **Network Isolation**: A single **Amazon VPC** is partitioned into public, private, and isolated data subnets to enforce least-privilege communication.
+* **Network Isolation**: A simplified **Amazon VPC** with only public subnets to minimize costs (no NAT Gateway).
 * **Identity-Based Partitioning**: We use **Amazon Cognito** for subscriber authentication. Every request processed by the backend is tagged with a `tenant_id` extracted from Cognito JWT claims to ensure logical data isolation.
-* **Centralized Security Operations**: A central **Wazuh Manager** (SIEM/EDR) and **TheHive** (Incident Management) instance monitor disparate customer assets from a central location.
+* **Centralized Security Operations**: A central SOC EC2 instance runs **Wazuh Manager** (SIEM/EDR) and **TheHive** (Incident Management) via docker-compose to monitor customer assets.
 
 
 
@@ -19,7 +19,7 @@ The platform follows a **three-tier architecture** consisting of frontend, backe
 | **Logic** | AWS Lambda | Normalization and detection pipelines that process security telemetry into standardized JSON. |
 | **SIEM** | Wazuh Manager | The primary SIEM and EDR; provides visibility for monitoring client assets. |
 | **Management** | TheHive | The control room for the on-call team to track alerts through triage and resolution. |
-| **Storage** | DynamoDB & RDS | Persistent storage for normalized alerts, vulnerability data, and case history, partitioned by `tenant_id`. |
+| **Storage** | S3 Data Lake, Cassandra & ES | Persistent storage for normalized alerts (S3) and case history (Cassandra/ES). DynamoDB for profiles. |
 
 ## 3. Team Responsibilities
 * **Center Team (Service Backbone)**: Responsible for VPC design, IP addressing, IAM role enforcement, and setting up GitHub Actions for automated deployment.
@@ -33,5 +33,5 @@ The platform follows a **three-tier architecture** consisting of frontend, backe
 ---
 
 **Next Steps**:
-* **Center Team**: Ensure the **NAT Gateway** is correctly routed to allow **OpenVAS** signature updates.
-* **Backend Team**: Finalize the **DynamoDB** schema to include `tenant_id` as the Partition Key for all telemetry data.
+* **Center Team**: Monitor the single-instance SOC performance under load.
+* **Backend Team**: Finalize the **S3 Data Lake** structure and lifecycle rules for telemetry data.
