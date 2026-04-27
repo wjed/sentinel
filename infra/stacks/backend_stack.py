@@ -351,7 +351,7 @@ class BackendStack(Stack):
         )
 
         self.instance = ec2.Instance(
-            self, "SentinelSOCReplicaV4",
+            self, "SentinelSOCReplicaV5",
             instance_type=ec2.InstanceType("t3.large"),
             machine_image=ec2.MachineImage.latest_amazon_linux2(),
             vpc=vpc,
