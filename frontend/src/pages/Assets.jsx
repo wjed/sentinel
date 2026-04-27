@@ -16,15 +16,13 @@ const MOCK_AGENTS = [
   { id: '010', name: 'k8s-node-02',   ip: '10.0.5.22', os: 'Ubuntu 22.04', version: '4.7.2', status: 'active',       lastSeen: '2024-04-08T15:31:47Z', groups: ['linux', 'k8s'] },
   { id: '011', name: 'dmz-proxy-02',  ip: '10.0.6.12', os: 'Debian 11',    version: '4.7.0', status: 'active',       lastSeen: '2024-04-08T15:28:33Z', groups: ['linux', 'dmz'] },
   { id: '012', name: 'legacy-app-01', ip: '10.0.7.30', os: 'CentOS 7',     version: '4.3.10', status: 'disconnected', lastSeen: '2024-04-06T18:04:11Z', groups: ['linux', 'legacy'] },
-  { id: '013', name: 'honeypot-ssh',  ip: '10.0.8.10', os: 'Ubuntu 22.04', version: '4.7.2', status: 'active',       lastSeen: '2024-04-08T15:31:55Z', groups: ['honeypot'] },
-  { id: '014', name: 'honeypot-web',  ip: '10.0.8.11', os: 'Ubuntu 22.04', version: '4.7.2', status: 'active',       lastSeen: '2024-04-08T15:31:50Z', groups: ['honeypot'] },
   { id: '015', name: 'siem-backup',   ip: '10.0.1.50', os: 'Ubuntu 22.04', version: '4.7.2', status: 'active',       lastSeen: '2024-04-08T15:30:40Z', groups: ['default'] },
   { id: '016', name: 'dev-workst-04', ip: '10.0.9.44', os: 'macOS 14.4',   version: '4.7.1', status: 'never_connected', lastSeen: null,                groups: [] },
 ]
 
 const OS_GROUPS = ['All OS', 'Ubuntu', 'Debian', 'CentOS', 'Windows', 'macOS']
 const STATUS_OPTS = ['All Statuses', 'active', 'disconnected', 'never_connected']
-const GROUP_OPTS  = ['All Groups', 'web', 'db', 'windows', 'linux', 'k8s', 'dmz', 'finance', 'honeypot', 'legacy']
+const GROUP_OPTS  = ['All Groups', 'web', 'db', 'windows', 'linux', 'k8s', 'dmz', 'finance', 'legacy']
 
 const STATUS_META = {
   active:          { color: '#22c55e', label: 'Active' },

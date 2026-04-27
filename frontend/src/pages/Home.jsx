@@ -50,7 +50,6 @@ export default function Home() {
           {[
             { title: 'SIEM monitoring & correlation', desc: 'Centralized logs and security events with correlation rules.' },
             { title: 'Case management & workflow', desc: 'Track incidents from detection through resolution.' },
-            { title: 'Deception & honeypot telemetry', desc: 'Honeypot data and attack analytics in one view.' },
             { title: 'Automation & playbooks', desc: 'Runbooks and automated response where it makes sense.' },
             { title: 'Executive reporting & dashboards', desc: 'Clear metrics and reports for leadership.' },
             { title: 'Multi-tenant client portals', desc: 'Dedicated views and access per client or team.' },
@@ -67,15 +66,15 @@ export default function Home() {
         <h2 className="section-title">Pricing</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem', maxWidth: 900, margin: '0 auto' }}>
           {[
-            { name: 'Starter', price: '$129', desc: 'Up to 5 users — SIEM & log ingestion' },
-            { name: 'Professional', price: '$799', desc: 'Up to 25 users — case management & honeypot' },
-            { name: 'Enterprise', price: 'Custom', desc: 'Full SOC, custom integrations & SLA' },
+            { name: 'Starter', price: '$100', desc: 'Up to 5 devices — SIEM & log ingestion' },
+            { name: 'Professional', price: '$200', desc: 'Up to 10 devices — case management & analytics' },
+            { name: 'Enterprise', price: '$200+', desc: 'Contact sales for the amount of endpoints and devices you have' },
           ].map((tier) => (
-            <div key={tier.name} className="feature-card" style={{ padding: '1.5rem' }}>
+            <Link to="/pricing" key={tier.name} className="feature-card" style={{ padding: '1.5rem', display: 'block', textDecoration: 'none', color: 'inherit' }}>
               <div style={{ fontWeight: 600, fontSize: '1.0625rem', marginBottom: '0.35rem', color: 'var(--text-bright)' }}>{tier.name}</div>
               <div style={{ fontSize: '1.25rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: 500 }}>{tier.price}</div>
-              <p className="desc">{tier.desc}</p>
-            </div>
+              <p className="desc" style={{ margin: 0 }}>{tier.desc}</p>
+            </Link>
           ))}
         </div>
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--text-dim)' }}>

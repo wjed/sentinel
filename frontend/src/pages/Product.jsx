@@ -13,11 +13,6 @@ const tourSteps = [
     preview: 'Open cases with assignees, timelines, and linked evidence. Escalate and close with audit trail.',
   },
   {
-    title: 'Honeypot Intelligence Feed',
-    desc: 'Attack analytics from deception assets: source IPs, protocols, and geographic distribution.',
-    preview: 'Maps, port breakdowns, and SSH fingerprint data. Export for threat intel and blocking.',
-  },
-  {
     title: 'Executive Reporting Dashboard',
     desc: 'KPIs, trend charts, and summary reports for leadership and stakeholders.',
     preview: 'Customizable widgets, scheduled reports, and one-click export to PDF or share links.',
@@ -36,13 +31,6 @@ const mockCases = [
   { id: 'INC-0042', title: 'Brute force SSH 10.0.1.0/24', status: 'Open', assignee: 'Unassigned', updated: '2m ago' },
   { id: 'INC-0041', title: 'Suspicious PowerShell execution', status: 'In progress', assignee: 'J. Martino', updated: '15m ago' },
   { id: 'INC-0040', title: 'Phishing link in email', status: 'Resolved', assignee: 'D. Gill', updated: '1h ago' },
-]
-
-const mockHoneypot = [
-  { label: 'SSH (22)', pct: 68 },
-  { label: 'Telnet (23)', pct: 18 },
-  { label: 'HTTP (80)', pct: 8 },
-  { label: 'Other', pct: 6 },
 ]
 
 function ProductTourSidebar({ onClose, sectionRefs, step: controlledStep, onStepChange }) {
@@ -174,7 +162,7 @@ function ProductTourSidebar({ onClose, sectionRefs, step: controlledStep, onStep
 export default function Product() {
   const [tourOpen, setTourOpen] = useState(false)
   const [tourStep, setTourStep] = useState(0)
-  const sectionRefs = [useRef(null), useRef(null), useRef(null), useRef(null)]
+  const sectionRefs = [useRef(null), useRef(null), useRef(null)]
 
   const startTour = () => {
     setTourStep(0)
@@ -314,7 +302,7 @@ export default function Product() {
           </div>
         </section>
 
-        {/* 3. Honeypot Intelligence — mock */}
+        {/* 3. Executive Reporting — mock */}
         <section
           ref={sectionRefs[2]}
           className="product-mock-section"
@@ -323,51 +311,6 @@ export default function Product() {
             borderRadius: 'var(--radius)',
             transition: 'box-shadow 0.25s ease',
             ...(tourOpen && tourStep === 2 ? { boxShadow: '0 0 0 2px var(--accent)' } : {}),
-          }}
-        >
-          <h2 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--text-bright)' }}>Honeypot Intelligence Feed</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-            Attack analytics from deception assets: source IPs, protocols, and geographic distribution.
-          </p>
-          <div className="panel" style={{ overflow: 'hidden' }}>
-            <div className="panel-header">Last 24h — Top ports</div>
-            <div style={{ display: 'flex', gap: '2rem', padding: '1rem', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <div className="kpi-card" style={{ padding: '0.75rem 1rem' }}>
-                  <div className="kpi-label">Attacks</div>
-                  <div className="kpi-value" style={{ fontSize: '1.25rem' }}>14,283</div>
-                </div>
-                <div className="kpi-card" style={{ padding: '0.75rem 1rem' }}>
-                  <div className="kpi-label">Unique IPs</div>
-                  <div className="kpi-value" style={{ fontSize: '1.25rem' }}>2,847</div>
-                </div>
-              </div>
-              <div style={{ flex: 1, minWidth: 200 }}>
-                {mockHoneypot.map(({ label, pct }) => (
-                  <div key={label} style={{ marginBottom: '0.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.2rem' }}>
-                      <span style={{ color: 'var(--text-muted)' }}>{label}</span>
-                      <span style={{ color: 'var(--text-dim)' }}>{pct}%</span>
-                    </div>
-                    <div style={{ height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent)', borderRadius: 3 }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 4. Executive Reporting — mock */}
-        <section
-          ref={sectionRefs[3]}
-          className="product-mock-section"
-          style={{
-            marginBottom: '3rem',
-            borderRadius: 'var(--radius)',
-            transition: 'box-shadow 0.25s ease',
-            ...(tourOpen && tourStep === 3 ? { boxShadow: '0 0 0 2px var(--accent)' } : {}),
           }}
         >
           <h2 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--text-bright)' }}>Executive Reporting Dashboard</h2>

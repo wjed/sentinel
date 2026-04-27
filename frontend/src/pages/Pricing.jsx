@@ -2,23 +2,23 @@ export default function Pricing() {
   const tiers = [
     {
       name: 'Starter',
-      price: '$129',
+      price: '$100',
       period: 'per month',
-      features: ['Up to 5 users', 'SIEM & log ingestion', 'Basic dashboards', '7-day retention', 'Email support'],
-      cta: 'Start 1-week free trial',
+      features: ['Up to 5 devices', 'SIEM & log ingestion', 'Basic dashboards', '7-day retention', 'Email support'],
+      cta: 'Contact sales',
     },
     {
       name: 'Professional',
-      price: '$799',
+      price: '$200',
       period: 'per month',
-      features: ['Up to 25 users', 'Everything in Starter', 'Case management', 'Honeypot analytics', '90-day retention', 'SLA & priority support'],
-      cta: 'Start 1-week free trial',
+      features: ['Up to 10 devices', 'Everything in Starter', 'Case management', '90-day retention', 'SLA & priority support'],
+      cta: 'Contact sales',
     },
     {
       name: 'Enterprise',
-      price: 'Custom',
-      period: 'Contact us',
-      features: ['Unlimited users', 'Everything in Professional', 'Custom integrations', 'Dedicated success manager', 'On-prem options', 'Custom retention & SLA'],
+      price: '$200+',
+      period: 'per month',
+      features: ['Contact sales for the amount of endpoints and devices you have', 'Everything in Professional', 'Custom integrations', 'Dedicated success manager', 'On-prem options', 'Custom retention & SLA'],
       cta: 'Contact sales',
     },
   ]
@@ -35,7 +35,7 @@ export default function Pricing() {
           <div
             key={tier.name}
             className="feature-card"
-            style={{ padding: '1.5rem' }}
+            style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}
           >
             <div style={{ fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--text-bright)' }}>{tier.name}</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '0.25rem' }}>
@@ -47,9 +47,9 @@ export default function Pricing() {
                 <li key={f} style={{ marginBottom: '0.4rem' }}>• {f}</li>
               ))}
             </ul>
-            <button type="button" className={tier.price === '$0' ? 'btn-primary' : 'btn-secondary'} style={{ width: '100%', padding: '0.55rem' }}>
+            <a href="mailto:jedrzewj@dukes.jmu.edu" className={tier.price === '$0' ? 'btn-primary' : 'btn-secondary'} style={{ display: 'block', textAlign: 'center', textDecoration: 'none', width: '100%', padding: '0.55rem', marginTop: 'auto' }}>
               {tier.cta}
-            </button>
+            </a>
           </div>
         ))}
       </div>
