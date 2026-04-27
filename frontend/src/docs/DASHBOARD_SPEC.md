@@ -398,7 +398,7 @@ Called by frontend every 30s.
 
 The "Attack Origin Map" panel on Dashboard is a placeholder for a Grafana panel. To embed it:
 
-1. Create a Grafana dashboard with a **Geomap** panel pointed at the DynamoDB/InfluxDB honeypot data source
+1. Create a Grafana dashboard with a **Geomap** panel pointed at the DynamoDB/InfluxDB threat intel data source
 2. Enable **anonymous access** for the embedded panel (Grafana → Configuration → Anonymous Auth) or use a service account token
 3. Generate a **share URL** with `&kiosk` mode: `https://grafana.internal/d/<uid>/panel?orgId=1&panelId=<id>&kiosk`
 4. Replace the SVG placeholder in `Dashboard.jsx` with:

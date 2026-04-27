@@ -48,12 +48,9 @@ export default function ProtectedRoute({ children, requiredGroups }) {
   if (!hasAllowedGroup(auth.user, allowedGroups)) {
     return (
       <div style={{ padding: '2rem', maxWidth: 560, margin: '0 auto', color: 'var(--text)' }}>
-        <h2 style={{ marginTop: 0 }}>Access pending</h2>
+        <h2 style={{ marginTop: 0 }}>Access Denied</h2>
         <p style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          Your sign-in worked, but this account is not assigned to a SentinelNet access group yet.
-        </p>
-        <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', lineHeight: 1.5 }}>
-          Ask an admin to add you to one of: {allowedGroups.join(', ')}.
+          Please contact your org lead to get access.
         </p>
         <button type="button" className="btn-primary" style={{ marginTop: '1rem' }} onClick={() => signOut(auth)}>
           Sign out

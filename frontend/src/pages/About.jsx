@@ -18,7 +18,7 @@ export default function About() {
       <div className="page">
         <h1 style={{ marginBottom: '0.5rem' }}>About SentinelNet</h1>
         <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
-          SentinelNet is a cloud-native security operations platform designed for B2B and enterprise teams. We help organizations ingest, correlate, and act on security data with clear escalation and executive reporting.
+          SentinelNet is a cloud-native security operations platform designed for small businesses and organizations. We help organizations ingest, correlate, and act on security data with clear escalation and executive reporting.
         </p>
         <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
           This project was created at James Madison University (JMU) as a university assignment simulating real-world SOC workflows. The dashboard, incidents, alerts, and reports areas demonstrate the intended product experience.
