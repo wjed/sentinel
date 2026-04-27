@@ -166,6 +166,21 @@ class BackendStack(Stack):
             'index.search.elasticsearch.cluster-name = "thp"',
             'storage.backend = "local"',
             'storage.local.directory = "/opt/thp/thehive/files"',
+            'auth.multi = true',
+            'auth.methods {',
+            '  oidc {',
+            '    name = "SentinelNet"',
+            '    clientId = "5fghom9hob0drkrhlofeushn98"',
+            '    clientSecret = "ff4j9tnnidbm44523ip99fsr40m2hnl1p5hrt6s2433lstdqgci"',
+            '    redirectUri = "https://sentinelnetsolutions.com/thehive/"',
+            '    responseType = "code"',
+            '    scope = ["openid", "email", "profile"]',
+            '    authorizationUrl = "https://sentinelnet.auth.us-east-1.amazoncognito.com/oauth2/authorize"',
+            '    tokenUrl = "https://sentinelnet.auth.us-east-1.amazoncognito.com/oauth2/token"',
+            '    userinfoUrl = "https://sentinelnet.auth.us-east-1.amazoncognito.com/oauth2/userInfo"',
+            '    userIdField = "email"',
+            '  }',
+            '}',
             "THEHIVE_EOF",
             # Create compose file
             "cat > /opt/sentinel/docker-compose.yml << 'COMPOSE_EOF'",
@@ -230,10 +245,20 @@ class BackendStack(Stack):
             '      - "3000:3000"',
             "    environment:",
             "      - GF_SECURITY_ADMIN_PASSWORD=sentinel",
-            "      - GF_SERVER_ROOT_URL=https://%(domain)s/grafana/",
+            "      - GF_SERVER_ROOT_URL=https://sentinelnetsolutions.com/grafana/",
             "      - GF_SERVER_SERVE_FROM_SUB_PATH=true",
             "      - GF_SECURITY_COOKIE_SECURE=true",
             "      - GF_SECURITY_COOKIE_SAMESITE=none",
+            "      - GF_AUTH_GENERIC_OAUTH_ENABLED=true",
+            "      - GF_AUTH_GENERIC_OAUTH_NAME=SentinelNet",
+            "      - GF_AUTH_GENERIC_OAUTH_CLIENT_ID=5fghom9hob0drkrhlofeushn98",
+            "      - GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET=ff4j9tnnidbm44523ip99fsr40m2hnl1p5hrt6s2433lstdqgci",
+            "      - GF_AUTH_GENERIC_OAUTH_SCOPES=openid email profile",
+            "      - GF_AUTH_GENERIC_OAUTH_AUTH_URL=https://sentinelnet.auth.us-east-1.amazoncognito.com/oauth2/authorize",
+            "      - GF_AUTH_GENERIC_OAUTH_TOKEN_URL=https://sentinelnet.auth.us-east-1.amazoncognito.com/oauth2/token",
+            "      - GF_AUTH_GENERIC_OAUTH_API_URL=https://sentinelnet.auth.us-east-1.amazoncognito.com/oauth2/userInfo",
+            "      - GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH=contains(\"cognito:groups\", 'SentinelNetAdmins') && 'Admin' || contains(\"cognito:groups\", 'SentinelNetAnalysts') && 'Editor' || 'Viewer'",
+            "      - GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP=true",
 
             "    volumes:",
             "      - grafana_data:/var/lib/grafana",
@@ -380,7 +405,9 @@ class BackendStack(Stack):
                 scopes=[cognito.OAuthScope.OPENID, cognito.OAuthScope.EMAIL, cognito.OAuthScope.PROFILE],
                 callback_urls=[
                     f"https://{alb_domain}/oauth2/idpresponse",
-                    "https://sentinelnetsolutions.com/oauth2/idpresponse"
+                    "https://sentinelnetsolutions.com/oauth2/idpresponse",
+                    "https://sentinelnetsolutions.com/grafana/login/generic_oauth",
+                    "https://sentinelnetsolutions.com/thehive/"
                 ]
             )
         )
