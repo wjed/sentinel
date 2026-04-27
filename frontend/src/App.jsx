@@ -15,12 +15,16 @@ import Settings from './pages/Settings'
 import Account from './pages/Account'
 import Login from './pages/Login'
 import AdminAccessTerminal from './pages/AdminAccessTerminal'
+import GrafanaGateway from './pages/GrafanaGateway'
+import TheHiveGateway from './pages/TheHiveGateway'
 import { ADMIN_GROUP } from './auth/groups'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/grafana" element={<GrafanaGateway />} />
+      <Route path="/thehive" element={<TheHiveGateway />} />
       <Route path="/" element={<PublicLayout />}>
         <Route index element={<Home />} />
         <Route path="product" element={<Product />} />
@@ -40,3 +44,4 @@ export default function App() {
     </Routes>
   )
 }
+
