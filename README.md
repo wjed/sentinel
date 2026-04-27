@@ -148,12 +148,14 @@ When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https:/
 
 ### 🌐 Live Dashboard Access (POC Default)
 
-| Tool | Access URL | Default Credentials |
+| Tool | Access URL | Authentication |
 | :--- | :--- | :--- |
-| **Analyst Portal** | [https://sentinelnetsolutions.com](https://sentinelnetsolutions.com) | (Use Cognito) |
-| **TheHive 5** | `http://Sentin-ALBAE-K-123456789.elb.amazonaws.com` (Check ALB Output) | `admin` / `thehive1234` |
-| **Grafana** | `http://[ALB-DNS-Name]:3000` | `admin` / `sentinel` |
+| **Analyst Portal** | [https://sentinelnetsolutions.com](https://sentinelnetsolutions.com) | **Cognito SSO** |
+| **TheHive 5** | `https://sentinelnetsolutions.com/thehive/` | **Cognito SSO** (or `admin` / `thehive1234`) |
+| **Grafana** | `https://sentinelnetsolutions.com/grafana/` | **Cognito SSO** (or `admin` / `sentinel`) |
 | **Wazuh Agent** | Port **1514** (TCP) | (Public IP Registration) |
+
+> **Note:** For TheHive and Grafana, always use the **"Sign in with SentinelNet"** button to log in automatically using your main project credentials.
 
 ---
 
