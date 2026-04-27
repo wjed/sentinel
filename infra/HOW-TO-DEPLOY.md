@@ -189,3 +189,15 @@ After that, normal deploy order works (e.g. use `./deploy-all.sh` or the steps i
 - **Sign-in 404 or “user pool does not exist”** — Use the correct Cognito user pool in the app (see `frontend/.env.example` for `VITE_COGNITO_USER_POOL_ID` and `VITE_COGNITO_CLIENT_ID`). Clean build: `rm -rf frontend/dist` then `npm run build`, then deploy again.
 - **Sign-in “Something went wrong”** — Add the exact CloudFront URL (with trailing slash) to Cognito **Allowed callback URLs** and **Allowed sign-out URLs**.
 - **“disallowed MIME type” or “NS_ERROR_CORRUPTED_CONTENT” on `/assets/...`** — You’re loading an old `index.html` that points to an asset that’s no longer on S3. Always run `npm run build` in `frontend` before `cdk deploy`. After redeploying, do a hard refresh (Ctrl+Shift+R / Cmd+Shift+R) or wait a minute for the automatic CloudFront invalidation.
+
+---
+
+## 💰 Cost Management (Demo Mode)
+
+To save money on this university project, **Stop** the backend EC2 instance when not in use.
+
+1. Open **EC2 Console** -> **Instances**.
+2. Select **SentinelNet-Backend**.
+3. **Instance state** -> **Stop instance**.
+
+When you need to demo the platform, **Start** the instance and wait **5-10 minutes** for the SOC services to initialize and the ALB health checks to pass.
