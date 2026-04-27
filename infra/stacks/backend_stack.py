@@ -325,7 +325,7 @@ class BackendStack(Stack):
 
         self.instance = ec2.Instance(
             self, "SentinelSOCReplicaV4",
-            instance_type=ec2.InstanceType("t3.medium"),
+            instance_type=ec2.InstanceType("t3.large"),
             machine_image=ec2.MachineImage.latest_amazon_linux2(),
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
@@ -336,7 +336,7 @@ class BackendStack(Stack):
             block_devices=[
                 ec2.BlockDevice(
                     device_name="/dev/xvda",
-                    volume=ec2.BlockDeviceVolume.ebs(20, volume_type=ec2.EbsDeviceVolumeType.GP3)
+                    volume=ec2.BlockDeviceVolume.ebs(50, volume_type=ec2.EbsDeviceVolumeType.GP3)
                 )
             ]
         )
