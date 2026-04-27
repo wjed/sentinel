@@ -2,7 +2,7 @@
 
 Infra is **AWS CDK in Python**. The **SentinelNet-Website** stack deploys the frontend to S3 and serves it via CloudFront.
 
-**Live site (current deployment):** https://d1zrndjozdwm01.cloudfront.net
+**Live site:** https://sentinelnetsolutions.com
 
 **Every time you deploy:** You must run `npm run build` in `frontend/` first (so `frontend/dist` is up to date), then run `cdk deploy SentinelNet-Website` from `infra/`. CDK uploads whatever is in `dist`—no build, no new code on CloudFront.
 
@@ -75,7 +75,7 @@ The stack exports two outputs:
 
 | Output | Description |
 |--------|-------------|
-| **WebsiteURL** | Full URL to open the dashboard (e.g. `https://d1zrndjozdwm01.cloudfront.net`) |
+| **WebsiteURL** | Full URL to open the dashboard (e.g. `https://sentinelnetsolutions.com`) |
 | **DistributionDomainName** | CloudFront domain only (e.g. `d1zrndjozdwm01.cloudfront.net`) |
 
 **Where to find them:**
@@ -105,4 +105,4 @@ CloudFront will be invalidated so the new content is served.
 | Deploy website  | `cd infra && cdk deploy SentinelNet-Website` |
 | Get URL         | Stack outputs **WebsiteURL** / **DistributionDomainName** (terminal, CloudFormation Outputs tab, or CLI above) |
 
-**Live site (current):** https://d1zrndjozdwm01.cloudfront.net
+**Live site:** https://sentinelnetsolutions.com

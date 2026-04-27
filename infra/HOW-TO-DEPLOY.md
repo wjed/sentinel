@@ -1,6 +1,6 @@
 # Deploy SentinelNet to CloudFront
 
-One stack. Build the frontend, deploy, share the CloudFront URL. People sign in with Cognito.
+One stack. Build the frontend, deploy, share the URL (https://sentinelnetsolutions.com). People sign in with Cognito.
 
 ---
 
@@ -77,7 +77,7 @@ cd ..
 
 If **Network** fails with “Cannot delete export … in use by SentinelNet-Backend”, run the one-time fix first: `./fix-network-export-conflict.sh` (see section below).
 
-At the end you’ll see **WebsiteURL** (e.g. `https://xxxxx.cloudfront.net`). That’s the live site.
+At the end you’ll see **WebsiteURL** (e.g. `https://sentinelnetsolutions.com`). That’s the live site.
 
 **4. (Optional) Force refresh** — Each deploy automatically invalidates CloudFront (`/*`), so the site should update within a minute. If you need to clear cache immediately, run (using **DistributionId** from the output):
 

@@ -232,6 +232,8 @@ class BackendStack(Stack):
             "      - GF_SECURITY_ADMIN_PASSWORD=sentinel",
             "      - GF_SERVER_ROOT_URL=https://%(domain)s/grafana/",
             "      - GF_SERVER_SERVE_FROM_SUB_PATH=true",
+            "      - GF_SECURITY_COOKIE_SECURE=true",
+            "      - GF_SECURITY_COOKIE_SAMESITE=none",
 
             "    volumes:",
             "      - grafana_data:/var/lib/grafana",

@@ -14,7 +14,7 @@ A security operations platform: marketing pages (Home, Product, Pricing) + a das
 
 That’s it. **SentinelNet** includes a full backend SOC running on a cost-optimized EC2 instance, with a dedicated SQS/Lambda alert ingestion pipeline.
 
-**Live site:** [https://d7lsgn7zae54e.cloudfront.net/](https://d7lsgn7zae54e.cloudfront.net/) (CloudFront). Sign-in and the dashboard work there.
+**Live site:** [https://sentinelnetsolutions.com/](https://sentinelnetsolutions.com/) (Route 53). Sign-in and the dashboard work there.
 
 ---
 
@@ -150,7 +150,7 @@ When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https:/
 
 | Tool | Access URL | Default Credentials |
 | :--- | :--- | :--- |
-| **Analyst Portal** | [https://d2p6585asnlov5.cloudfront.net](https://d2p6585asnlov5.cloudfront.net) | (Use Cognito) |
+| **Analyst Portal** | [https://sentinelnetsolutions.com](https://sentinelnetsolutions.com) | (Use Cognito) |
 | **TheHive 5** | `http://Sentin-ALBAE-K-123456789.elb.amazonaws.com` (Check ALB Output) | `admin` / `thehive1234` |
 | **Grafana** | `http://[ALB-DNS-Name]:3000` | `admin` / `sentinel` |
 | **Wazuh Agent** | Port **1514** (TCP) | (Public IP Registration) |
