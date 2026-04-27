@@ -120,8 +120,8 @@ Or deploy step by step (from `infra/`):
 cd infra
 cdk deploy SentinelNet-Network --require-approval never --exclusively
 cdk deploy SentinelNet-UserData --require-approval never
-cdk deploy SentinelNet-Website --require-approval never --exclusively
 cdk deploy SentinelNet-Backend --require-approval never
+cdk deploy SentinelNet-Website --require-approval never --exclusively
 cd ..
 ```
 
@@ -141,7 +141,7 @@ When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https:/
 - [ ] AWS credentials set (Step 1) or already configured
 - [ ] `cd frontend` → `npm install` → `npm run build` → `cd ..`
 - [ ] First time only: `cd infra` → `pip install -r requirements.txt` → `cdk bootstrap`
-- [ ] `cd infra` → deploy **Network**, then **UserData**, then **Website** (with `--exclusively` on Website), then **Backend**
+- [ ] `cd infra` → deploy **Network**, then **UserData**, then **Backend**, then **Website** (with `--exclusively` on Website)
 - [ ] Copy **WebsiteURL** from the output
 
 ---

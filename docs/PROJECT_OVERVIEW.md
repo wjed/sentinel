@@ -74,6 +74,6 @@ When the analyst views the live React dashboard, the dashboard makes a request t
 ---
 
 ## 5. Security & Access Control
-- **Cognito SSO:** Centralized authentication for the frontend profiles and API gateways. 
-- **Application Load Balancer (ALB):** Routes administrative web traffic to the EC2 container ports. `TheHive` serves HTTP on port 80, while `Grafana` listens on 3000.
+- **Cognito SSO:** Centralized authentication for the frontend profiles, API gateways, and the Application Load Balancer. 
+- **Application Load Balancer (ALB):** Routes administrative web traffic to the EC2 container ports over HTTPS (443). The ALB handles Cognito authentication before forwarding traffic to `TheHive` (9000) and `Grafana` (3000).
 - **Security Groups:** The EC2 instance explicitly drops all ingress traffic except from the ALB, internal VPC CIDRs, and specific Wazuh agent connectivity ports.

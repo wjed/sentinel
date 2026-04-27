@@ -18,18 +18,15 @@ from aws_cdk import (
     Duration,
     RemovalPolicy,
     Stack,
-    Tags,
     aws_apigatewayv2 as apigwv2,
     aws_apigatewayv2_integrations as integrations,
     aws_certificatemanager as acm,
     aws_cognito as cognito,
-    aws_dynamodb as dynamodb,
     aws_ec2 as ec2,
     aws_elasticloadbalancingv2 as elbv2,
     aws_elasticloadbalancingv2_actions as elb_actions,
     aws_elasticloadbalancingv2_targets as targets,
     aws_iam as iam,
-    aws_kms as kms,
     aws_lambda as lambda_,
     aws_lambda_event_sources as events,
     aws_logs as logs,
@@ -401,7 +398,7 @@ class BackendStack(Stack):
         https_listener.add_action("TheHiveAuth", priority=10, conditions=[elbv2.ListenerCondition.path_patterns(["/thehive", "/thehive/*"])], action=elb_actions.AuthenticateCognitoAction(user_pool=user_pool, user_pool_client=alb_client, user_pool_domain=user_pool_domain, next=elbv2.ListenerAction.forward([thehive_tg])))
         https_listener.add_action("GrafanaAuth", priority=20, conditions=[elbv2.ListenerCondition.path_patterns(["/grafana", "/grafana/*"])], action=elb_actions.AuthenticateCognitoAction(user_pool=user_pool, user_pool_client=alb_client, user_pool_domain=user_pool_domain, next=elbv2.ListenerAction.forward([grafana_tg])))
 
-        # ── Lambda: SQS -> DynamoDB ───────────────────────────────────────────
+        # ── Lambda: SQS -> S3 Data Lake ───────────────────────────────────────
         self.ingest_fn = lambda_.Function(
             self, "IngestFunction",
             function_name="sentinel-wazuh-ingest",
