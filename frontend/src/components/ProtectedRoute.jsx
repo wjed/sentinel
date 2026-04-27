@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useAuth } from 'react-oidc-context'
 import { signOut } from '../auth/signOut'
 import { getAllowedGroups, hasAllowedGroup } from '../auth/access'
+import { setPostLoginRedirect } from '../auth/postLoginRedirect'
 
 /**
  * Renders children only when the user is authenticated.
@@ -9,13 +11,16 @@ import { getAllowedGroups, hasAllowedGroup } from '../auth/access'
  */
 export default function ProtectedRoute({ children, requiredGroups }) {
   const auth = useAuth()
+  const location = useLocation()
   const allowedGroups = requiredGroups ?? getAllowedGroups()
 
   useEffect(() => {
     if (!auth.isLoading && !auth.isAuthenticated && !auth.activeNavigator) {
-      auth.signinRedirect()
+      const returnTo = `${location.pathname}${location.search}`
+      setPostLoginRedirect(returnTo)
+      auth.signinRedirect({ state: { returnTo } })
     }
-  }, [auth.isLoading, auth.isAuthenticated, auth.activeNavigator, auth])
+  }, [auth.isLoading, auth.isAuthenticated, auth.activeNavigator, auth, location.pathname, location.search])
 
   if (auth.isLoading) {
     return (
@@ -30,7 +35,16 @@ export default function ProtectedRoute({ children, requiredGroups }) {
       <div style={{ padding: '2rem', maxWidth: 480, margin: '0 auto', color: 'var(--text)' }}>
         <h2 style={{ marginTop: 0 }}>Authentication error</h2>
         <p style={{ color: 'var(--text-muted)' }}>{auth.error.message}</p>
-        <button type="button" className="btn-primary" style={{ marginTop: '1rem' }} onClick={() => auth.signinRedirect()}>
+        <button
+          type="button"
+          className="btn-primary"
+          style={{ marginTop: '1rem' }}
+          onClick={() => {
+            const returnTo = `${location.pathname}${location.search}`
+            setPostLoginRedirect(returnTo)
+            auth.signinRedirect({ state: { returnTo } })
+          }}
+        >
           Try again
         </button>
       </div>

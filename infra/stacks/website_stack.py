@@ -118,42 +118,12 @@ class WebsiteStack(Stack):
             protocol_policy=cloudfront.OriginProtocolPolicy.HTTPS_ONLY
         )
 
-        self.distribution.add_behavior(
-            "/grafana",
-            origin=alb_origin,
-            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
-        )
-
-        self.distribution.add_behavior(
-            "/grafana/*",
-            origin=alb_origin,
-            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
-        )
-
-        self.distribution.add_behavior(
-            "/thehive",
-            origin=alb_origin,
-            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
-        )
-
+        # Gateway routes like /grafana and /thehive are handled by the SPA default behavior.
+        # Only the Cognito callback path is proxied to the backend ALB.
         self.distribution.add_behavior(
             "/oauth2/idpresponse",
             origin=alb_origin,
             viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
-            cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
-            origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
-        )
-
-        self.distribution.add_behavior(
-            "/thehive/*",
-            origin=alb_origin,
-            viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
             cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
             origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER
         )
@@ -199,7 +169,7 @@ class WebsiteStack(Stack):
             allowed_o_auth_flows_user_pool_client=True,
             allowed_o_auth_scopes=["openid", "email"],
             callback_ur_ls=[callback_url, "http://localhost:5173/", "http://localhost:3000/"],
-            logout_ur_ls=[callback_url, "http://localhost:5173/", "http://localhost:3000/"],
+            logout_ur_ls=[callback_url, f"{website_url}/", "http://localhost:5173/", "http://localhost:3000/"],
             supported_identity_providers=["COGNITO"],
         )
         web_client_id = self._web_client_cfn.ref
