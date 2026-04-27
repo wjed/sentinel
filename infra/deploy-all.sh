@@ -8,24 +8,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "=== Deploying SentinelNet stacks ==="
-echo "Order: Website -> Backend -> Network -> UserData"
+echo "Order: Network -> UserData -> Backend -> Website"
 echo ""
 
-# 1. Website (CloudFront + Cognito); --exclusively avoids export conflicts
+# 1. Network (VPC — everything depends on this)
+echo ">>> Deploying SentinelNet-Network..."
+cdk deploy SentinelNet-Network --require-approval never
+
+# 2. UserData (DynamoDB + S3 + Cognito — Auth depends on this)
+echo ">>> Deploying SentinelNet-UserData..."
+cdk deploy SentinelNet-UserData --require-approval never
+
+# 3. Backend (EC2 + Alert Pipeline — Provides Telemetry API for Website)
+echo ">>> Deploying SentinelNet-Backend..."
+cdk deploy SentinelNet-Backend --require-approval never
+
+# 4. Website (CloudFront + APIs — Depends on Backend for Telemetry)
 echo ">>> Deploying SentinelNet-Website..."
 cdk deploy SentinelNet-Website --require-approval never --exclusively
-
-# 2. Backend (EC2 + Alert Pipeline)
-echo ">>> Deploying SentinelNet-Backend..."
-cdk deploy SentinelNet-Backend --require-approval never --exclusively
-
-# 3. Network (VPC — everything depends on this)
-echo ">>> Deploying SentinelNet-Network..."
-cdk deploy SentinelNet-Network --require-approval never --exclusively
-
-# 4. UserData (DynamoDB + S3)
-echo ">>> Deploying SentinelNet-UserData..."
-cdk deploy SentinelNet-UserData --require-approval never --exclusively
-
-echo ""
-echo "=== All stacks deployed ==="

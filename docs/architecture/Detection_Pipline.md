@@ -1,30 +1,89 @@
 # Detection Pipeline (POC)
 
 ```mermaid
-flowchart LR
+graph TD
+    %% External Layer
+    subgraph "Public Internet"
+        User((Analyst/User))
+        Agent((Remote Wazuh Agent))
+    end
 
-%% =========================
-%% MAIN PIPELINE
-%% =========================
+    %% Edge Layer
+    subgraph "AWS Edge Locations"
+        CF[CloudFront Distribution]
+        WAF[AWS WAF Proxy - Optional]
+        CF --- WAF
+    end
 
-START["Wazuh Agent<br/>(on Target)"] -->|"Events (1514/1515)"| WAZ["Wazuh Manager<br/>(on SOC EC2)"]
+    %% VPC Layer
+    subgraph "VPC: SentinelNet-Network (10.0.0.0/16)"
+        subgraph "Public Subnets (us-east-1a / us-east-1b)"
+            direction TB
+            subgraph "Security Group: ALB-SG"
+                ALB[Application Load Balancer / Cognito Auth]
+            end
 
-WAZ -->|"Rule Hits (JSON)"| Q1["SQS<br/>sentinel-alerts"]
+            subgraph "Security Group: Services-SG"
+                direction LR
+                SOC_EC2[SOC Manager: t3.medium]
+                FW[Wazuh Port: 1514]
+                REG[Wazuh Reg: 1515]
+                TH[TheHive: 9000]
+                GR[Grafana: 3000]
+                
+                SOC_EC2 --- FW
+                SOC_EC2 --- REG
+                SOC_EC2 --- TH
+                SOC_EC2 --- GR
+            end
+        end
 
-Q1 -->|"Trigger"| INGEST["Ingest Lambda<br/>(wazuh-ingest)"]
+        %% Internal Data Flow
+        IGW[Internet Gateway]
+    end
 
-INGEST -->|"PutObject"| S3ALRT["S3 Data Lake<br/>AlertsBucket"]
+    %% Serverless / Managed Layer
+    subgraph "AWS Managed Services (Public Endpoints)"
+        S3_WEB[(S3: Website Assets & Code)]
+        DDB_PROFILES[(DynamoDB: User Profiles)]
+        S3_ALERTS[(S3: Alerts Data Lake)]
+        COG[Cognito: Shared UserPool]
+        APIGW[HTTP APIs: Profile, Admin, Telemetry]
+        LAMBDA_INGEST[Lambda: Wazuh Ingest]
+        LAMBDA_API[Lambdas: API Handlers]
+        SQS[SQS: Alert Buffer]
+    end
 
-S3ALRT -->|"List/Get"| PORTAL["Analyst Portal<br/>(Dashboard)"]
+    %% Connections
+    User -->|HTTPS:443| CF
+    CF -->|Origin| S3_WEB
+    User -->|HTTPS:443| ALB
+    ALB -->|Forward:9000| TH
+    ALB -->|Forward:3000| GR
+    Agent -->|UDP/TCP:1514/1515| SOC_EC2
+    
+    %% Internal Log Pipeline
+    SOC_EC2 -->|HTTPS via IGW| SQS
+    SQS -->|Trigger| LAMBDA_INGEST
+    LAMBDA_INGEST -->|Write JSON| S3_ALERTS
+    
+    %% API and Auth
+    User -->|HTTPS: APIs| APIGW
+    APIGW -->|Trigger| LAMBDA_API
+    LAMBDA_API -->|Read| S3_ALERTS
+    LAMBDA_API -->|Read/Write| DDB_PROFILES
+    LAMBDA_API -->|Manage| COG
+    
+    User -.->|SSO Login| COG
+    ALB -.->|Authenticate| COG
 
-subgraph "SOC Managed Instance"
-    WAZ
-    HIVE["TheHive 5"]
-    GRAF["Grafana"]
-end
-
-WAZ -.->|"Manual/Auto Triage"| HIVE
-INGEST -.->|"Internal Intel"| HIVE
+    %% Styling
+    style SOC_EC2 fill:#fff4dd,stroke:#d4a017,stroke-width:2px
+    style CF fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style S3_ALERTS fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style DDB_PROFILES fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style SQS fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style ALB fill:#fffde7,stroke:#fbc02d,stroke-width:2px
 ```
 
 ## Data Flow Details
@@ -66,7 +125,7 @@ Stores public/private profile images for analysts and clients.
 A single **UserPool** is used for all platform access:
 - **Analyst Portal**: Hosted via CloudFront.
 - **Backend Services**: Protected by the ALB OIDC authentication.
--   **Grafana**: Executive and operational metrics are pulled from DynamoDB and Wazuh APIs for real-time visualization.
+- **Grafana**: Executive and operational metrics are pulled from Wazuh APIs for real-time visualization.
 
 %% =========================
 %% PORTAL ACCESS (side lane)

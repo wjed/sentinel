@@ -70,8 +70,8 @@ cd ..
 cd infra
 cdk deploy SentinelNet-Network --require-approval never --exclusively
 cdk deploy SentinelNet-UserData --require-approval never
-cdk deploy SentinelNet-Website --require-approval never --exclusively
 cdk deploy SentinelNet-Backend --require-approval never
+cdk deploy SentinelNet-Website --require-approval never --exclusively
 cd ..
 ```
 
@@ -151,8 +151,8 @@ Only do this if you want to clean up those stacks. Don’t run `cdk destroy Sent
 
 1. Deploy **Network** first (creates VPC and subnets).
 2. Deploy **UserData** (DynamoDB, S3).
-3. Deploy **Website** with `--exclusively` (site + Cognito + profile API).
-4. Deploy **Backend** last (SOC EC2 instance uses Network’s VPC and public subnets).
+3. Deploy **Backend** (SOC EC2 instance uses Network’s VPC and public subnets).
+4. Deploy **Website** last with `--exclusively` (site + Cognito + profile API, depends on Backend).
 
 If an **old** Backend stack was deployed in AWS (e.g. by the center team) and it imported exports from an older Network template, updating Network can fail: CloudFormation won’t delete or change an export that another stack still imports. You have to remove that dependency once, then redeploy.
 

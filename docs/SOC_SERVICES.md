@@ -20,8 +20,8 @@ All services are managed in `/opt/sentinel/docker-compose.yml`. Data is persiste
 
 | Service | Protocol | Default Credentials | Path |
 |---------|----------|---------------------|------|
-| **TheHive 5** | HTTP (Port 80) | `admin` / `thehive1234` | `/` |
-| **Grafana** | HTTP (Port 3000) | `admin` / `sentinel` | `/login` |
+| **TheHive 5** | HTTPS (ALB 443) | (Cognito SSO) | `/thehive` |
+| **Grafana** | HTTPS (ALB 443) | (Cognito SSO) | `/grafana` |
 | **Wazuh API** | HTTPS (Port 55000)| `wazuh` / `Wazuh123!` | `/` |
 | **Sentinel Dashboard** | HTTPS | (Cognito SSO) | (CloudFront URL) |
 
@@ -53,7 +53,7 @@ Wazuh agents connect to the manager over ports **1514 (Events)** and **1515 (Reg
 
 ### Analyst-to-UI
 Analysts access the platform in two ways:
-1.  **Management Console**: Direct HTTP access to TheHive/Grafana via the **ALB**.
+1.  **Management Console**: Direct HTTPS access to TheHive/Grafana via the **ALB**, protected by Cognito SSO.
 2.  **SentinelNet Dashboard**: The React frontend (on CloudFront) which pulls live data from the **Telemetry API**.
 
 ---
