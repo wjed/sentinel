@@ -170,12 +170,13 @@ class BackendStack(Stack):
             '  multi = true',
             '  method.oidc {',
             '    name = "SentinelNet"',
-            '    clientId = "5fghom9hob0drkrhlofeushn98"',
-            '    clientSecret = "ff4j9tnnidbm44523ip99fsr40m2hnl1p5hrt6s2433lstdqgci"',
+            '    client-id = "5fghom9hob0drkrhlofeushn98"',
+            '    client-secret = "ff4j9tnnidbm44523ip99fsr40m2hnl1p5hrt6s2433lstdqgci"',
             '    redirectUri = "https://sentinelnetsolutions.com/thehive/"',
             '    responseType = "code"',
             '    grantType = "authorization_code"',
             '    scope = ["openid", "email", "profile"]',
+            '    issuer = "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_qBl0PoXjr"',
             '    authorizationUrl = "https://sentinelnet.auth.us-east-1.amazoncognito.com/oauth2/authorize"',
             '    tokenUrl = "https://sentinelnet.auth.us-east-1.amazoncognito.com/oauth2/token"',
             '    userinfoUrl = "https://sentinelnet.auth.us-east-1.amazoncognito.com/oauth2/userInfo"',
@@ -352,7 +353,7 @@ class BackendStack(Stack):
         )
 
         self.instance = ec2.Instance(
-            self, "SentinelSOCReplicaV6",
+            self, "SentinelSOCReplicaV7",
             instance_type=ec2.InstanceType("t3.large"),
             machine_image=ec2.MachineImage.latest_amazon_linux2(),
             vpc=vpc,
