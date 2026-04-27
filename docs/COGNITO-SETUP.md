@@ -48,7 +48,8 @@ Use this guide to add sign-in to SentinelNet using AWS Cognito Hosted UI. Do the
 
    - `https://sentinelnetsolutions.com/`
    - `https://sentinelnetsolutions.com`
-   - `https://d1zrndjozdwm01.cloudfront.net/` (if you use CloudFront)
+   - `https://sentinelnetsolutions.com/grafana/login/generic_oauth`
+   - `https://sentinelnetsolutions.com/thehive/`
    - `http://localhost:3000/` (for local dev)
 
    **Default redirect URL:** e.g. `https://sentinelnetsolutions.com/`

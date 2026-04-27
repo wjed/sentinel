@@ -14,7 +14,7 @@ A security operations platform: marketing pages (Home, Product, Pricing) + a das
 
 That’s it. **SentinelNet** includes a full backend SOC running on a cost-optimized EC2 instance, with a dedicated SQS/Lambda alert ingestion pipeline.
 
-**Live site:** [https://d7lsgn7zae54e.cloudfront.net/](https://d7lsgn7zae54e.cloudfront.net/) (CloudFront). Sign-in and the dashboard work there.
+**Live site:** [https://sentinelnetsolutions.com/](https://sentinelnetsolutions.com/) (Route 53). Sign-in and the dashboard work there.
 
 ---
 
@@ -128,7 +128,7 @@ cd ..
 - **SentinelNet-Network** — VPC and subnets (center team). Public subnets only, no NAT Gateway.
 - **SentinelNet-UserData** — DynamoDB (profiles), S3 (profile pictures), and **Cognito UserPool** (shared auth).
 - **SentinelNet-Website** — The React frontend (S3 + CloudFront) and the Profile API.
-- **SentinelNet-Backend** — Full SOC suite (Wazuh, TheHive 5, Cassandra, Elasticsearch) on a cost-optimized **`t3.medium`** (4GB RAM / **20GB GP3 SSD**) instance + **4GB Swap** and SQS/Lambda/S3 alert data lake. See **SOC_SERVICES.md** for service details.
+- **SentinelNet-Backend** — Full SOC suite (Wazuh, TheHive 5, Cassandra, Elasticsearch) on a cost-optimized **`t3.large`** (8GB RAM / **50GB GP3 SSD**) instance + **4GB Swap** and SQS/Lambda/S3 alert data lake. See **SOC_SERVICES.md** for service details.
 
 **If Network fails** with “Cannot delete export … in use by SentinelNet-Backend”, run the one-time fix from `infra/`: `./fix-network-export-conflict.sh` (see **infra/HOW-TO-DEPLOY.md**).
 
@@ -148,12 +148,14 @@ When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https:/
 
 ### 🌐 Live Dashboard Access (POC Default)
 
-| Tool | Access URL | Default Credentials |
+| Tool | Access URL | Authentication |
 | :--- | :--- | :--- |
-| **Analyst Portal** | [https://d2p6585asnlov5.cloudfront.net](https://d2p6585asnlov5.cloudfront.net) | (Use Cognito) |
-| **TheHive 5** | `http://Sentin-ALBAE-K-123456789.elb.amazonaws.com` (Check ALB Output) | `admin` / `thehive1234` |
-| **Grafana** | `http://[ALB-DNS-Name]:3000` | `admin` / `sentinel` |
+| **Analyst Portal** | [https://sentinelnetsolutions.com](https://sentinelnetsolutions.com) | **Cognito SSO** |
+| **TheHive 5** | `https://sentinelnetsolutions.com/thehive/` | **Cognito SSO** (or `admin` / `thehive1234`) |
+| **Grafana** | `https://sentinelnetsolutions.com/grafana/` | **Cognito SSO** (or `admin` / `sentinel`) |
 | **Wazuh Agent** | Port **1514** (TCP) | (Public IP Registration) |
+
+> **Note:** For TheHive and Grafana, always use the **"Sign in with SentinelNet"** button to log in automatically using your main project credentials.
 
 ---
 
@@ -202,3 +204,21 @@ New Lambda environment variables:
 Deployment note:
 
 - Redeploy `SentinelNet-Website` after building the frontend so CloudFront gets the new page, runtime config, and the new admin access HTTP API.
+
+---
+
+## 💰 Cost Management (Demo Mode)
+
+Since this is a demo/university project, you can save money by stopping the SOC backend when it's not in use.
+
+### Stopping the Instance
+1. Log into the **AWS Console**.
+2. Go to **EC2** -> **Instances**.
+3. Select the **SentinelNet-Backend** instance.
+4. Click **Instance state** -> **Stop instance**.
+   * *Note: You only pay for the 50GB storage (~$4/mo) while it's stopped, instead of the full ~$60/mo.*
+
+### Restarting for a Demo
+1. Go to the **EC2 Console** and **Start** the instance.
+2. **Wait 5-10 minutes.** The services take a few minutes to boot up and the ALB needs time to mark the targets as healthy.
+3. Refresh the **Dashboard** and you're back in business!

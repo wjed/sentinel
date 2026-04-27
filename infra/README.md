@@ -71,7 +71,7 @@ Don’t run `cdk deploy` without approval. The main repo README explains the wor
 
 ## Live site
 
-After a successful Website deploy, the output shows **WebsiteURL**. The current live URL is in the **main repo README** (e.g. `https://d7lsgn7zae54e.cloudfront.net/`). That’s the CloudFront URL; the React app and sign-in run there.
+After a successful Website deploy, the output shows **WebsiteURL**. The current live URL is in the **main repo README** (e.g. `https://sentinelnetsolutions.com/`). That’s the custom domain; the React app and sign-in run there.
 
 ---
 
