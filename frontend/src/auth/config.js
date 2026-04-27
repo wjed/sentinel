@@ -6,8 +6,8 @@
 import { getResolvedConfig } from './resolvedConfig.js'
 
 const COGNITO_REGION = 'us-east-1'
-const FALLBACK_POOL_ID = 'us-east-1_2tphwtJVz'
-const FALLBACK_CLIENT_ID = '72nacspbmmec7ghfurtr7dlom1'
+const FALLBACK_POOL_ID = 'us-east-1_qBl0PoXjr'
+const FALLBACK_CLIENT_ID = '3ane9ugp3kbp5vm8tevqtnfvev'
 
 function callbackUri(url) {
   if (typeof url !== 'string') return url
