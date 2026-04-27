@@ -166,14 +166,15 @@ class BackendStack(Stack):
             'index.search.elasticsearch.cluster-name = "thp"',
             'storage.backend = "local"',
             'storage.local.directory = "/opt/thp/thehive/files"',
-            'auth.multi = true',
-            'auth.methods {',
-            '  oidc {',
+            'auth {',
+            '  multi = true',
+            '  method.oidc {',
             '    name = "SentinelNet"',
             '    clientId = "5fghom9hob0drkrhlofeushn98"',
             '    clientSecret = "ff4j9tnnidbm44523ip99fsr40m2hnl1p5hrt6s2433lstdqgci"',
             '    redirectUri = "https://sentinelnetsolutions.com/thehive/"',
             '    responseType = "code"',
+            '    grantType = "authorization_code"',
             '    scope = ["openid", "email", "profile"]',
             '    authorizationUrl = "https://sentinelnet.auth.us-east-1.amazoncognito.com/oauth2/authorize"',
             '    tokenUrl = "https://sentinelnet.auth.us-east-1.amazoncognito.com/oauth2/token"',
@@ -351,7 +352,7 @@ class BackendStack(Stack):
         )
 
         self.instance = ec2.Instance(
-            self, "SentinelSOCReplicaV5",
+            self, "SentinelSOCReplicaV6",
             instance_type=ec2.InstanceType("t3.large"),
             machine_image=ec2.MachineImage.latest_amazon_linux2(),
             vpc=vpc,
