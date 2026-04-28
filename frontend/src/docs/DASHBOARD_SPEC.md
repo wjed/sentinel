@@ -135,15 +135,15 @@ POST /wazuh-alerts-*/_search
 }
 ```
 
-**How to get it from TheHive:**
+**How to get it from TheHive 5.4:**
 ```
-GET https://<thehive>:9000/api/case?status=Open&range=all   → count
-GET https://<thehive>:9000/api/case?status=InProgress&range=all
-GET https://<thehive>:9000/api/case?status=Resolved&range=0-100
+GET https://<sentinelnetsolutions.com>/thehive/api/case?status=Open&range=all   → count
+GET https://<sentinelnetsolutions.com>/thehive/api/case?status=InProgress&range=all
+GET https://<sentinelnetsolutions.com>/thehive/api/case?status=Resolved&range=0-100
   Filter by _createdAt >= now - 30d, compute avg closeDate-createdAt
 ```
 
-TheHive API auth: `Authorization: Bearer <api_key>` header.
+The Dashboard UI should hit the Telemetry API Lambda, which in turn calls TheHive using the auth proxy's internal address (`http://thehive:9000/thehive`).
 
 ---
 
@@ -296,8 +296,8 @@ Same as 1.4 (`/api/dashboard/thehive/summary`).
 ```
 
 **Mapping from TheHive v5 API:**  
-`GET /api/case` returns `_id`, `title`, `severity` (1=Low, 2=Medium, 3=High, 4=Critical), `status`, `owner`, `tags`, `_createdAt`, `_updatedAt`.  
-Map `severity` integer → label in the Lambda handler.
+`GET /thehive/api/case` returns `_id`, `title`, `severity` (1=Low, 2=Medium, 3=High, 4=Critical), `status`, `owner`, `tags`, `_createdAt`, `_updatedAt`.  
+Map `severity` integer → label in the Lambda handler or the UI.
 
 ---
 
@@ -413,4 +413,4 @@ The "Attack Origin Map" panel on Dashboard is a placeholder for a Grafana panel.
 
 ---
 
-*Last updated: 2024-04-08 · maintained by the SentinelNet infra team*
+*Last updated: 2026-04-28 (TheHive 5.4 Update) · maintained by the SentinelNet infra team*

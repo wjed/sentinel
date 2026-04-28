@@ -8,7 +8,7 @@ SentinelNet consists of four main layers:
 1.  **Network Layer**: A simplified VPC with public subnets only (no NAT Gateway).
 2.  **User Data & Auth Layer**: Shared Cognito User Pool and DynamoDB tables for user profiles.
 3.  **Frontend Layer**: A React SPA hosted on S3 and served via CloudFront.
-4.  **Backend SOC Layer**: A single EC2 instance running all security services via `docker-compose`, protected by an Application Load Balancer (ALB) with Cognito authentication.
+4.  **Backend SOC Layer**: A single EC2 instance running all security services via `docker-compose`, protected by an Application Load Balancer (ALB) with Cognito authentication and a TheHive auth proxy.
 
 ---
 
@@ -39,14 +39,16 @@ graph TD
 
             subgraph "Security Group: Services-SG"
                 direction LR
-                SOC_EC2[SOC Manager: t3.medium]
+                SOC_EC2[SOC Manager: t3.large]
                 FW[Wazuh Port: 1514]
                 REG[Wazuh Reg: 1515]
+                THP[TheHive Proxy: 9001]
                 TH[TheHive: 9000]
                 GR[Grafana: 3000]
                 
                 SOC_EC2 --- FW
                 SOC_EC2 --- REG
+                SOC_EC2 --- THP
                 SOC_EC2 --- TH
                 SOC_EC2 --- GR
             end
@@ -72,7 +74,8 @@ graph TD
     User -->|HTTPS:443| CF
     CF -->|Origin| S3_WEB
     User -->|HTTPS:443| ALB
-    ALB -->|Forward:9000| TH
+    ALB -->|Forward:9001| THP
+    THP -->|Forward:9000| TH
     ALB -->|Forward:3000| GR
     Agent -->|UDP/TCP:1514/1515| SOC_EC2
     
@@ -107,7 +110,7 @@ graph TD
 ### 1. Network (SentinelNet-Network)
 - **Cost Optimization**: We use `nat_gateways=0` to save ~$32/mo.
 - **Subnets**: Public subnets only. All resources (EC2, ALB) are placed here.
-- **Security**: Access is restricted via Security Groups. The EC2 instance is only accessible via SSM (no open SSH port).
+- **Security**: Access is restricted via Security Groups. SSH is open for troubleshooting; prefer SSM for routine access.
 
 ### 2. User Data & Auth (SentinelNet-UserData)
 - **Cognito**: A single User Pool shared by the Website and Backend services.
@@ -120,13 +123,13 @@ graph TD
 - **Config**: Automatically generates `config.json` with the latest Telemetry and Profile API URLs.
 
 ### 4. Backend (SentinelNet-Backend)
-- **Compute**: One **`t3.medium`** EC2 instance (4GB RAM) with a **20GB GP3 SSD**. 
+- **Compute**: One **`t3.large`** EC2 instance (8GB RAM) with a **50GB GP3 SSD**. 
 - **Memory Diet**: A **4GB Swap File** and strict JVM heap limits (512MB for Cassandra/ES, 768MB for TheHive) are applied to ensure multiple heavy services remain stable within the 4GB limits.
 - **Ingestion**: A Python forwarder script monitors `alerts.json` and pushes rule hits to an SQS queue.
-- **TheHive 5 Stack**: Includes **Cassandra** and **Elasticsearch** containers running in a "low-memory mode".
+- **TheHive 5 Stack**: Includes **Cassandra** and **Elasticsearch** containers running in a "low-memory mode". The stack is automatically initialized during the first deployment via a bootstrap script that creates necessary proxy accounts.
 - **Telemetry API**: A dedicated Lambda + HttpApi allows the dashboard to fetch the latest alerts from the **S3 Data Lake**.
-- **Containerization**: Services run as Docker containers using `docker-compose`. This avoids the complexity of multi-container Fargate tasks.
-- **Auth**: The ALB accepts HTTPS traffic and enforces Cognito authentication at the LB level before forwarding to internal service ports.
+- **Containerization**: Services run as Docker containers using `docker-compose`.
+- **Auth**: The ALB enforces Cognito authentication. TheHive traffic is forwarded to a small auth proxy that uses credentials stored in `.thehive_proxy.env` to establish sessions.
 
 ---
 
@@ -134,11 +137,11 @@ graph TD
 
 | Service | Cost (Monthly) | Notes |
 |---------|----------------|-------|
-| **EC2 (t3.medium)** | ~$30.00 | Reserved or Spot would be cheaper. |
+| **EC2 (t3.large)** | ~$60.00 | Reserved or Spot would be cheaper. |
 | **ALB** | ~$16.00 | Base cost for one Load Balancer. |
 | **CloudFront / S3** | < $1.00 | Free tier usually covers this. |
 | **Cognito / DDB / Lambda** | ~$0.00 | Pay-per-request / Free tier. |
-| **TOTAL** | **~$46.00** | vs ~$120.00 for the old setup. |
+| **TOTAL** | **~$76.00** | vs ~$120.00 for the old setup. |
 
 ---
 

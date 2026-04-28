@@ -27,11 +27,11 @@ You run **all** `cdk` commands from **this directory** (`infra/`). Not from the 
 | **SentinelNet-Network** | `stacks/network_stack.py` | **VPC** with public, private, and internal subnets. Outputs VPC ID and subnet IDs. Backend uses this VPC. |
 | **SentinelNet-UserData** | `stacks/user_data_stack.py` | **DynamoDB** (profiles) and **S3** bucket. No Lambda here — just storage. |
 | **SentinelNet-Website** | `stacks/website_stack.py` | **Live site**: S3 + CloudFront, **Cognito**, the **profile API**, and the **admin access API**. Writes `config.json` for the frontend. |
-| **SentinelNet-Backend** | `stacks/backend_stack.py` | **SOC EC2**: t3.medium running Wazuh, TheHive 5, etc. + SQS/Lambda/S3 alert data lake. |
+| **SentinelNet-Backend** | `stacks/backend_stack.py` | **SOC EC2**: t3.large running Wazuh, TheHive 5, TheHive auth proxy, etc. + SQS/Lambda/S3 alert data lake. |
 
 **Dependencies:** Website uses UserData (profile API). Backend uses Network (VPC + private subnets). **Backend does not deploy Network** — you deploy Network first, then Backend.
 
-**Deploy order:** Network → UserData → Website (`--exclusively`) → Backend. Use `./deploy-all.sh` to run them in order. If Network fails with “export in use by SentinelNet-Backend”, run `./fix-network-export-conflict.sh` once (see HOW-TO-DEPLOY.md).
+**Deploy order:** Network → UserData → Backend → Website (`--exclusively`). Use `./deploy-all.sh` to run them in order. If Network fails with “export in use by SentinelNet-Backend”, run `./fix-network-export-conflict.sh` once (see HOW-TO-DEPLOY.md).
 
 ---
 
@@ -64,7 +64,8 @@ Don’t run `cdk deploy` without approval. The main repo README explains the wor
 - **VPC / subnets:** Edit `stacks/network_stack.py`.
 - **DynamoDB / S3 for user data:** Edit `stacks/user_data_stack.py`.
 - **Site, CloudFront, Cognito, profile API, admin access API:** Edit `stacks/website_stack.py`. Profile Lambda: `lambda/profile_api_py/handler.py`. Admin access Lambda: `lambda/admin_access_api_py/handler.py`.
-- **SOC EC2 (Backend):** Edit `stacks/backend_stack.py`. Contains Docker settings and alert pipeline.
+- **SOC EC2 (Backend):** Edit `stacks/backend_stack.py`. Contains Docker settings, TheHive auth proxy, and alert pipeline.
+- **TheHive proxy credentials:** Create `.thehive_proxy.env` in the repo root (git-ignored) with BOTH proxy and default admin credentials for TheHive 5.4 bootstrap. See HOW-TO-DEPLOY.md.
 - **New stack:** Add a new file in `stacks/`, extend `Stack`, then in `app.py` instantiate it (e.g. `SomethingStack(app, "SentinelNet-Something", env=env)`).
 
 ---

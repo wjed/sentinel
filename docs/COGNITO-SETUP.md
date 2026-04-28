@@ -48,8 +48,8 @@ Use this guide to add sign-in to SentinelNet using AWS Cognito Hosted UI. Do the
 
    - `https://sentinelnetsolutions.com/`
    - `https://sentinelnetsolutions.com`
-   - `https://sentinelnetsolutions.com/grafana/login/generic_oauth`
-   - `https://sentinelnetsolutions.com/thehive/`
+   - `http://localhost:3000/` (for local dev)
+   - `http://localhost:5173/` (for Vite dev)
    - `http://localhost:3000/` (for local dev)
 
    **Default redirect URL:** e.g. `https://sentinelnetsolutions.com/`
@@ -61,6 +61,8 @@ Use this guide to add sign-in to SentinelNet using AWS Cognito Hosted UI. Do the
    **OAuth 2.0 grant types:** check **Authorization code grant**.
 
    **OpenID Connect scopes:** check **OpenID**, **Email**, and **Phone** (or at least **OpenID** and **Email**).
+
+> **Note:** The ALB (Grafana/TheHive) uses its own Cognito app client created by CDK in the backend stack. That client includes callbacks like `https://api.sentinelnetsolutions.com/grafana/login/generic_oauth` and `https://api.sentinelnetsolutions.com/thehive/`. You do not need to add those to the website app client.
 
 4. **Save**.
 
@@ -97,6 +99,20 @@ The repo currently has auth **removed** so the site runs without sign-in. To tur
    - Do **not** use React StrictMode around the auth provider if it causes the callback to run twice (and the token exchange to get a 400).
 
 5. **Optional:** keep a single `frontend/src/auth/config.js` that reads `VITE_COGNITO_*` env vars (user pool ID, client ID, redirect URI, Cognito domain) so you can switch between local and production without code changes.
+
+---
+
+## 7. Create User Groups for Access Control
+
+SentinelNet uses Cognito groups to manage access to the backend SOC and admin tools.
+
+1. In your user pool, go to **User pool groups** -> **Create group**.
+2. Create the following groups:
+   - **SentinelNetAdmins**: Full access to all tools and the `/admin/access` management terminal.
+   - **SentinelNetAnalysts**: Access to Wazuh, TheHive, and Grafana via the dashboard.
+   - **SentinelNetViewers**: Read-only access to dashboards.
+
+The TheHive auth proxy specifically checks for `SentinelNetAdmins` or `SentinelNetAnalysts` membership before allowing a session to be established.
 
 ---
 

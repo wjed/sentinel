@@ -53,7 +53,12 @@ export function getCognitoDomain() {
 }
 
 export function getLogoutUri() {
-  return getRedirectUri()
+  const raw = typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : (typeof import.meta !== 'undefined' && import.meta.env?.VITE_REDIRECT_URI
+        ? import.meta.env.VITE_REDIRECT_URI
+        : 'http://localhost:3000')
+  return raw + '/'
 }
 
 /** Profile API base URL (from config.json when profile API is deployed). */

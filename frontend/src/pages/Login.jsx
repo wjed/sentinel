@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from 'react-oidc-context'
 import TopNav from '../components/TopNav'
+import { setPostLoginRedirect } from '../auth/postLoginRedirect'
 
 export default function Login() {
   const auth = useAuth()
@@ -50,7 +51,10 @@ export default function Login() {
             type="button"
             className="btn-primary"
             style={{ width: '100%', padding: '0.7rem' }}
-            onClick={() => auth.signinRedirect()}
+            onClick={() => {
+              setPostLoginRedirect('/dashboard')
+              auth.signinRedirect({ state: { returnTo: '/dashboard' } })
+            }}
           >
             Sign in with Cognito
           </button>

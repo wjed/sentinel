@@ -36,6 +36,7 @@ Thumbs.db
 # Local / secrets (do not commit)
 .env
 .env.local
+.thehive_proxy.env
 *.pem
 
 # Nested repo (avoid "does not have a commit checked out")
