@@ -100,6 +100,7 @@ class BackendStack(Stack):
             description="SentinelNet SOC services",
             allow_all_outbound=True,
         )
+        self.sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "SSH for instance access")
         # ALB forwarding
         self.sg.add_ingress_rule(self.alb_sg, ec2.Port.tcp(9000), "TheHive from ALB")
         self.sg.add_ingress_rule(self.alb_sg, ec2.Port.tcp(3000), "Grafana from ALB")
@@ -167,8 +168,8 @@ class BackendStack(Stack):
                     f"{website_url}/login",
                     "http://localhost:3000/",
                     "http://localhost:5173/",
-                    "https://api.sentinelnetsolutions.com/grafana",
-                    "https://api.sentinelnetsolutions.com/thehive"
+                    "https://api.sentinelnetsolutions.com/grafana/",
+                    "https://api.sentinelnetsolutions.com/thehive/"
                 ]
             )
         )
@@ -219,8 +220,14 @@ class BackendStack(Stack):
             'storage.backend = "local"',
             'storage.local.directory = "/opt/thp/thehive/files"',
             'auth {',
-            '  provider = [header, local]',
-            '  header { userHeader = "X-Amzn-Oidc-Identity" }',
+            '  providers: [',
+            '    {name: session}',
+            '    {name: basic, realm: thehive}',
+            '    {name: local}',
+            '    {name: key}',
+            '  ]',
+            '  defaultUserDomain: "thehive.local"',
+            '  organisationCookieName: "X-Organisation"',
             '}',
             f'play.controllers.Logout.redirectUrl = "{thehive_logout}"',
             'play.http.forwarded.trustedProxies = ["10.0.0.0/8", "172.16.0.0/12"]',
@@ -234,6 +241,12 @@ class BackendStack(Stack):
             "    hostname: cassandra",
             "    restart: unless-stopped",
             "    environment: [ MAX_HEAP_SIZE=512M, HEAP_NEWSIZE=100M ]",
+            "    healthcheck:",
+            "      test: [ 'CMD', 'bash', '-lc', 'echo > /dev/tcp/127.0.0.1/9042' ]",
+            "      interval: 20s",
+            "      timeout: 5s",
+            "      retries: 18",
+            "      start_period: 60s",
             "    volumes: [ /opt/sentinel/data/cassandra:/var/lib/cassandra ]",
             "  elasticsearch:",
             "    image: elasticsearch:7.17.13",
@@ -241,12 +254,22 @@ class BackendStack(Stack):
             "    restart: unless-stopped",
             "    environment: [ 'discovery.type=single-node', 'ES_JAVA_OPTS=-Xms512M -Xmx512M' ]",
             "    ulimits: { memlock: { soft: -1, hard: -1 } }",
+            "    healthcheck:",
+            "      test: [ 'CMD', 'bash', '-lc', 'echo > /dev/tcp/127.0.0.1/9200' ]",
+            "      interval: 20s",
+            "      timeout: 5s",
+            "      retries: 18",
+            "      start_period: 90s",
             "    volumes: [ /opt/sentinel/data/elasticsearch:/usr/share/elasticsearch/data ]",
             "  thehive:",
             "    image: strangebee/thehive:5.4",
             "    hostname: thehive",
             "    restart: unless-stopped",
-            "    depends_on: [ cassandra, elasticsearch ]",
+            "    depends_on:",
+            "      cassandra:",
+            "        condition: service_healthy",
+            "      elasticsearch:",
+            "        condition: service_healthy",
             "    ports: [ '9000:9000' ]",
             "    environment: [ JAVA_OPTS=-Xms768M -Xmx768M ]",
             "    volumes:",
@@ -367,7 +390,14 @@ class BackendStack(Stack):
             self, "TheHiveTG", vpc=vpc, port=9000,
             protocol=elbv2.ApplicationProtocol.HTTP,
             targets=[targets.InstanceTarget(self.instance, 9000)],
-            health_check=elbv2.HealthCheck(path="/", interval=Duration.seconds(20), healthy_http_codes="200-499")
+            health_check=elbv2.HealthCheck(
+                path="/thehive/api/status",
+                interval=Duration.seconds(20),
+                timeout=Duration.seconds(10),
+                healthy_threshold_count=2,
+                unhealthy_threshold_count=5,
+                healthy_http_codes="200-499"
+            )
         )
         grafana_tg = elbv2.ApplicationTargetGroup(
             self, "GrafanaTG", vpc=vpc, port=3000,
@@ -382,13 +412,9 @@ class BackendStack(Stack):
         )
 
         https_listener.add_action(
-            "TheHiveAuth", priority=10,
+            "TheHiveForward", priority=11,
             conditions=[elbv2.ListenerCondition.path_patterns(["/thehive", "/thehive/*"])],
-            action=elb_actions.AuthenticateCognitoAction(
-                user_pool=user_pool, user_pool_client=alb_client,
-                user_pool_domain=user_pool_domain,
-                next=elbv2.ListenerAction.forward([thehive_tg])
-            )
+            action=elbv2.ListenerAction.forward([thehive_tg])
         )
         https_listener.add_action(
             "GrafanaAuth", priority=20,
