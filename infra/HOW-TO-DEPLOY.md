@@ -73,7 +73,26 @@ cdk deploy SentinelNet-UserData --require-approval never
 cdk deploy SentinelNet-Backend --require-approval never
 cdk deploy SentinelNet-Website --require-approval never --exclusively
 cd ..
+
+**TheHive auth proxy credentials (TheHive 5.4)**
+
+The backend stack includes an automated bootstrap script that creates the proxy user for you. You MUST create a `.thehive_proxy.env` file in the **repo root** before deploying the backend stack.
+
+```bash
+# repo root
+cat > .thehive_proxy.env << 'EOF'
+# Credentials for the proxy service to use
+THEHIVE_USER=thehive-proxy@sentinelnetsolutions.com
+THEHIVE_PASSWORD=SnNet!Hive2026$Q9
+
+# Factory default admin credentials for bootstrap (TheHive 5.4)
+THEHIVE_ADMIN_USER=admin@thehive.local
+THEHIVE_ADMIN_PASSWORD=secret
+THEHIVE_ORG=admin
+EOF
 ```
+
+The stack will automatically use the admin credentials to create the proxy account in the specified organization during the first deployment.
 
 If **Network** fails with “Cannot delete export … in use by SentinelNet-Backend”, run the one-time fix first: `./fix-network-export-conflict.sh` (see section below).
 

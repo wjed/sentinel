@@ -40,6 +40,8 @@ There is **no** `Layout.jsx` with a sidebar. The layout is: **TopNav** at the to
 - **`/settings`** — Settings (protected)  
 - **`/account`** — Account / profile (protected; edit display name, icon, job, bio)
 - **`/admin/access`** — Access Management Terminal (protected; admin-only)
+- **`/grafana`** — Redirect to Grafana (protected; group-gated)
+- **`/thehive`** — Redirect to TheHive (protected; admin or analyst groups)
 
 Protected = you must be signed in; otherwise you’re sent to login.
 Admin-only = you must also be in `SentinelNetAdmins`.

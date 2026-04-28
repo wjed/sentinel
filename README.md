@@ -151,11 +151,30 @@ When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https:/
 | Tool | Access URL | Authentication |
 | :--- | :--- | :--- |
 | **Analyst Portal** | [https://sentinelnetsolutions.com](https://sentinelnetsolutions.com) | **Cognito SSO** |
-| **TheHive 5** | `https://sentinelnetsolutions.com/thehive/` | **Cognito SSO** (or `admin` / `thehive1234`) |
+| **TheHive 5** | `https://sentinelnetsolutions.com/thehive/` | **Cognito SSO + group gate** (TheHive session via auth proxy) |
 | **Grafana** | `https://sentinelnetsolutions.com/grafana/` | **Cognito SSO** (or `admin` / `sentinel`) |
 | **Wazuh Agent** | Port **1514** (TCP) | (Public IP Registration) |
 
-> **Note:** For TheHive and Grafana, always use the **"Sign in with SentinelNet"** button to log in automatically using your main project credentials.
+> **Note:** For TheHive and Grafana, use the **"Sign in with SentinelNet"** button. TheHive sessions are created by the auth proxy using a local TheHive user.
+
+### TheHive auth proxy credentials
+
+The backend stack uses an automated bootstrap process to create the necessary proxy accounts in TheHive 5.4. For this to work, you MUST provide both the proxy user credentials and the default admin credentials in a `.thehive_proxy.env` file (ignored by git) in the repo root.
+
+Example file:
+
+```bash
+# Credentials for the proxy service to use
+THEHIVE_USER=thehive-proxy@sentinelnetsolutions.com
+THEHIVE_PASSWORD=SnNet!Hive2026$Q9
+
+# Factory default admin credentials for bootstrap (TheHive 5.4)
+THEHIVE_ADMIN_USER=admin@thehive.local
+THEHIVE_ADMIN_PASSWORD=secret
+THEHIVE_ORG=admin
+```
+
+The stack will automatically create the `THEHIVE_USER` in the `THEHIVE_ORG` during deployment.
 
 ---
 

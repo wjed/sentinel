@@ -2,7 +2,7 @@
 Backend Stack - Single EC2 running SOC services via docker-compose.
 
 Resources:
-  - EC2 (t3.medium, public subnet) running Wazuh + TheHive + Grafana
+  - EC2 (t3.Large, public subnet) running Wazuh + TheHive + Grafana
   - ALB (internet-facing) routing to TheHive + Grafana
   - DynamoDB telemetry table + KMS key for alert storage
   - SQS alert queue + DLQ for Wazuh alert ingestion
@@ -11,6 +11,7 @@ Resources:
 Deploy with: cdk deploy SentinelNet-Backend
 """
 
+import hashlib
 from pathlib import Path
 
 from aws_cdk import (
@@ -70,6 +71,19 @@ class BackendStack(Stack):
         proxy_secrets = load_thehive_proxy_secrets(repo_root)
         proxy_user = proxy_secrets.get("THEHIVE_USER", "thehive-proxy@sentinelnetsolutions.com")
         proxy_password = proxy_secrets.get("THEHIVE_PASSWORD", "CHANGE_ME")
+        admin_user = proxy_secrets.get("THEHIVE_ADMIN_USER", "")
+        admin_password = proxy_secrets.get("THEHIVE_ADMIN_PASSWORD", "CHANGE_ME")
+        admin_org = proxy_secrets.get("THEHIVE_ORG", "thehive")
+        if not proxy_user or not proxy_password or proxy_password == "CHANGE_ME":
+            raise ValueError(
+                "Missing TheHive proxy credentials. Create .thehive_proxy.env "
+                "with THEHIVE_USER and THEHIVE_PASSWORD before deploying."
+            )
+        if not admin_user or not admin_password or admin_password == "CHANGE_ME":
+            raise ValueError(
+                "Missing TheHive admin credentials. Create .thehive_proxy.env "
+                "with THEHIVE_ADMIN_USER and THEHIVE_ADMIN_PASSWORD before deploying."
+            )
 
         # ── Telemetry: S3 Data Lake ──────────────────────────────────────────
         self.alerts_bucket = s3.Bucket(
@@ -283,10 +297,11 @@ class BackendStack(Stack):
             "  if (!thehiveUser || !thehivePassword) {",
             "    throw new Error('Missing TheHive credentials');",
             "  }",
-            "  const endpoints = ['/thehive/api/login', '/thehive/api/v1/login'];",
+            "  const endpoints = ['/thehive/api/login', '/thehive/api/v1/login', '/thehive/api/v1/auth/login'];",
             "  const bodies = [",
             "    { user: thehiveUser, password: thehivePassword },",
             "    { login: thehiveUser, password: thehivePassword },",
+            "    { username: thehiveUser, password: thehivePassword, remember: false },",
             "  ];",
             "  for (const endpoint of endpoints) {",
             "    for (const body of bodies) {",
@@ -300,7 +315,13 @@ class BackendStack(Stack):
             "        if (response.ok && setCookie) {",
             "          return setCookie.split(';')[0];",
             "        }",
+            "        if (process.env.DEBUG_LOG_CLAIMS === '1') {",
+            "          console.log(`Login attempt to ${endpoint} returned ${response.status}`);",
+            "        }",
             "      } catch (error) {",
+            "        if (process.env.DEBUG_LOG_CLAIMS === '1') {",
+            "          console.error(`Fetch error for ${endpoint}:`, error.message);",
+            "        }",
             "      }",
             "    }",
             "  }",
@@ -310,11 +331,20 @@ class BackendStack(Stack):
             "app.get('/healthz', (req, res) => res.status(200).send('ok'));",
             "",
             "app.use(async (req, res, next) => {",
-            "  const token = req.header('x-amzn-oidc-data');",
-            "  const claims = decodeJwt(token || '');",
+            "  const dataToken = req.header('x-amzn-oidc-data');",
+            "  const accessToken = req.header('x-amzn-oidc-accesstoken');",
+            "  const claims = {",
+            "    ...decodeJwt(dataToken || ''),",
+            "    ...decodeJwt(accessToken || ''),",
+            "  };",
             "  const subject = claims.sub || claims.username || claims.email || 'unknown';",
-            "  if (!token) {",
+            "  if (!dataToken && !accessToken) {",
             "    return res.status(401).send('Missing identity token');",
+            "  }",
+            "  if (process.env.DEBUG_LOG_CLAIMS === '1') {",
+            "    const groups = [claims['cognito:groups'], claims.groups].filter(Boolean);",
+            "    console.log('oidc groups', JSON.stringify(groups));",
+            "    console.log('oidc claim keys', Object.keys(claims));",
             "  }",
             "  if (!hasAllowedGroup(claims)) {",
             "    return res.status(403).send('Access denied');",
@@ -330,6 +360,7 @@ class BackendStack(Stack):
             "    req.headers.cookie = cookie;",
             "    return next();",
             "  } catch (error) {",
+            "    console.error(`Session failure for ${subject}:`, error.message);",
             "    return res.status(502).send('TheHive session failure');",
             "  }",
             "});",
@@ -429,7 +460,7 @@ class BackendStack(Stack):
             "    environment:",
             "      - THEHIVE_BASE=http://thehive:9000",
             f"      - THEHIVE_USER={proxy_user}",
-            f"      - THEHIVE_PASSWORD={proxy_password}",
+            f"      - THEHIVE_PASSWORD={proxy_password.replace('$', '$$')}",
             "      - ALLOWED_GROUPS=SentinelNetAdmins,SentinelNetAnalysts",
             "    volumes:",
             "      - /opt/sentinel/thehive_proxy:/app",
@@ -464,6 +495,70 @@ class BackendStack(Stack):
             "volumes: { thehive_data: {}, grafana_data: {} }",
             "COMPOSE_EOF",
             "cd /opt/sentinel && /usr/local/bin/docker-compose up -d",
+                        # TheHive proxy user bootstrap
+                        "cat > /opt/sentinel/bootstrap_thehive_user.sh << 'BOOT_EOF'",
+                        "#!/bin/bash",
+                        "set -euo pipefail",
+                        "BASE_URL=\"http://localhost:9000/thehive\"",
+                        f"ADMIN_USER=\"{admin_user}\"",
+                        f"ADMIN_PASSWORD=\"{admin_password.replace('$', '\\$')}\"",
+                        f"ADMIN_ORG=\"{admin_org}\"",
+                        f"PROXY_USER=\"{proxy_user}\"",
+                        f"PROXY_PASSWORD=\"{proxy_password.replace('$', '\\$')}\"",
+                        "PROXY_NAME=\"TheHive Proxy\"",
+                        "PROXY_ROLE=\"analyst\"",
+                        "",
+                        "echo 'Waiting for TheHive to accept connections...'",
+                        "for i in $(seq 1 60); do",
+                        "  if curl -sSf \"${BASE_URL}/api/status\" >/dev/null 2>&1; then",
+                        "    break",
+                        "  fi",
+                        "  sleep 5",
+                        "done",
+                        "",
+                        "LOGIN_CODE=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \"${BASE_URL}/api/login\" -H 'Content-Type: application/json' -d \"{\\\"user\\\":\\\"${PROXY_USER}\\\",\\\"password\\\":\\\"${PROXY_PASSWORD}\\\"}\")",
+                        "if [ \"${LOGIN_CODE}\" = '200' ] || [ \"${LOGIN_CODE}\" = '204' ]; then",
+                        "  echo 'Proxy user already works.'",
+                        "  exit 0",
+                        "fi",
+                        "",
+                            "ADMIN_COOKIE=$(curl -sS -i -X POST \"${BASE_URL}/api/login\" -H 'Content-Type: application/json' -d \"{\\\"user\\\":\\\"${ADMIN_USER}\\\",\\\"password\\\":\\\"${ADMIN_PASSWORD}\\\"}\" | awk -F': ' 'tolower($1)==\"set-cookie\"{print $2}' | head -n1 | cut -d';' -f1)",
+                            "if [ -z \"${ADMIN_COOKIE}\" ]; then ADMIN_COOKIE=$(curl -sS -i -X POST \"${BASE_URL}/api/v1/auth/login\" -H 'Content-Type: application/json' -d \"{\\\"username\\\":\\\"${ADMIN_USER}\\\",\\\"password\\\":\\\"${ADMIN_PASSWORD}\\\",\\\"remember\\\":false}\" | awk -F': ' 'tolower($1)==\"set-cookie\"{print $2}' | head -n1 | cut -d';' -f1); fi",
+                        "if [ -z \"${ADMIN_COOKIE}\" ]; then",
+                        "  echo 'Admin login failed; cannot create proxy user.'",
+                        "  exit 1",
+                        "fi",
+                        "",
+                        "echo 'Attempting to create proxy user via API...'",
+                        "PAYLOAD1=\"{\\\"login\\\":\\\"${PROXY_USER}\\\",\\\"name\\\":\\\"${PROXY_NAME}\\\",\\\"email\\\":\\\"${PROXY_USER}\\\",\\\"password\\\":\\\"${PROXY_PASSWORD}\\\",\\\"profile\\\":\\\"${PROXY_ROLE}\\\",\\\"organisation\\\":\\\"${ADMIN_ORG}\\\"}\"",
+                        "PAYLOAD2=\"{\\\"user\\\":\\\"${PROXY_USER}\\\",\\\"name\\\":\\\"${PROXY_NAME}\\\",\\\"email\\\":\\\"${PROXY_USER}\\\",\\\"password\\\":\\\"${PROXY_PASSWORD}\\\",\\\"profile\\\":\\\"${PROXY_ROLE}\\\",\\\"organisation\\\":\\\"${ADMIN_ORG}\\\"}\"",
+                        "for endpoint in /api/user /api/v1/user /api/user/_create /api/v1/user/_create; do",
+                        "  for payload in \"${PAYLOAD1}\" \"${PAYLOAD2}\"; do",
+                        "    code=$(curl -sS -o /dev/null -w '%{http_code}' \
+                            -X POST \"${BASE_URL}${endpoint}\" \
+                            -H 'Content-Type: application/json' \
+                            -H \"Cookie: ${ADMIN_COOKIE}\" \
+                            -d \"${payload}\")",
+                        "    if [ \"${code}\" = '200' ] || [ \"${code}\" = '201' ] || [ \"${code}\" = '409' ]; then",
+                        "      echo \"Create user response ${code} on ${endpoint}\"",
+                        "      break 2",
+                        "    fi",
+                        "  done",
+                        "done",
+                        "",
+                        "echo 'Validating proxy user login after create...'",
+                        "code=$(curl -sS -o /dev/null -w '%{http_code}' \
+                            -X POST \"${BASE_URL}/api/login\" \
+                            -H 'Content-Type: application/json' \
+                            -d \"{\\\"user\\\":\\\"${PROXY_USER}\\\",\\\"password\\\":\\\"${PROXY_PASSWORD}\\\"}\")",
+                        "if ! echo \"${code}\" | grep -q '^2'; then",
+                        "  echo 'Proxy user login still failing.'",
+                        "  exit 1",
+                        "fi",
+                        "echo 'Proxy user ready.'",
+                        "BOOT_EOF",
+                        "chmod +x /opt/sentinel/bootstrap_thehive_user.sh",
+                        "/opt/sentinel/bootstrap_thehive_user.sh || true",
             # Wazuh Forwarder
             "yum install -y python3-pip",
             "pip3 install boto3",
@@ -526,8 +621,10 @@ class BackendStack(Stack):
         )
 
         # ── EC2 Instance ──────────────────────────────────────────────────────
+        # Force instance replacement when user_data changes.
+        user_data_hash = hashlib.sha1(user_data.render().encode("utf-8")).hexdigest()[:8]
         self.instance = ec2.Instance(
-            self, "SentinelSOCReplicaV13",
+            self, f"SentinelSOCReplica{user_data_hash}",
             instance_type=ec2.InstanceType("t3.large"),
             machine_image=ec2.MachineImage.latest_amazon_linux2(),
             vpc=vpc,

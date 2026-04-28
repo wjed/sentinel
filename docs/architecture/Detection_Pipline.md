@@ -25,14 +25,16 @@ graph TD
 
             subgraph "Security Group: Services-SG"
                 direction LR
-                SOC_EC2[SOC Manager: t3.medium]
+                SOC_EC2[SOC Manager: t3.large]
                 FW[Wazuh Port: 1514]
                 REG[Wazuh Reg: 1515]
+                THP[TheHive Proxy: 9001]
                 TH[TheHive: 9000]
                 GR[Grafana: 3000]
                 
                 SOC_EC2 --- FW
                 SOC_EC2 --- REG
+                SOC_EC2 --- THP
                 SOC_EC2 --- TH
                 SOC_EC2 --- GR
             end
@@ -58,7 +60,8 @@ graph TD
     User -->|HTTPS:443| CF
     CF -->|Origin| S3_WEB
     User -->|HTTPS:443| ALB
-    ALB -->|Forward:9000| TH
+    ALB -->|Forward:9001| THP
+    THP -->|Forward:9000| TH
     ALB -->|Forward:3000| GR
     Agent -->|UDP/TCP:1514/1515| SOC_EC2
     
@@ -124,7 +127,7 @@ Stores public/private profile images for analysts and clients.
 ## Shared Auth (Cognito)
 A single **UserPool** is used for all platform access:
 - **Analyst Portal**: Hosted via CloudFront.
-- **Backend Services**: Protected by the ALB OIDC authentication.
+- **Backend Services**: Protected by the ALB OIDC authentication. TheHive traffic goes through a small auth proxy that verifies Cognito groups and creates a local TheHive session.
 - **Grafana**: Executive and operational metrics are pulled from Wazuh APIs for real-time visualization.
 
 %% =========================
