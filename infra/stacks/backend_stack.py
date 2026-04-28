@@ -38,6 +38,21 @@ from aws_cdk import (
 from constructs import Construct
 
 
+def load_thehive_proxy_secrets(repo_root: Path) -> dict:
+    env_path = repo_root / ".thehive_proxy.env"
+    if not env_path.exists():
+        return {}
+
+    secrets: dict[str, str] = {}
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        secrets[key.strip()] = value.strip()
+    return secrets
+
+
 class BackendStack(Stack):
     def __init__(
         self,
@@ -52,6 +67,9 @@ class BackendStack(Stack):
 
         repo_root = Path(__file__).resolve().parents[2]
         lambda_dir = str(repo_root / "backend" / "lambda" / "wazuh_ingest")
+        proxy_secrets = load_thehive_proxy_secrets(repo_root)
+        proxy_user = proxy_secrets.get("THEHIVE_USER", "thehive-proxy@sentinelnetsolutions.com")
+        proxy_password = proxy_secrets.get("THEHIVE_PASSWORD", "CHANGE_ME")
 
         # ── Telemetry: S3 Data Lake ──────────────────────────────────────────
         self.alerts_bucket = s3.Bucket(
@@ -103,6 +121,7 @@ class BackendStack(Stack):
         self.sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "SSH for instance access")
         # ALB forwarding
         self.sg.add_ingress_rule(self.alb_sg, ec2.Port.tcp(9000), "TheHive from ALB")
+        self.sg.add_ingress_rule(self.alb_sg, ec2.Port.tcp(9001), "TheHive proxy from ALB")
         self.sg.add_ingress_rule(self.alb_sg, ec2.Port.tcp(3000), "Grafana from ALB")
         # Wazuh registration/events
         self.sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(1514), "Wazuh agent TCP")
@@ -206,6 +225,130 @@ class BackendStack(Stack):
             "chmod +x /usr/local/bin/docker-compose",
             "mkdir -p /opt/sentinel/conf /opt/sentinel/data/cassandra /opt/sentinel/data/elasticsearch /opt/sentinel/data/wazuh_logs",
             "chown -R 1000:1000 /opt/sentinel/data/elasticsearch /opt/sentinel/data/wazuh_logs",
+            # TheHive SSO Proxy
+            "mkdir -p /opt/sentinel/thehive_proxy",
+            "cat > /opt/sentinel/thehive_proxy/package.json << 'PROXY_EOF'",
+            '{"name":"thehive-auth-proxy","version":"1.0.0","private":true,"type":"module","dependencies":{"express":"4.19.2","http-proxy-middleware":"2.0.7"}}',
+            "PROXY_EOF",
+            "cat > /opt/sentinel/thehive_proxy/server.js << 'PROXY_EOF'",
+            "import express from 'express';",
+            "import { createProxyMiddleware } from 'http-proxy-middleware';",
+            "",
+            "const app = express();",
+            "const target = process.env.THEHIVE_BASE || 'http://thehive:9000';",
+            "const allowedGroups = (process.env.ALLOWED_GROUPS || 'SentinelNetAdmins,SentinelNetAnalysts')",
+            "  .split(',').map((g) => g.trim()).filter(Boolean);",
+            "const thehiveUser = process.env.THEHIVE_USER || '';",
+            "const thehivePassword = process.env.THEHIVE_PASSWORD || '';",
+            "const sessionCache = new Map();",
+            "",
+            "function base64UrlDecode(value) {",
+            "  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');",
+            "  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');",
+            "  return Buffer.from(padded, 'base64').toString('utf8');",
+            "}",
+            "",
+            "function decodeJwt(token) {",
+            "  if (!token) return {};",
+            "  const parts = token.split('.');",
+            "  if (parts.length < 2) return {};",
+            "  try {",
+            "    return JSON.parse(base64UrlDecode(parts[1]));",
+            "  } catch {",
+            "    return {};",
+            "  }",
+            "}",
+            "",
+            "function normalizeGroups(value) {",
+            "  if (Array.isArray(value)) return value.map(String).map((v) => v.trim()).filter(Boolean);",
+            "  if (typeof value === 'string') {",
+            "    return value.split(/[\\s,]+/).map((v) => v.trim()).filter(Boolean);",
+            "  }",
+            "  return [];",
+            "}",
+            "",
+            "function hasAllowedGroup(claims) {",
+            "  if (!allowedGroups.length) return true;",
+            "  const groups = new Set([",
+            "    ...normalizeGroups(claims['cognito:groups']),",
+            "    ...normalizeGroups(claims.groups),",
+            "  ]);",
+            "  for (const group of allowedGroups) {",
+            "    if (groups.has(group)) return true;",
+            "  }",
+            "  return false;",
+            "}",
+            "",
+            "async function loginToTheHive() {",
+            "  if (!thehiveUser || !thehivePassword) {",
+            "    throw new Error('Missing TheHive credentials');",
+            "  }",
+            "  const endpoints = ['/thehive/api/login', '/thehive/api/v1/login'];",
+            "  const bodies = [",
+            "    { user: thehiveUser, password: thehivePassword },",
+            "    { login: thehiveUser, password: thehivePassword },",
+            "  ];",
+            "  for (const endpoint of endpoints) {",
+            "    for (const body of bodies) {",
+            "      try {",
+            "        const response = await fetch(`${target}${endpoint}`, {",
+            "          method: 'POST',",
+            "          headers: { 'Content-Type': 'application/json' },",
+            "          body: JSON.stringify(body),",
+            "        });",
+            "        const setCookie = response.headers.get('set-cookie');",
+            "        if (response.ok && setCookie) {",
+            "          return setCookie.split(';')[0];",
+            "        }",
+            "      } catch (error) {",
+            "      }",
+            "    }",
+            "  }",
+            "  throw new Error('Unable to establish TheHive session');",
+            "}",
+            "",
+            "app.get('/healthz', (req, res) => res.status(200).send('ok'));",
+            "",
+            "app.use(async (req, res, next) => {",
+            "  const token = req.header('x-amzn-oidc-data');",
+            "  const claims = decodeJwt(token || '');",
+            "  const subject = claims.sub || claims.username || claims.email || 'unknown';",
+            "  if (!token) {",
+            "    return res.status(401).send('Missing identity token');",
+            "  }",
+            "  if (!hasAllowedGroup(claims)) {",
+            "    return res.status(403).send('Access denied');",
+            "  }",
+            "  const cached = sessionCache.get(subject);",
+            "  if (cached && cached.expiresAt > Date.now()) {",
+            "    req.headers.cookie = cached.cookie;",
+            "    return next();",
+            "  }",
+            "  try {",
+            "    const cookie = await loginToTheHive();",
+            "    sessionCache.set(subject, { cookie, expiresAt: Date.now() + 30 * 60 * 1000 });",
+            "    req.headers.cookie = cookie;",
+            "    return next();",
+            "  } catch (error) {",
+            "    return res.status(502).send('TheHive session failure');",
+            "  }",
+            "});",
+            "",
+            "app.use(createProxyMiddleware({",
+            "  target,",
+            "  changeOrigin: true,",
+            "  logLevel: 'warn',",
+            "  onProxyReq: (proxyReq, req) => {",
+            "    if (req.headers.cookie) {",
+            "      proxyReq.setHeader('cookie', req.headers.cookie);",
+            "    }",
+            "  },",
+            "}));",
+            "",
+            "app.listen(8080, () => {",
+            "  console.log('TheHive auth proxy listening on :8080');",
+            "});",
+            "PROXY_EOF",
             # TheHive Config
             "cat > /opt/sentinel/conf/thehive.conf << 'THEHIVE_EOF'",
             'play.http.context = "/thehive"',
@@ -275,6 +418,22 @@ class BackendStack(Stack):
             "    volumes:",
             "      - /opt/sentinel/conf/thehive.conf:/etc/thehive/application.conf",
             "      - thehive_data:/opt/thp/thehive/files",
+            "  thehive_proxy:",
+            "    image: node:18-alpine",
+            "    hostname: thehive-proxy",
+            "    restart: unless-stopped",
+            "    depends_on:",
+            "      - thehive",
+            "    ports: [ '9001:8080' ]",
+            "    working_dir: /app",
+            "    environment:",
+            "      - THEHIVE_BASE=http://thehive:9000",
+            f"      - THEHIVE_USER={proxy_user}",
+            f"      - THEHIVE_PASSWORD={proxy_password}",
+            "      - ALLOWED_GROUPS=SentinelNetAdmins,SentinelNetAnalysts",
+            "    volumes:",
+            "      - /opt/sentinel/thehive_proxy:/app",
+            "    command: [ 'sh', '-lc', 'npm install --production && node server.js' ]",
             "  wazuh:",
             "    image: wazuh/wazuh-manager:4.9.2",
             "    hostname: wazuh-manager",
@@ -387,11 +546,11 @@ class BackendStack(Stack):
 
         # ── ALB Targets & Rules ──────────────────────────────────────────────
         thehive_tg = elbv2.ApplicationTargetGroup(
-            self, "TheHiveTG", vpc=vpc, port=9000,
+            self, "TheHiveTG", vpc=vpc, port=9001,
             protocol=elbv2.ApplicationProtocol.HTTP,
-            targets=[targets.InstanceTarget(self.instance, 9000)],
+            targets=[targets.InstanceTarget(self.instance, 9001)],
             health_check=elbv2.HealthCheck(
-                path="/thehive/api/status",
+                path="/healthz",
                 interval=Duration.seconds(20),
                 timeout=Duration.seconds(10),
                 healthy_threshold_count=2,
@@ -412,9 +571,13 @@ class BackendStack(Stack):
         )
 
         https_listener.add_action(
-            "TheHiveForward", priority=11,
+            "TheHiveAuth", priority=11,
             conditions=[elbv2.ListenerCondition.path_patterns(["/thehive", "/thehive/*"])],
-            action=elbv2.ListenerAction.forward([thehive_tg])
+            action=elb_actions.AuthenticateCognitoAction(
+                user_pool=user_pool, user_pool_client=alb_client,
+                user_pool_domain=user_pool_domain,
+                next=elbv2.ListenerAction.forward([thehive_tg])
+            )
         )
         https_listener.add_action(
             "GrafanaAuth", priority=20,
