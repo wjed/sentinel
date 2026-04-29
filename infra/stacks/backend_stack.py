@@ -479,6 +479,7 @@ class BackendStack(Stack):
             "    restart: unless-stopped",
             "    ports: [ '3000:3000' ]",
             "    environment:",
+            "      - GF_INSTALL_PLUGINS=wazuh-wazuh-app",
             "      - GF_SECURITY_ADMIN_PASSWORD=sentinel",
             "      - GF_SERVER_ROOT_URL=https://api.sentinelnetsolutions.com/grafana/",
             "      - GF_SERVER_SERVE_FROM_SUB_PATH=true",

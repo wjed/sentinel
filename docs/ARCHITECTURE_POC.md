@@ -129,7 +129,7 @@ graph TD
 - **TheHive 5 Stack**: Includes **Cassandra** and **Elasticsearch** containers running in a "low-memory mode". The stack is automatically initialized during the first deployment via a bootstrap script that creates necessary proxy accounts.
 - **Telemetry API**: A dedicated Lambda + HttpApi allows the dashboard to fetch the latest alerts from the **S3 Data Lake**.
 - **Containerization**: Services run as Docker containers using `docker-compose`.
-- **Auth**: The ALB enforces Cognito authentication. TheHive traffic is forwarded to a small auth proxy that uses credentials stored in `.thehive_proxy.env` to establish sessions.
+- **Auth**: The ALB enforces Cognito authentication. TheHive traffic is forwarded to a small auth proxy that uses credentials stored in `.thehive_proxy.env` to establish sessions. Grafana is integrated with the **Wazuh plugin** for native agent monitoring.
 
 ---
 
