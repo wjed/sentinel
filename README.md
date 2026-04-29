@@ -9,8 +9,9 @@ A security operations platform: marketing pages (Home, Product, Pricing) + a das
 | Folder | What it is |
 |--------|------------|
 | **frontend/** | The website. React app. You edit code here. |
-| **infra/** | AWS deployment (CDK). One command deploys the site and SOC. |
-| **backend/** | Lambda functions for alert ingestion and the Telemetry API. |
+| **infra/** | AWS deployment (Terraform). One command deploys the site and SOC. |
+| **backend/lambda/** | Lambdas for the profile API, telemetry alerts API, admin access terminal API, and the SQS → S3 alert ingester. |
+| **backend/dashboard_api/** | Flask container that runs on the SOC EC2. Queries Wazuh (indexer + manager), TheHive, Grafana, Elasticsearch, and Cassandra and powers the live dashboard at `/api/dashboard/*`. |
 
 That’s it. **SentinelNet** includes a full backend SOC running on a cost-optimized EC2 instance, with a dedicated SQS/Lambda alert ingestion pipeline.
 
@@ -23,7 +24,7 @@ That’s it. **SentinelNet** includes a full backend SOC running on a cost-optim
 - **Push only to your branch.** Do not push directly to `main`. Create a branch, push your branch, then open a **pull request (PR)** to get your changes into `main`.
 - **How to make a PR:** Create a branch (`git checkout -b your-name/feature-name`), commit and push it, then on GitHub open a PR from your branch into `main`. **Your entire team must review your PR before it is merged.** Do not merge the PR yourself — all approvals and merges go through **Will**. Will will move the PR in after the team has reviewed and approved. Do not merge `main` into your branch and then push; keep `main` as the source of truth and merge your branch into `main` via the PR.
 - **Never merge or push to `main` directly.** All changes to `main` should go through a PR, with full team review and approval from Will.
-- **Do not run `cdk deploy` unless you have approval.** Deploying changes the live site and AWS resources. Get approval from whoever owns deployment before you run the deploy steps below.
+- **Do not run `terraform apply` without approval.** Deploying changes the live site and AWS resources. Get approval from whoever owns deployment before you run the deploy steps below.
 
 ---
 
@@ -42,46 +43,28 @@ Open **http://localhost:3000** in your browser. You’ll see the site. Sign-in w
 
 ---
 
-## Deploying to AWS (CDK)
+## Deploying to AWS (Terraform)
 
-**Do not run `cdk deploy` without approval.** Deploying updates the live site and AWS; get approval first (see “Team workflow” above).
+**Do not run `terraform apply` without approval.** Deploying updates the live site and AWS; get approval first (see “Team workflow” above).
 
-We deploy this project with AWS CDK. There is no separate “deploy script” or CI job — someone runs `cdk deploy` from their machine (see below). If you’ve been approved to deploy and have never done it before, follow every step in order.
+We deploy with Terraform from `infra/terraform/`. If you’ve been approved to deploy and have never done it before, follow every step in order.
 
-You need: **Node.js**, **npm**, **Python 3**, and **AWS credentials** (access key + secret for an IAM user that can deploy CloudFormation, or use `aws configure` if you already have credentials saved).
+You need: **Terraform >= 1.5**, **AWS CLI >= 2**, **Node.js >= 18**, and **AWS credentials**.
 
 ---
 
 ### First time only (once per computer)
 
-From the **repo root**:
-
 ```bash
-cd infra
-pip install -r requirements.txt
-cdk bootstrap
-cd ..
+cd infra/terraform
+terraform init
 ```
-
-If the terminal says **“cdk: command not found”**, run `npm install -g aws-cdk` and open a new terminal, then run the commands above again.
 
 ---
 
 ### Every time you deploy
 
-Do these in the same terminal, in order.
-
 **Step 1 — Log in to AWS**
-
-Set credentials in the terminal you’ll use for the rest of the steps.
-
-Windows PowerShell:
-
-```powershell
-$env:AWS_ACCESS_KEY_ID="YOUR_ACCESS_KEY"
-$env:AWS_SECRET_ACCESS_KEY="YOUR_SECRET_KEY"
-$env:AWS_DEFAULT_REGION="us-east-1"
-```
 
 Mac / Linux / Git Bash:
 
@@ -91,11 +74,17 @@ export AWS_SECRET_ACCESS_KEY=YOUR_SECRET_KEY
 export AWS_DEFAULT_REGION=us-east-1
 ```
 
-(Or run `aws configure` once and use that profile; then you can skip this step next time.)
+Windows PowerShell:
+
+```powershell
+$env:AWS_ACCESS_KEY_ID=”YOUR_ACCESS_KEY”
+$env:AWS_SECRET_ACCESS_KEY=”YOUR_SECRET_KEY”
+$env:AWS_DEFAULT_REGION=”us-east-1”
+```
+
+(Or run `aws configure` once and use that profile.)
 
 **Step 2 — Build the frontend**
-
-From the **repo root**:
 
 ```bash
 cd frontend
@@ -104,35 +93,23 @@ npm run build
 cd ..
 ```
 
-**Step 3 — Deploy with CDK**
+**Step 3 — Deploy**
 
-From the **repo root** you can deploy everything in order:
-
-```bash
-cd infra
-./deploy-all.sh
-cd ..
-```
-
-Or deploy step by step (from `infra/`):
+One-shot (builds frontend + applies everything):
 
 ```bash
-cd infra
-cdk deploy SentinelNet-Network --require-approval never --exclusively
-cdk deploy SentinelNet-UserData --require-approval never
-cdk deploy SentinelNet-Backend --require-approval never
-cdk deploy SentinelNet-Website --require-approval never --exclusively
-cd ..
+cd infra/terraform
+./scripts/deploy-dev-cloudfront.sh
 ```
 
-- **SentinelNet-Network** — VPC and subnets (center team). Public subnets only, no NAT Gateway.
-- **SentinelNet-UserData** — DynamoDB (profiles), S3 (profile pictures), and **Cognito UserPool** (shared auth).
-- **SentinelNet-Website** — The React frontend (S3 + CloudFront) and the Profile API.
-- **SentinelNet-Backend** — Full SOC suite (Wazuh, TheHive 5, Cassandra, Elasticsearch) on a cost-optimized **`t3.large`** (8GB RAM / **50GB GP3 SSD**) instance + **4GB Swap** and SQS/Lambda/S3 alert data lake. See **SOC_SERVICES.md** for service details.
+Or step by step:
 
-**If Network fails** with “Cannot delete export … in use by SentinelNet-Backend”, run the one-time fix from `infra/`: `./fix-network-export-conflict.sh` (see **infra/HOW-TO-DEPLOY.md**).
+```bash
+cd infra/terraform
+terraform apply -var-file=envs/dev.tfvars
+```
 
-When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https://xxxxx.cloudfront.net`). That’s the live site. Sign-in works because the stack creates Cognito and points it at that URL.
+When apply finishes, Terraform prints `website_url`. That’s the live site. Cognito is configured automatically and pointed at that URL.
 
 ---
 
@@ -140,9 +117,9 @@ When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https:/
 
 - [ ] AWS credentials set (Step 1) or already configured
 - [ ] `cd frontend` → `npm install` → `npm run build` → `cd ..`
-- [ ] First time only: `cd infra` → `pip install -r requirements.txt` → `cdk bootstrap`
-- [ ] `cd infra` → deploy **Network**, then **UserData**, then **Backend**, then **Website** (with `--exclusively` on Website)
-- [ ] Copy **WebsiteURL** from the output
+- [ ] First time only: `cd infra/terraform` → `terraform init`
+- [ ] `cd infra/terraform` → `terraform apply -var-file=envs/dev.tfvars`
+- [ ] Copy `website_url` from the output
 
 ---
 
@@ -150,43 +127,26 @@ When the Website deploy finishes, the output shows **WebsiteURL** (e.g. `https:/
 
 | Tool | Access URL | Authentication |
 | :--- | :--- | :--- |
-| **Analyst Portal** | [https://sentinelnetsolutions.com](https://sentinelnetsolutions.com) | **Cognito SSO** |
-| **TheHive 5** | `https://sentinelnetsolutions.com/thehive/` | **Cognito SSO + group gate** (TheHive session via auth proxy) |
-| **Grafana** | `https://sentinelnetsolutions.com/grafana/` | **Cognito SSO** (or `admin` / `sentinel`) |
-| **Wazuh Agent** | Port **1514** (TCP) | (Public IP Registration) |
+| **Analyst Portal** | [https://sentinelnetsolutions.com](https://sentinelnetsolutions.com) | Cognito SSO |
+| **Console** *(admin + analyst only)* | `https://sentinelnetsolutions.com/console` | Inherits the analyst portal session — has the service links below + agent enrollment snippets |
+| **TheHive 5** | `https://sentinelnetsolutions.com/thehive/` | Cognito SSO (fallback: `admin@thehive.local` / `secret`) |
+| **Grafana** | `https://sentinelnetsolutions.com/grafana/` | Cognito SSO only — local login form is disabled |
+| **Wazuh Dashboard** | `https://sentinelnetsolutions.com/wazuh/` | Cognito SSO only — auto-redirects via OpenSearch security plugin OIDC |
+| **Wazuh Agent endpoints** | Manager public IP, ports **1514** (events), **1515** (registration), **55000** (REST API) | Open enrollment (no password) |
 
-> **Note:** For TheHive and Grafana, use the **"Sign in with SentinelNet"** button. TheHive sessions are created by the auth proxy using a local TheHive user.
-
-### TheHive auth proxy credentials
-
-The backend stack uses an automated bootstrap process to create the necessary proxy accounts in TheHive 5.4. For this to work, you MUST provide both the proxy user credentials and the default admin credentials in a `.thehive_proxy.env` file (ignored by git) in the repo root.
-
-Example file:
-
-```bash
-# Credentials for the proxy service to use
-THEHIVE_USER=thehive-proxy@sentinelnetsolutions.com
-THEHIVE_PASSWORD=SnNet!Hive2026$Q9
-
-# Factory default admin credentials for bootstrap (TheHive 5.4)
-THEHIVE_ADMIN_USER=admin@thehive.local
-THEHIVE_ADMIN_PASSWORD=secret
-THEHIVE_ORG=admin
-```
-
-The stack will automatically create the `THEHIVE_USER` in the `THEHIVE_ORG` during deployment.
+> Always use the **"Sign in with SentinelNet"** button on TheHive — that's the Cognito flow. Wazuh and Grafana redirect to Cognito automatically. Get the agent enrollment commands from the Console tab.
 
 ---
 
 ### When something breaks
 
-- **“security token invalid” / “credentials could not be used”** → Set AWS credentials again (Step 1).
-- **“No such file or directory: frontend/dist”** → Run Step 2 (`npm run build` in `frontend`) before deploying.
-- **“cdk: command not found”** → Run `npm install -g aws-cdk`, then open a new terminal.
-- **“Cannot delete export … in use by SentinelNet-Website”** → Deploy Website with `--exclusively` (see Step 3).
-- **“Cannot delete export … in use by SentinelNet-Backend”** (when deploying Network) → Run the one-time fix: from `infra/`, run `./fix-network-export-conflict.sh`. Then deploy as usual.
+- **”security token invalid” / “credentials could not be used”** → Re-export AWS credentials (Step 1).
+- **”No such file or directory: frontend/dist”** → Run `npm run build` in `frontend/` before deploying.
+- **”terraform: command not found”** → Install Terraform from https://developer.hashicorp.com/terraform/install.
+- **Cognito “redirect_uri_mismatch”** → In cloudfront_only mode, set `site_url_override` in tfvars to the CloudFront URL from `terraform output website_url` and re-apply.
+- **CloudFront serving stale content** → Run `aws cloudfront create-invalidation --distribution-id $(cd infra/terraform && terraform output -raw cloudfront_distribution_id) --paths “/*”`.
 
-More detail: **infra/HOW-TO-DEPLOY.md**.
+More detail: **infra/HOW-TO-DEPLOY.md** and **infra/terraform/README.md**.
 
 ---
 
@@ -226,18 +186,28 @@ Deployment note:
 
 ---
 
-## 💰 Cost Management (Demo Mode)
+## Cost Management (Demo Mode)
 
 Since this is a demo/university project, you can save money by stopping the SOC backend when it's not in use.
 
-### Stopping the Instance
-1. Log into the **AWS Console**.
-2. Go to **EC2** -> **Instances**.
-3. Select the **SentinelNet-Backend** instance.
-4. Click **Instance state** -> **Stop instance**.
-   * *Note: You only pay for the 50GB storage (~$4/mo) while it's stopped, instead of the full ~$60/mo.*
+### Stopping the instance (CLI)
 
-### Restarting for a Demo
-1. Go to the **EC2 Console** and **Start** the instance.
-2. **Wait 5-10 minutes.** The services take a few minutes to boot up and the ALB needs time to mark the targets as healthy.
-3. Refresh the **Dashboard** and you're back in business!
+```bash
+INSTANCE_ID=$(cd infra/terraform && terraform output -raw soc_instance_id)
+aws ec2 stop-instances --instance-ids "$INSTANCE_ID"
+```
+
+You only pay for 50GB EBS storage (~$4/mo) while stopped, instead of the full ~$60–80/mo for a running t3.large.
+
+### Restarting for a demo (CLI)
+
+```bash
+INSTANCE_ID=$(cd infra/terraform && terraform output -raw soc_instance_id)
+aws ec2 start-instances --instance-ids "$INSTANCE_ID"
+```
+
+Wait **5–10 minutes** for SOC services (Cassandra, Elasticsearch, TheHive, Grafana) to initialize. Then refresh the dashboard.
+
+### Or via the AWS Console
+1. Go to **EC2** → **Instances**, select the SentinelNet instance.
+2. **Instance state** → **Stop** / **Start**.

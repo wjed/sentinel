@@ -6,7 +6,6 @@ import App from './App'
 import { SettingsProvider } from './contexts/SettingsContext'
 import { getOidcConfig } from './auth/config'
 import { setResolvedConfig } from './auth/resolvedConfig'
-import { consumePostLoginRedirect } from './auth/postLoginRedirect'
 import './index.css'
 
 function renderApp(oidcConfig) {
@@ -15,7 +14,7 @@ function renderApp(oidcConfig) {
 
   const onSigninCallback = () => {
     window.history.replaceState({}, document.title, window.location.pathname)
-    window.location.assign(consumePostLoginRedirect('/dashboard'))
+    window.location.assign('/dashboard')
   }
 
   ReactDOM.createRoot(root).render(

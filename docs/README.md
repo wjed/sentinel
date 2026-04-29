@@ -19,6 +19,6 @@
 
 ## ⚙️ Developer Documentation
 - **[Root README](../README.md)** — Main project overview and deploy steps.
-- **[Infra: Deploy Guide](../infra/README.md)** — Deep dive into AWS CDK and deployment order.
+- **[Infra: Deploy Guide](../infra/README.md)** — Terraform modules, deployment modes, and how to deploy.
 
 Keeping everything here makes it easy for new team members and graders to find “how it works” in one place.

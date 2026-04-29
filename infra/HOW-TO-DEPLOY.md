@@ -1,222 +1,193 @@
-# Deploy SentinelNet to CloudFront
+# How to Deploy SentinelNet
 
-One stack. Build the frontend, deploy, share the URL (https://sentinelnetsolutions.com). People sign in with Cognito.
+Infrastructure is managed with **Terraform**. All commands run from `infra/terraform/`.
+
+**Live site:** https://sentinelnetsolutions.com
 
 ---
 
 ## What you need
 
-- **Node.js** (LTS) and **npm**
-- **Python 3** (3.8+)
-- **CDK CLI:** `npm install -g aws-cdk`
-- **AWS credentials** (access key + secret) for the account that will hold the stack
+| Tool | Version | Install |
+|------|---------|---------|
+| Terraform | >= 1.5 | https://developer.hashicorp.com/terraform/install |
+| AWS CLI | >= 2.x | https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html |
+| Node.js | >= 18 | https://nodejs.org |
+| npm | >= 9 | bundled with Node.js |
+
+---
+
+## AWS credentials (required every session)
+
+Never commit credentials to the repo. Use environment variables or an AWS profile:
+
+```bash
+# Environment variables (this terminal session only)
+export AWS_ACCESS_KEY_ID=YOUR_ACCESS_KEY
+export AWS_SECRET_ACCESS_KEY=YOUR_SECRET_KEY
+export AWS_DEFAULT_REGION=us-east-1
+
+# OR — named profile
+export AWS_PROFILE=sentinelnet-dev
+```
+
+If you accidentally shared a key, rotate it immediately in the AWS IAM console (create new, delete old).
 
 ---
 
 ## First-time setup (once per machine)
 
-From the **repo root**:
-
 ```bash
-cd infra
-pip install -r requirements.txt
-cdk bootstrap
-cd ..
+cd infra/terraform
+terraform init
 ```
+
+That's it — no Python deps, no bootstrapping.
 
 ---
 
-## Deploy (every time you want to push an update)
+## Deploy (every time)
 
-**Option A — Deploy everything with one script** (from repo root, after building frontend):
+**Option A — one script (recommended)**
 
 ```bash
+cd infra/terraform
+./scripts/deploy-dev-cloudfront.sh
+```
+
+This builds the frontend, runs `terraform apply`, and prints `website_url` when done.
+
+**Option B — step by step**
+
+```bash
+# 1. Build the frontend
 cd frontend && npm install && npm run build && cd ..
-./infra/deploy-all.sh
+
+# 2. Apply infrastructure
+cd infra/terraform
+terraform apply -var-file=envs/dev.tfvars
 ```
 
-**Option B — Deploy step by step**
+After apply, Terraform prints `website_url`. That's the live site.
 
-**1. Set AWS credentials** (same terminal you’ll use below).
+---
 
-Mac/Linux / Git Bash:
+## Production deploy (custom domain)
 
 ```bash
-export AWS_ACCESS_KEY_ID=YOUR_ACCESS_KEY
-export AWS_SECRET_ACCESS_KEY=YOUR_SECRET_KEY
-export AWS_DEFAULT_REGION=us-east-1
+cd infra/terraform
+cp envs/prod.tfvars.example envs/prod.tfvars
+# Edit prod.tfvars with your domain, hosted_zone_id, etc.
+./scripts/deploy-prod-domain.sh
 ```
 
-Windows PowerShell:
+ACM certificate validation via Route 53 happens automatically — can take 5–30 minutes on first deploy.
 
-```powershell
-$env:AWS_ACCESS_KEY_ID="YOUR_ACCESS_KEY"
-$env:AWS_SECRET_ACCESS_KEY="YOUR_SECRET_KEY"
-$env:AWS_DEFAULT_REGION="us-east-1"
+---
+
+## Updating the frontend only
+
+After changing code in `frontend/`:
+
+```bash
+./scripts/build-frontend.sh
+
+BUCKET=$(cd infra/terraform && terraform output -raw frontend_bucket_name)
+DIST_ID=$(cd infra/terraform && terraform output -raw cloudfront_distribution_id)
+
+aws s3 sync frontend/dist/ "s3://$BUCKET/" --delete \
+  --cache-control "public,max-age=86400" \
+  --exclude "config.json"
+
+aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"
 ```
 
-**2. Build the frontend**
+`config.json` is managed by Terraform and excluded from the sync.
+
+---
+
+## SOC backend (EC2 — Wazuh / TheHive / Grafana)
+
+### Stop to save cost
+
+The EC2 instance (~$60–80/month) is the main ongoing cost. Stop it when not in use:
 
 ```bash
-cd frontend
-npm install
-npm run build
-cd ..
+INSTANCE_ID=$(cd infra/terraform && terraform output -raw soc_instance_id)
+aws ec2 stop-instances --instance-ids "$INSTANCE_ID"
 ```
 
-**3. Deploy the stacks** (from `infra/`). Order matters:
+Restart:
 
 ```bash
-cd infra
-cdk deploy SentinelNet-Network --require-approval never --exclusively
-cdk deploy SentinelNet-UserData --require-approval never
-cdk deploy SentinelNet-Backend --require-approval never
-cdk deploy SentinelNet-Website --require-approval never --exclusively
-cd ..
-
-**TheHive auth proxy credentials (TheHive 5.4)**
-
-The backend stack includes an automated bootstrap script that creates the proxy user for you. You MUST create a `.thehive_proxy.env` file in the **repo root** before deploying the backend stack.
-
-```bash
-# repo root
-cat > .thehive_proxy.env << 'EOF'
-# Credentials for the proxy service to use
-THEHIVE_USER=thehive-proxy@sentinelnetsolutions.com
-THEHIVE_PASSWORD=SnNet!Hive2026$Q9
-
-# Factory default admin credentials for bootstrap (TheHive 5.4)
-THEHIVE_ADMIN_USER=admin@thehive.local
-THEHIVE_ADMIN_PASSWORD=secret
-THEHIVE_ORG=admin
-EOF
+aws ec2 start-instances --instance-ids "$INSTANCE_ID"
+# Wait 5–10 minutes for SOC services to come up
 ```
 
-The stack will automatically use the admin credentials to create the proxy account in the specified organization during the first deployment.
-
-If **Network** fails with “Cannot delete export … in use by SentinelNet-Backend”, run the one-time fix first: `./fix-network-export-conflict.sh` (see section below).
-
-At the end you’ll see **WebsiteURL** (e.g. `https://sentinelnetsolutions.com`). That’s the live site.
-
-**4. (Optional) Force refresh** — Each deploy automatically invalidates CloudFront (`/*`), so the site should update within a minute. If you need to clear cache immediately, run (using **DistributionId** from the output):
+### Connect to the instance
 
 ```bash
-aws cloudfront create-invalidation --distribution-id DISTRIBUTION_ID --paths "/*"
+INSTANCE_ID=$(cd infra/terraform && terraform output -raw soc_instance_id)
+aws ssm start-session --target "$INSTANCE_ID"
+
+# Inside the session:
+cd /opt/sentinel
+docker-compose ps
+docker-compose logs --tail=50 thehive
+```
+
+### Toggle SOC backend off entirely
+
+Set `create_soc_backend = false` in your tfvars and re-apply:
+
+```bash
+terraform apply -var-file=envs/dev.tfvars -var="create_soc_backend=false"
 ```
 
 ---
 
-## Sign-in (Cognito)
-
-**Cognito is created by the stack.** The stack creates a user pool, Hosted UI domain, and app client. It also writes `/config.json` to the site so the app uses the correct pool at runtime (no more hardcoded pool ID or 404).
-
-After deploy, use **WebsiteURL** from the outputs. The callback URL is already set to that URL in the app client. Just open the site and click Sign in.
-
----
-
-## User profiles (DynamoDB + S3 + profile API)
-
-A second stack **SentinelNet-UserData** adds:
-
-- **DynamoDB table** — One row per user, partition key `userId` (Cognito `sub`). Stores `displayName`, `profilePictureKey`, etc.
-- **S3 bucket** — For profile picture uploads.
-
-The **Website** stack includes a **profile API** (Lambda + HTTP API) when User Data is deployed. It exposes:
-
-- `GET /profile` — Load profile (display name, avatar icon, job function, bio)
-- `PATCH /profile` — Update profile fields
-
-**Order:** For a fresh deploy, User Data first then Website. If you get **"Cannot delete export ... in use by SentinelNet-Website"** (e.g. after removing the profile API’s use of the S3 bucket), deploy **Website only** with `--exclusively` so CDK doesn’t try to update User Data first, then deploy User Data:
+## Tear down / destroy
 
 ```bash
-cd frontend && npm run build && cd ..
-cd infra
-# Fix export conflict: deploy Website only (no dependency stacks), then User Data
-cdk deploy SentinelNet-Website --require-approval never --exclusively
-cdk deploy SentinelNet-UserData --require-approval never
+cd infra/terraform
+
+# Dev (safe — force_destroy=true empties buckets first)
+./scripts/destroy-dev.sh
+
+# Manual
+terraform destroy -var-file=envs/dev.tfvars
 ```
 
-After that, the **Account** page lets signed-in users pick an avatar icon, set display name, job/function, and bio (all stored in DynamoDB).
+If destroy fails because a bucket is non-empty:
+
+```bash
+BUCKET=$(terraform output -raw frontend_bucket_name)
+aws s3 rm "s3://$BUCKET" --recursive
+terraform destroy -var-file=envs/dev.tfvars
+```
 
 ---
 
 ## Quick checklist
 
 - [ ] AWS credentials set
-- [ ] `cd frontend` → `npm install` → `npm run build` → `cd ..`
-- [ ] First time only: `cd infra` → `pip install -r requirements.txt` → `cdk bootstrap` → `cd ..`
-- [ ] `cd infra` → `cdk deploy SentinelNet-Website --require-approval never`
-- [ ] (Optional) `cdk deploy SentinelNet-UserData --require-approval never` for profiles table + S3
-- [ ] Use **WebsiteURL** from the output; add that URL (with `/`) to Cognito callback and sign-out URLs
-
----
-
-## Removing old stacks from AWS (optional)
-
-If you previously deployed the old placeholder stacks (SentinelNet-Network, SentinelNet-Identity, SentinelNet-Data, SentinelNet-Backend), they’re no longer in the codebase but still exist in your AWS account. To delete them:
-
-```bash
-cd infra
-cdk destroy SentinelNet-Network SentinelNet-Identity SentinelNet-Data SentinelNet-Backend --force
-```
-
-Only do this if you want to clean up those stacks. Don’t run `cdk destroy SentinelNet-Website` or you’ll remove the live site.
-
----
-
-## How the stacks relate (Network vs Backend)
-
-**Backend does NOT deploy Network.** They are separate stacks. In code, Backend gets the VPC and private subnets from the Network stack (so it depends on Network), but you deploy them separately:
-
-1. Deploy **Network** first (creates VPC and subnets).
-2. Deploy **UserData** (DynamoDB, S3).
-3. Deploy **Backend** (SOC EC2 instance uses Network’s VPC and public subnets).
-4. Deploy **Website** last with `--exclusively` (site + Cognito + profile API, depends on Backend).
-
-If an **old** Backend stack was deployed in AWS (e.g. by the center team) and it imported exports from an older Network template, updating Network can fail: CloudFormation won’t delete or change an export that another stack still imports. You have to remove that dependency once, then redeploy.
-
----
-
-## "Cannot delete export … in use by SentinelNet-Backend" (when deploying Network)
-
-If deploying **SentinelNet-Network** fails with that message, the **Backend** stack already in AWS is still importing a subnet export from Network. CloudFormation blocks the Network update.
-
-**One-time fix** — from repo root (or from `infra/`):
-
-```bash
-cd infra
-./fix-network-export-conflict.sh
-```
-
-Or run these by hand (from `infra/`):
-
-```bash
-cdk destroy SentinelNet-Backend --force
-cdk deploy SentinelNet-Network --require-approval never --exclusively
-cdk deploy SentinelNet-Backend --require-approval never
-```
-
-After that, normal deploy order works (e.g. use `./deploy-all.sh` or the steps in “Deploy (every time you deploy)”). Get approval before running `cdk destroy` on Backend.
+- [ ] `terraform init` (first time only)
+- [ ] `cd frontend && npm install && npm run build && cd ..`
+- [ ] `cd infra/terraform && terraform apply -var-file=envs/dev.tfvars`
+- [ ] Copy `website_url` from output
 
 ---
 
 ## If something goes wrong
 
-- **“The security token included in the request is invalid”** — Set AWS credentials again (Step 1).
-- **“No such file or directory: frontend/dist”** — Run `npm run build` in `frontend` first.
-- **“cdk: command not found”** — Run `npm install -g aws-cdk` and open a new terminal.
-- **Sign-in 404 or “user pool does not exist”** — Use the correct Cognito user pool in the app (see `frontend/.env.example` for `VITE_COGNITO_USER_POOL_ID` and `VITE_COGNITO_CLIENT_ID`). Clean build: `rm -rf frontend/dist` then `npm run build`, then deploy again.
-- **Sign-in “Something went wrong”** — Add the exact CloudFront URL (with trailing slash) to Cognito **Allowed callback URLs** and **Allowed sign-out URLs**.
-- **“disallowed MIME type” or “NS_ERROR_CORRUPTED_CONTENT” on `/assets/...`** — You’re loading an old `index.html` that points to an asset that’s no longer on S3. Always run `npm run build` in `frontend` before `cdk deploy`. After redeploying, do a hard refresh (Ctrl+Shift+R / Cmd+Shift+R) or wait a minute for the automatic CloudFront invalidation.
+| Error | Fix |
+|-------|-----|
+| "The security token included in the request is invalid" | Re-export AWS credentials |
+| "No such file or directory: frontend/dist" | Run `npm run build` in `frontend/` first |
+| "terraform: command not found" | Install Terraform from https://developer.hashicorp.com/terraform/install |
+| Cognito "redirect_uri_mismatch" | In cloudfront_only mode, set `site_url_override` to the CloudFront URL from `terraform output website_url` and re-apply |
+| CloudFront serving stale content | Run `aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"` |
+| "BucketAlreadyExists" on apply | Change `project_name` or `environment` in tfvars to generate a unique bucket name |
+| ACM certificate stuck "Pending" | DNS validation via Route 53 can take up to 30 minutes — check NS records are correct |
 
----
-
-## 💰 Cost Management (Demo Mode)
-
-To save money on this university project, **Stop** the backend EC2 instance when not in use.
-
-1. Open **EC2 Console** -> **Instances**.
-2. Select **SentinelNet-Backend**.
-3. **Instance state** -> **Stop instance**.
-
-When you need to demo the platform, **Start** the instance and wait **5-10 minutes** for the SOC services to initialize and the ALB health checks to pass.
+Full troubleshooting: **infra/terraform/README.md**

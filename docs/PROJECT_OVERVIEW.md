@@ -3,16 +3,16 @@
 This document provides a technical breakdown of the SentinelNet architecture. It details how the infrastructure is provisioned, how the security services are configured, data flow, and how the various databases within the system operate.
 
 ## 1. Infrastructure & Provisioning 
-The entire AWS infrastructure is described as Infrastructure as Code (IaC) using the **AWS Cloud Development Kit (CDK)** in Python. The deployment is broken into four distinct stacks:
-- **Network Stack:** Provisions a simplified VPC with only public subnets (to save costs on NAT Gateways) and restrictive Security Groups.
-- **UserData Stack:** Provisions the Cognito User Pool for authentication and DynamoDB/S3 for user profile data.
-- **Website Stack:** Creates the S3 bucket and CloudFront distribution to host the React SPA. Also deploys the Profile API Gateway and Lambda.
-- **Backend Stack:** Provisions the core SOC compute layer (a `t3.large` EC2 instance), the Application Load Balancer (ALB), the SQS queues, the S3 Data Lake, and the ingestion/telemetry serverless functions.
+The entire AWS infrastructure is described as Infrastructure as Code (IaC) using **Terraform** under `infra/terraform/`. The deployment is organized into Terraform modules:
+- **network module:** Provisions a simplified VPC with only public subnets (to save costs on NAT Gateways) and restrictive Security Groups.
+- **auth + userdata modules:** Provisions the Cognito User Pool for authentication and DynamoDB/S3 for user profile data.
+- **frontend + backend_api modules:** Creates the S3 bucket and CloudFront distribution to host the React SPA. Also deploys the Profile API, Admin Access API, and Telemetry API via Lambda + HTTP API Gateway.
+- **soc_backend + alert_pipeline modules:** Provisions the core SOC compute layer (a `t3.large` EC2 instance), the Application Load Balancer (ALB), the SQS queues, the S3 Data Lake, and the ingestion/telemetry serverless functions.
 
 ---
 
 ## 2. Core SOC Compute (The Memory-Constrained EC2)
-Unlike traditional separated designs, all primary SOC operations run on a single **t3.large** EC2 instance (8GB RAM, 50GB GP3 SSD). 
+Unlike traditional separated designs, all primary SOC operations run on a single **t3.medium** EC2 instance (4GB RAM, 20GB GP3 SSD). 
 
 ### Containerized Environment
 Services run as Docker containers orchestrated via `docker-compose.yml` (located at `/opt/sentinel/docker-compose.yml` on the instance). The components include:
@@ -28,7 +28,7 @@ To fit these heavy Java-based applications into 4GB of RAM, strict JVM heap limi
 - *Cassandra / Elasticsearch:* 512 MB each
 - *Grafana:* 256 MB
 
-A **4GB Swap File** is provisioned on the host OS via EC2 UserData to act as a buffer for memory spikes, preventing OOM kills. Instance management is handled via **AWS Systems Manager (SSM)**; SSH is enabled for troubleshooting.
+A **4GB Swap File** is provisioned on the host OS via EC2 UserData to act as a buffer for memory spikes, preventing OOM kills. Instance management is handled securely via **AWS Systems Manager (SSM)**—there are no open SSH ports.
 
 ---
 
@@ -75,5 +75,5 @@ When the analyst views the live React dashboard, the dashboard makes a request t
 
 ## 5. Security & Access Control
 - **Cognito SSO:** Centralized authentication for the frontend profiles, API gateways, and the Application Load Balancer. 
-- **Application Load Balancer (ALB):** Routes administrative web traffic to the EC2 container ports over HTTPS (443). The ALB handles Cognito authentication, then forwards TheHive traffic to a small auth proxy (9001) that creates a TheHive session after group checks. Grafana is forwarded directly (3000).
+- **Application Load Balancer (ALB):** Routes administrative web traffic to the EC2 container ports over HTTPS (443). The ALB handles Cognito authentication before forwarding traffic to `TheHive` (9000) and `Grafana` (3000).
 - **Security Groups:** The EC2 instance explicitly drops all ingress traffic except from the ALB, internal VPC CIDRs, and specific Wazuh agent connectivity ports.

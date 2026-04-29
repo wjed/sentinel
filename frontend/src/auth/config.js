@@ -1,5 +1,5 @@
 /**
- * Cognito OIDC config. When deployed, /config.json (from CDK) is loaded and used.
+ * Cognito OIDC config. When deployed, /config.json (written by Terraform) is loaded and used.
  * For local dev, falls back to env or defaults.
  */
 
@@ -53,12 +53,7 @@ export function getCognitoDomain() {
 }
 
 export function getLogoutUri() {
-  const raw = typeof window !== 'undefined' && window.location?.origin
-    ? window.location.origin
-    : (typeof import.meta !== 'undefined' && import.meta.env?.VITE_REDIRECT_URI
-        ? import.meta.env.VITE_REDIRECT_URI
-        : 'http://localhost:3000')
-  return raw + '/'
+  return getRedirectUri()
 }
 
 /** Profile API base URL (from config.json when profile API is deployed). */
@@ -78,7 +73,7 @@ export function getOidcConfig() {
     client_id: getClientId(),
     redirect_uri: getRedirectUri(),
     response_type: 'code',
-    scope: (getResolvedConfig()?.scope) || 'openid email',
+    scope: (getResolvedConfig()?.scope) || 'openid profile email',
     automaticSilentRenew: true,
   }
 }

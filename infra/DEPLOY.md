@@ -1,10 +1,10 @@
 # Deploying the SentinelNet website (S3 + CloudFront)
 
-Infra is **AWS CDK in Python**. The **SentinelNet-Website** stack deploys the frontend to S3 and serves it via CloudFront.
+Infrastructure is **Terraform**. The `frontend` module deploys the React app to S3 and serves it via CloudFront.
 
 **Live site:** https://sentinelnetsolutions.com
 
-**Every time you deploy:** You must run `npm run build` in `frontend/` first (so `frontend/dist` is up to date), then run `cdk deploy SentinelNet-Website` from `infra/`. CDK uploads whatever is in `dist`—no build, no new code on CloudFront.
+**Every time you deploy:** Run `npm run build` in `frontend/` first (so `frontend/dist` is current), then run `terraform apply` from `infra/terraform/`. Terraform syncs whatever is in `dist` to S3.
 
 **Important:** Never commit AWS keys to the repo. If you shared your access key or secret anywhere (e.g. in chat), **rotate them now** in the AWS IAM console (create a new key, delete the old one).
 
@@ -37,72 +37,78 @@ npm run build
 cd ..
 ```
 
-This creates `frontend/dist/`. The CDK deployment will upload that folder to S3.
+This creates `frontend/dist/`. Terraform uploads that folder to S3.
 
 ---
 
-## 3. Bootstrap (first time only)
-
-From **infra/** (Python env):
+## 3. Initialize Terraform (first time only)
 
 ```bash
-cd infra
-pip install -r requirements.txt   # Python CDK deps
-cdk bootstrap
+cd infra/terraform
+terraform init
 ```
-
-Use the same account/region you set in step 1.
 
 ---
 
-## 4. Deploy the website stack
-
-From **infra/**:
+## 4. Deploy
 
 ```bash
-cdk deploy SentinelNet-Website --require-approval never
+cd infra/terraform
+terraform apply -var-file=envs/dev.tfvars
 ```
 
-Or run `cdk deploy SentinelNet-Website` and approve the IAM changes when prompted.
+Or use the one-shot script (builds frontend + applies):
 
-When it finishes, CDK will print stack **outputs** including the CloudFront URL. Open that URL to see the site.
+```bash
+cd infra/terraform
+./scripts/deploy-dev-cloudfront.sh
+```
+
+When Terraform finishes it prints `website_url`. Open it to see the live site.
 
 ---
 
 ## 5. Get the website URL after deploy
 
-The stack exports two outputs:
+```bash
+cd infra/terraform
+terraform output website_url
+terraform output cloudfront_distribution_id
+```
 
-| Output | Description |
-|--------|-------------|
-| **WebsiteURL** | Full URL to open the dashboard (e.g. `https://sentinelnetsolutions.com`) |
-| **DistributionDomainName** | CloudFront domain only (e.g. `d1zrndjozdwm01.cloudfront.net`) |
-
-**Where to find them:**
-
-- **Terminal** — Printed at the end of `cdk deploy SentinelNet-Website`.
-- **AWS Console** — CloudFormation → **SentinelNet-Website** → **Outputs** tab.
-- **CLI:** `aws cloudformation describe-stacks --stack-name SentinelNet-Website --query "Stacks[0].Outputs"`
+Or via AWS CLI:
+```bash
+aws cloudformation describe-stacks  # not needed — use terraform output
+```
 
 ---
 
 ## 6. Redeploy after frontend changes
 
-1. Build again: `cd frontend && npm run build && cd ..`
-2. From `infra/`: `cdk deploy SentinelNet-Website --require-approval never`
+```bash
+cd frontend && npm run build && cd ..
+cd infra/terraform && terraform apply -var-file=envs/dev.tfvars
+```
 
-CloudFront will be invalidated so the new content is served.
+Or sync directly without a full apply (faster for frontend-only changes):
+
+```bash
+BUCKET=$(terraform output -raw frontend_bucket_name)
+DIST_ID=$(terraform output -raw cloudfront_distribution_id)
+aws s3 sync frontend/dist/ "s3://$BUCKET/" --delete --cache-control "public,max-age=86400" --exclude "config.json"
+aws cloudfront create-invalidation --distribution-id "$DIST_ID" --paths "/*"
+```
 
 ---
 
 ## Summary
 
-| Step              | Command / action |
-|------------------|-------------------|
-| Set credentials  | `export AWS_ACCESS_KEY_ID=...` and `AWS_SECRET_ACCESS_KEY=...` (or `aws configure`) |
-| Build frontend  | `cd frontend && npm run build` |
-| Bootstrap (once) | `cd infra && cdk bootstrap` |
-| Deploy website  | `cd infra && cdk deploy SentinelNet-Website` |
-| Get URL         | Stack outputs **WebsiteURL** / **DistributionDomainName** (terminal, CloudFormation Outputs tab, or CLI above) |
+| Step | Command / action |
+|------|-----------------|
+| Set credentials | `export AWS_ACCESS_KEY_ID=...` and `AWS_SECRET_ACCESS_KEY=...` (or `aws configure`) |
+| Build frontend | `cd frontend && npm run build` |
+| Init (once) | `cd infra/terraform && terraform init` |
+| Deploy | `terraform apply -var-file=envs/dev.tfvars` |
+| Get URL | `terraform output website_url` |
 
 **Live site:** https://sentinelnetsolutions.com

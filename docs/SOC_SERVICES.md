@@ -2,9 +2,9 @@
 
 This document describes the services running on the backend and how they interact to provide a functional Security Operations Center (SOC) stack for SentinelNet.
 
-## Backend SOC Services (Single-Instance t3.large)
+## Backend SOC Services (Single-Instance t3.medium)
 
-The Backend SOC is consolidated into a single **t3.large** EC2 instance (8GB RAM / **50GB GP3 SSD**). To fit all services, a **"Memory Diet"** is applied to the Java-based components:
+The Backend SOC is consolidated into a single **t3.medium** EC2 instance (4GB RAM / **20GB GP3 SSD**) for extreme cost-efficiency. To fit all services, a **"Memory Diet"** is applied to the Java-based components:
 
 | Service | Memory Limit | Description |
 |---------|--------------|-------------|
@@ -20,15 +20,12 @@ All services are managed in `/opt/sentinel/docker-compose.yml`. Data is persiste
 
 | Service | Protocol | Default Credentials | Path |
 |---------|----------|---------------------|------|
-| **TheHive 5** | HTTPS (ALB 443) | (Cognito SSO + group gate) | `/thehive` |
+| **TheHive 5** | HTTPS (ALB 443) | (Cognito SSO) | `/thehive` |
 | **Grafana** | HTTPS (ALB 443) | (Cognito SSO) | `/grafana` |
 | **Wazuh API** | HTTPS (Port 55000)| `wazuh` / `Wazuh123!` | `/` |
-| **Grafana Wazuh Plugin** | Internal | API: `http://wazuh:55000` | (Configure in Grafana) |
 | **Sentinel Dashboard** | HTTPS | (Cognito SSO) | (CloudFront URL) |
 
 ---
-
-TheHive access uses a Cognito-protected auth proxy. On the first deployment, an automated bootstrap script creates the proxy user using the admin credentials provided in `.thehive_proxy.env`.
 
 ## The Alert Pipeline
 
@@ -56,18 +53,8 @@ Wazuh agents connect to the manager over ports **1514 (Events)** and **1515 (Reg
 
 ### Analyst-to-UI
 Analysts access the platform in two ways:
-1.  **Management Console**: Direct HTTPS access to TheHive/Grafana via the **ALB**. TheHive uses a Cognito-protected auth proxy to create a local TheHive session after group checks.
+1.  **Management Console**: Direct HTTPS access to TheHive/Grafana via the **ALB**, protected by Cognito SSO.
 2.  **SentinelNet Dashboard**: The React frontend (on CloudFront) which pulls live data from the **Telemetry API**.
-
-### Grafana & Wazuh Integration
-Grafana is pre-installed with the **Wazuh plugin**. To visualize Wazuh data:
-1. Log into Grafana via Cognito SSO.
-2. Go to **Apps** -> **Wazuh** (or search for the **wazuh-wazuh-app** plugin).
-3. Configure the Wazuh API:
-   - **URL**: `http://wazuh:55000`
-   - **User**: `wazuh`
-   - **Password**: `Wazuh123!` (default)
-4. Click **Save & Test**. You can now use the built-in Wazuh dashboards.
 
 ---
 

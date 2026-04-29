@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useDashboardData } from '../contexts/DashboardDataContext'
+
+const SEV_LEVEL_LABEL = { 1: 'Low', 2: 'Medium', 3: 'High', 4: 'Critical' }
+const STATUS_LABEL = { Open: 'Open', InProgress: 'In Progress', Resolved: 'Resolved', Duplicated: 'Duplicated' }
 
 // ─── Mock data — realistic TheHive v5 case shapes ─────────────────────────────
 
-const MOCK_CASES = [
+const cases = [
   {
     id: 'CS-2024-047',
     title: 'SSH Brute-Force Campaign — prod-web-01',
@@ -168,6 +172,19 @@ function fmt(isoStr) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function Incidents() {
+  const { data, errors } = useDashboardData()
+  const cases = (data.cases?.cases || []).map(c => ({
+    id:        `CS-${c.id}`,
+    title:     c.title || '',
+    severity:  SEV_LEVEL_LABEL[c.severity] || 'Low',
+    status:    STATUS_LABEL[c.status] || c.status || 'Open',
+    assignee:  c.assignee || 'unassigned',
+    createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : null,
+    updatedAt: c.updatedAt ? new Date(c.updatedAt).toISOString() : null,
+    tags:      c.tags || [],
+  }))
+  const error = errors.cases
+  const loading = data.cases === undefined && !error
   const [filters, setFilters] = useState({
     status:   'All Statuses',
     severity: 'All Severities',
@@ -187,7 +204,7 @@ export default function Incidents() {
     cursor: 'pointer',
   }
 
-  const filtered = MOCK_CASES.filter(c => {
+  const filtered = cases.filter(c => {
     if (filters.status   !== 'All Statuses'   && c.status   !== filters.status)   return false
     if (filters.severity !== 'All Severities' && c.severity !== filters.severity) return false
     if (filters.assignee !== 'All Assignees'  && c.assignee !== filters.assignee) return false
@@ -195,10 +212,10 @@ export default function Incidents() {
   })
 
   const counts = {
-    open:       MOCK_CASES.filter(c => c.status === 'Open').length,
-    inProgress: MOCK_CASES.filter(c => c.status === 'In Progress').length,
-    resolved:   MOCK_CASES.filter(c => c.status === 'Resolved').length,
-    total:      MOCK_CASES.length,
+    open:       cases.filter(c => c.status === 'Open').length,
+    inProgress: cases.filter(c => c.status === 'In Progress').length,
+    resolved:   cases.filter(c => c.status === 'Resolved').length,
+    total:      cases.length,
   }
 
   const hasActiveFilter = filters.status !== 'All Statuses' || filters.severity !== 'All Severities' || filters.assignee !== 'All Assignees'
@@ -210,15 +227,15 @@ export default function Incidents() {
           <div>
             <h1 style={{ margin: 0 }}>Incidents</h1>
             <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-              TheHive case management · mock data
+              TheHive case management — live
             </p>
           </div>
           <span style={{
             fontFamily: 'var(--font-mono)', fontSize: '0.6rem', padding: '0.25rem 0.6rem',
             background: 'var(--accent-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
-            color: 'var(--accent)',
+            color: error ? '#ef4444' : 'var(--accent)',
           }}>
-            MOCK · THEHIVE API NOT CONNECTED
+            {error ? `OFFLINE · ${error}` : (loading ? 'LOADING...' : `LIVE · ${cases.length} CASES`)}
           </span>
         </div>
 
@@ -262,7 +279,7 @@ export default function Incidents() {
               Cases
             </span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--text-dim)' }}>
-              {filtered.length} of {MOCK_CASES.length}
+              {filtered.length} of {cases.length}
             </span>
           </div>
           <div style={{ overflowX: 'auto' }}>
