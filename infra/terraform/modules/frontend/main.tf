@@ -92,22 +92,15 @@ resource "aws_acm_certificate" "site" {
 resource "aws_route53_record" "cert_validation" {
   for_each = (
     var.enable_custom_domain && var.create_route53_records
-    ? {
-      for dvo in aws_acm_certificate.site[0].domain_validation_options :
-      dvo.domain_name => {
-        name   = dvo.resource_record_name
-        record = dvo.resource_record_value
-        type   = dvo.resource_record_type
-      }
-    }
-    : {}
+    ? toset([var.domain_name, "www.${var.domain_name}"])
+    : toset([])
   )
 
-  zone_id         = var.hosted_zone_id
-  name            = each.value.name
-  type            = each.value.type
-  records         = [each.value.record]
-  ttl             = 60
+  zone_id = var.hosted_zone_id
+  name    = { for dvo in aws_acm_certificate.site[0].domain_validation_options : dvo.domain_name => dvo.resource_record_name }[each.key]
+  type    = { for dvo in aws_acm_certificate.site[0].domain_validation_options : dvo.domain_name => dvo.resource_record_type }[each.key]
+  records = [{ for dvo in aws_acm_certificate.site[0].domain_validation_options : dvo.domain_name => dvo.resource_record_value }[each.key]]
+  ttl     = 60
   allow_overwrite = true
 }
 
