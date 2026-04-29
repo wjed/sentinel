@@ -129,12 +129,12 @@ When apply finishes, Terraform prints `website_url`. That’s the live site. Cog
 | :--- | :--- | :--- |
 | **Analyst Portal** | [https://sentinelnetsolutions.com](https://sentinelnetsolutions.com) | Cognito SSO |
 | **Console** *(admin + analyst only)* | `https://sentinelnetsolutions.com/console` | Inherits the analyst portal session — has the service links below + agent enrollment snippets |
-| **TheHive 5** | `https://sentinelnetsolutions.com/thehive/` | Cognito SSO (fallback: `admin@thehive.local` / `secret`) |
-| **Grafana** | `https://sentinelnetsolutions.com/grafana/` | Cognito SSO only — local login form is disabled |
-| **Wazuh Dashboard** | `https://sentinelnetsolutions.com/wazuh/` | Cognito SSO only — auto-redirects via OpenSearch security plugin OIDC |
+| **TheHive 5** | `https://sentinelnetsolutions.com/thehive/` | Cognito SSO — auto-redirects, no login form (Admins/Analysts only) |
+| **Grafana** | `https://sentinelnetsolutions.com/grafana/` | Cognito SSO — auto-redirects, no login form (Admins/Analysts only) |
+| **Wazuh Dashboard** | `https://sentinelnetsolutions.com/wazuh/` | Cognito SSO — auto-redirects via OpenSearch security plugin OIDC (Admins/Analysts only) |
 | **Wazuh Agent endpoints** | Manager public IP, ports **1514** (events), **1515** (registration), **55000** (REST API) | Open enrollment (no password) |
 
-> Always use the **"Sign in with SentinelNet"** button on TheHive — that's the Cognito flow. Wazuh and Grafana redirect to Cognito automatically. Get the agent enrollment commands from the Console tab.
+> All three SOC tools auto-redirect to Cognito on first hit — no login form. Access is gated to the `SentinelNetAdmins` and `SentinelNetAnalysts` groups; `SentinelNetViewers` get a 403 and should consume telemetry through the SentinelNet dashboard pages instead. Get the agent enrollment commands from the Console tab.
 
 ---
 

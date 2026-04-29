@@ -227,10 +227,11 @@ config:
           type: intern
 OSC_YML_EOF
 
-# Roles mapping — give Cognito-authenticated users full dashboard access by
-# mapping the SentinelNet groups to the OpenSearch all_access + kibana_user
-# roles. Without this, OIDC users have no permissions and the wazuh plugin
-# blows up with "resp.saved_objects.map of undefined".
+# Roles mapping — only Admins and Analysts get into the Wazuh dashboard.
+# Viewers are intentionally left off so they get a 403 from the security
+# plugin when Cognito redirects them here, matching the access policy on
+# TheHive and Grafana. The dashboard itself is for read+write SOC work;
+# Viewers consume telemetry through the SentinelNet UI only.
 cat > /opt/sentinel/conf/wazuh-indexer/roles_mapping.yml << RM_YML_EOF
 ---
 _meta:
@@ -242,8 +243,7 @@ all_access:
     - "admin"
     - "${admin_group_name}"
     - "${analyst_group_name}"
-    - "${viewer_group_name}"
-  description: "admin + cognito groups → all_access"
+  description: "admin + admin/analyst cognito groups → all_access"
 own_index:
   reserved: false
   users:
@@ -254,7 +254,6 @@ kibana_user:
     - "kibanauser"
     - "${admin_group_name}"
     - "${analyst_group_name}"
-    - "${viewer_group_name}"
 kibana_server:
   reserved: true
   users:
@@ -277,7 +276,6 @@ readall:
   reserved: false
   backend_roles:
     - "readall"
-    - "${viewer_group_name}"
 RM_YML_EOF
 
 cat > /opt/sentinel/conf/wazuh-indexer/internal_users.yml <<IU_YML_EOF
@@ -299,6 +297,10 @@ wazuh-wui:
 IU_YML_EOF
 
 # ── TheHive configuration ──────────────────────────────────────────────────────
+# TheHive 5 OAuth2 / OIDC against Cognito.  `auth.sso.autologin = true` makes
+# the UI redirect straight to Cognito — no local login form is shown.  `local`
+# stays in `auth.provider` so the bootstrap script below can still POST to
+# /api/login with admin@thehive.local to mint a dashboard-api API key.
 cat > /opt/sentinel/conf/thehive.conf << 'THEHIVE_EOF'
 play.http.context = "/thehive"
 application.baseUrl = "${site_url}/thehive"
@@ -315,21 +317,41 @@ index.search.hostname = ["elasticsearch"]
 storage.backend = "local"
 storage.local.directory = "/opt/thp/thehive/files"
 
-auth.multi = true
-auth.methods {
-  oidc {
-    name = "SentinelNet"
-    clientId = "${soc_client_id}"
-    clientSecret = "${soc_client_secret}"
-    redirectUri = "${site_url}/thehive/"
-    responseType = "code"
-    scope = ["openid", "email", "profile"]
-    authorizationUrl = "${cognito_domain_url}/oauth2/authorize"
-    tokenUrl = "${cognito_domain_url}/oauth2/token"
-    userinfoUrl = "${cognito_domain_url}/oauth2/userInfo"
-    userIdField = "email"
+auth {
+  providers = [
+    {name: session}
+    {name: basic, realm: thehive}
+    {name: local}
+    {name: key}
+    {name: oauth2}
+  ]
+
+  defaults.oauth2 {
+    clientId            = "${soc_client_id}"
+    clientSecret        = "${soc_client_secret}"
+    redirectUri         = "${site_url}/thehive/api/ssoLogin"
+    responseType        = "code"
+    grantType           = "authorization_code"
+    authorizationUrl    = "${cognito_domain_url}/oauth2/authorize"
+    tokenUrl            = "${cognito_domain_url}/oauth2/token"
+    userUrl             = "${cognito_domain_url}/oauth2/userInfo"
+    scope               = ["openid", "email", "profile"]
+    userIdField         = "email"
+    authorizationHeader = "Bearer"
+    defaultOrganisation = "SentinelNet"
+  }
+
+  sso {
+    autocreate          = true
+    autoupdate          = true
+    autologin           = true
+    defaultRoles        = ["read", "write"]
+    defaultOrganisation = "SentinelNet"
   }
 }
+
+user.autoCreateOnSso       = true
+user.defaults.organisation = "SentinelNet"
 THEHIVE_EOF
 
 # ── Filebeat configuration ─────────────────────────────────────────────────────
@@ -1049,7 +1071,11 @@ services:
       GF_AUTH_GENERIC_OAUTH_TOKEN_URL: "${cognito_domain_url}/oauth2/token"
       GF_AUTH_GENERIC_OAUTH_API_URL: "${cognito_domain_url}/oauth2/userInfo"
       GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
-      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: "contains(\"cognito:groups\", 'SentinelNetAdmins') && 'Admin' || contains(\"cognito:groups\", 'SentinelNetAnalysts') && 'Editor' || 'Viewer'"
+      # Restrict to Admins/Analysts only — viewers don't get into Grafana.
+      GF_AUTH_GENERIC_OAUTH_ALLOWED_GROUPS: "SentinelNetAdmins SentinelNetAnalysts"
+      GF_AUTH_GENERIC_OAUTH_GROUPS_ATTRIBUTE_PATH: "\"cognito:groups\""
+      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT: "true"
+      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: "contains(\"cognito:groups\", 'SentinelNetAdmins') && 'Admin' || contains(\"cognito:groups\", 'SentinelNetAnalysts') && 'Editor'"
       GF_FEATURE_TOGGLES_ENABLE: ""
       GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: ""
     volumes:
@@ -1156,7 +1182,10 @@ docker exec -e OPENSEARCH_JAVA_HOME=/usr/share/wazuh-indexer/jdk sentinel-wazuh.
 # dashboard-api container. Port 8090 is exposed on the EC2 primary interface
 # so the ALB can reach it (SG restricts ingress to the ALB's SG only).
 (
-  for i in $(seq 1 120); do
+  # 180 × 5s = 15 min. TheHive can take 5–10 min on a cold boot (Cassandra
+  # warmup + janusgraph schema migration) — give it generous headroom so a
+  # slow boot doesn't strand dashboard-api.
+  for i in $(seq 1 180); do
     code=$(curl -sk -o /dev/null -w '%%{http_code}' -X POST http://localhost:9000/thehive/api/login \
       -H 'Content-Type: application/json' \
       -d '{"user":"admin@thehive.local","password":"secret"}' 2>/dev/null || echo 000)
@@ -1173,6 +1202,14 @@ docker exec -e OPENSEARCH_JAVA_HOME=/usr/share/wazuh-indexer/jdk sentinel-wazuh.
   if [ -n "$TH_KEY" ] && [ "$${#TH_KEY}" -ge 16 ]; then
     echo "$TH_KEY" > /opt/sentinel/.dashboard_api_thehive_key
     chmod 600 /opt/sentinel/.dashboard_api_thehive_key
+
+    # Create the default organisation that OIDC-authenticated users land in
+    # (matches auth.sso.defaultOrganisation in thehive.conf). 201 on success,
+    # 400 if it already exists — both are fine.
+    curl -sk -X POST 'http://localhost:9000/thehive/api/v1/organisation' \
+      -H "Authorization: Bearer $TH_KEY" \
+      -H 'Content-Type: application/json' \
+      -d '{"name":"SentinelNet","description":"Default org for Cognito SSO users"}' >/dev/null || true
 
     PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
 
