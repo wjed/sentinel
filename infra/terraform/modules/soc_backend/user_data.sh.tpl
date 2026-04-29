@@ -53,12 +53,14 @@ cat > /opt/sentinel/conf/thehive.conf << 'THEHIVE_EOF'
 play.http.context = "/thehive"
 application.baseUrl = "${site_url}/thehive"
 
-db.janusgraph.backend = "berkeleyje"
-db.janusgraph.directory = "/opt/thp/thehive/database"
-db.janusgraph.berkeleyje.je.log.groupclean = true
+db.janusgraph.storage.backend = cql
+db.janusgraph.storage.hostname = ["cassandra"]
+db.janusgraph.storage.cql.cluster-name = thp
+db.janusgraph.storage.cql.keyspace = thehive
+db.janusgraph.storage.cql.local-datacenter = datacenter1
 
-index.search.backend = "lucene"
-index.search.directory = "/opt/thp/thehive/index"
+index.search.backend = elasticsearch
+index.search.hostname = ["elasticsearch"]
 
 storage.backend = "local"
 storage.local.directory = "/opt/thp/thehive/files"
@@ -616,7 +618,27 @@ services:
       retries: 15
       start_period: 60s
 
-  # ── TheHive 5 (security incident management — BerkeleyDB backend) ───────────
+  # ── Cassandra (TheHive 5 graph storage backend) ──────────────────────────────
+  cassandra:
+    image: cassandra:4.1
+    hostname: cassandra
+    restart: unless-stopped
+    environment:
+      MAX_HEAP_SIZE: "256M"
+      HEAP_NEWSIZE: "64M"
+      CASSANDRA_CLUSTER_NAME: "thp"
+      CASSANDRA_DC: "datacenter1"
+      CASSANDRA_ENDPOINT_SNITCH: "GossipingPropertyFileSnitch"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe cluster' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 15
+      start_period: 90s
+
+  # ── TheHive 5 (security incident management — Cassandra + ES backend) ─────────
   thehive:
     image: strangebee/thehive:5.4.0
     hostname: thehive
@@ -624,21 +646,21 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
+      cassandra:
+        condition: service_healthy
     ports:
       - "9000:9000"
     environment:
-      JAVA_OPTS: "-Xms512M -Xmx512M"
+      JAVA_OPTS: "-Xms384M -Xmx384M"
     volumes:
       - /opt/sentinel/conf/thehive.conf:/etc/thehive/application.conf:ro
       - thehive_data:/opt/thp/thehive/files
-      - thehive_db:/opt/thp/thehive/database
-      - thehive_index:/opt/thp/thehive/index
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9000/thehive/api/status || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 10
-      start_period: 120s
+      start_period: 180s
 
   # ── Wazuh Manager (SIEM / EDR) ──────────────────────────────────────────────
   # Agents connect on 1514 (events), 1515 (registration), 55000 (REST API).
@@ -708,8 +730,7 @@ services:
 
 volumes:
   thehive_data:
-  thehive_db:
-  thehive_index:
+  cassandra_data:
   grafana_data:
 COMPOSE_EOF
 
