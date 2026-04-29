@@ -1,5 +1,5 @@
 /**
- * Cognito OIDC config. When deployed, /config.json (from CDK) is loaded and used.
+ * Cognito OIDC config. When deployed, /config.json (written by Terraform) is loaded and used.
  * For local dev, falls back to env or defaults.
  */
 

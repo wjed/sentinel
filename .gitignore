@@ -14,10 +14,11 @@ env/
 dist/
 build/
 
-# CDK / infra
-cdk.out/
-.cdk.staging/
-cdk.context.json
+# Terraform (module-level ignores live in infra/terraform/.gitignore)
+*.tfstate
+*.tfstate.*
+.terraform/
+crash.log
 
 # Node / frontend
 node_modules/

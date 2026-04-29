@@ -23,10 +23,10 @@ The platform follows a **three-tier architecture** consisting of frontend, backe
 
 ## 3. Team Responsibilities
 * **Center Team (Service Backbone)**: Responsible for VPC design, IP addressing, IAM role enforcement, and setting up GitHub Actions for automated deployment.
-* **Backend Team (Operations Force)**: Responsible for the **AWS CDK** logic, defining OpenAPI specifications, and implementing escalation logic from Wazuh to TheHive.
+* **Backend Team (Operations Force)**: Responsible for the **Terraform** infrastructure, defining OpenAPI specifications, and implementing escalation logic from Wazuh to TheHive.
 
 ## 4. Deployment & Security Standards
-* **Infrastructure as Code**: All backend resources must be defined using the **AWS Cloud Development Kit (CDK)**.
+* **Infrastructure as Code**: All backend resources must be defined using **Terraform** (under `infra/terraform/`).
 * **Encryption**: All data in transit must use encrypted **HTTPS** connections.
 * **Least Privilege**: Security groups and NACLs are configured manually to prevent direct internet access to private subnets.
 

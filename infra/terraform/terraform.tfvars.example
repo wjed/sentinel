@@ -1,0 +1,48 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# terraform.tfvars.example
+#
+# Copy this to terraform.tfvars and fill in your values.
+# terraform.tfvars is git-ignored; never commit it.
+#
+# Quick start (CloudFront-only, no custom domain):
+#   cp terraform.tfvars.example terraform.tfvars
+#   terraform init && terraform apply
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Project / environment
+project_name = "sentinelnet"
+environment  = "dev"
+aws_region   = "us-east-1"
+
+# ── Deployment mode ───────────────────────────────────────────────────────────
+# false = CloudFront URL only (recommended for new accounts / demos)
+# true  = custom domain via Route 53 + ACM
+enable_custom_domain = false
+
+# Required when enable_custom_domain = true:
+# domain_name    = "sentinelnetsolutions.com"
+# hosted_zone_id = "Z02031801QLNS1AIUFNZK"
+# create_route53_records = true
+
+# ── SOC Backend ───────────────────────────────────────────────────────────────
+# Set false to deploy frontend + APIs only (much cheaper for demos)
+create_soc_backend = false
+
+# Uncomment after first apply (cloudfront_only + SOC mode only):
+# site_url_override = "https://REPLACE_WITH_YOUR_CLOUDFRONT_URL.cloudfront.net"
+
+# ── Cognito ───────────────────────────────────────────────────────────────────
+# Must be globally unique in AWS. Change if "sentinelnet" is already taken.
+cognito_domain_prefix = "sentinelnet"
+
+# ── Security — lock this down in production! ──────────────────────────────────
+# allowed_admin_cidrs       = ["203.0.113.42/32"]  # YOUR IP
+# wazuh_agent_allowed_cidrs = ["10.0.0.0/8"]
+
+# ── EC2 SSH key (optional — use SSM Session Manager without it) ───────────────
+# key_pair_name = "my-key-pair"
+
+# ── Tags ─────────────────────────────────────────────────────────────────────
+tags = {
+  Owner = "SentinelNet"
+}

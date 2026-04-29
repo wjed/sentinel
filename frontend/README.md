@@ -48,7 +48,7 @@ Admin-only = you must also be in `SentinelNetAdmins`.
 
 ## Auth (Cognito)
 
-Sign-in uses **AWS Cognito** (OIDC). **Sign in** in the nav sends users to the Cognito Hosted UI; after login they come back to the app. The app gets pool ID, client ID, and callback URL from **`/config.json`** when deployed (CDK writes that file). For local dev it can use fallbacks in `src/auth/config.js` or env vars.
+Sign-in uses **AWS Cognito** (OIDC). **Sign in** in the nav sends users to the Cognito Hosted UI; after login they come back to the app. The app gets pool ID, client ID, and callback URL from **`/config.json`** when deployed (Terraform writes that file via `aws_s3_object.runtime_config`). For local dev it can use fallbacks in `src/auth/config.js` or env vars.
 
 - **Config:** `src/auth/config.js` — authority, clientId, redirectUri, profile API URL, etc.  
 - **Runtime:** `main.jsx` fetches `/config.json` and calls `setResolvedConfig()`; `config.js` reads that so the app uses the right Cognito pool and profile API URL after deploy.

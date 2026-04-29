@@ -1,0 +1,28 @@
+# Terraform state and sensitive files — NEVER commit these
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+crash.log
+crash.*.log
+
+# Local variable overrides (may contain secrets)
+terraform.tfvars
+envs/prod.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Lambda zip archives built by archive_file
+modules/**/lambda_packages/
+modules/**/*.zip
+
+# Generated frontend runtime config
+../../frontend/public/runtime-config.js
+../../frontend/public/config.json
+
+# OS
+.DS_Store
+Thumbs.db

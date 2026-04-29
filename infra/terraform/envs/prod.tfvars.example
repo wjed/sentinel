@@ -1,0 +1,72 @@
+# ── Production environment — custom domain, full Cognito SSO ──────────────────
+#
+# One-time prerequisites (do these BEFORE first apply):
+#
+#   1. Buy a domain (Namecheap, Google Domains, etc.)
+#
+#   2. Create a Route 53 hosted zone:
+#        aws route53 create-hosted-zone \
+#          --name yourdomain.com \
+#          --caller-reference $(date +%s)
+#      Note the hosted zone ID (format: Z1234567890ABC)
+#
+#   3. Point your domain's nameservers at Route 53:
+#      - Go to your registrar's DNS settings
+#      - Replace all NS records with the 4 Route 53 nameservers shown in the zone
+#      - Wait up to 48 hours for propagation (usually < 1 hour)
+#
+#   4. Copy this file to prod.tfvars and fill in your values:
+#        cp envs/prod.tfvars.example envs/prod.tfvars
+#
+#   5. Deploy:
+#        ./scripts/deploy-prod-domain.sh
+#
+# Teardown (fast, $0 after destroy):
+#   ./scripts/destroy-prod.sh
+#
+# NEVER commit prod.tfvars to git (it is in .gitignore).
+# ──────────────────────────────────────────────────────────────────────────────
+
+project_name = "sentinelnet"
+environment  = "prod"
+aws_region   = "us-east-1"
+
+# ── Custom domain ─────────────────────────────────────────────────────────────
+enable_custom_domain   = true
+domain_name            = "yourdomain.com"      # ← FILL IN
+hosted_zone_id         = "Z1234567890ABC"       # ← FILL IN (from Route 53 console)
+create_route53_records = true
+
+# ── SOC backend ───────────────────────────────────────────────────────────────
+create_soc_backend = true
+create_alb         = true   # required for Cognito SSO on TheHive + Grafana
+
+# ── EC2 sizing ────────────────────────────────────────────────────────────────
+instance_type    = "t3.medium"   # 4 GB RAM; BerkeleyDB+Lucene fits comfortably
+root_volume_size = 30
+
+# ── Cognito domain prefix (must be globally unique in AWS) ────────────────────
+# If "sentinelnet" is taken, try sentinelnet-yourname or sentinelnet-2025
+cognito_domain_prefix = "sentinelnet"
+
+# ── Groups ────────────────────────────────────────────────────────────────────
+admin_group_name   = "SentinelNetAdmins"
+analyst_group_name = "SentinelNetAnalysts"
+viewer_group_name  = "SentinelNetViewers"
+
+# ── Security ──────────────────────────────────────────────────────────────────
+# Lock down SSH and Wazuh agent ports in production.
+# allowed_admin_cidrs       = ["YOUR_IP/32"]
+# wazuh_agent_allowed_cidrs = ["10.0.0.0/8"]   # or your endpoint subnet
+
+# ── Storage ───────────────────────────────────────────────────────────────────
+force_destroy_buckets = true   # allows clean terraform destroy; set false if buckets have data you want to keep
+alert_retention_days  = 30
+
+# ── Optional SSH key (SSM Session Manager works without it) ───────────────────
+# key_pair_name = "sentinelnet-prod-key"
+
+tags = {
+  Owner      = "SentinelNet"
+  CostCenter = "prod"
+}

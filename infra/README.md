@@ -1,86 +1,95 @@
-# SentinelNet — Infrastructure (AWS CDK)
+# SentinelNet — Infrastructure (Terraform)
 
-This folder is the **AWS deployment** for SentinelNet. Everything that runs in AWS (the website, the database, the VPC, the profile API) is defined here as **CDK stacks** in **Python**. You don’t deploy by clicking in the AWS console; you run `cdk deploy` from this directory (and only if you have approval — see the main repo README).
+This folder contains the **AWS deployment** for SentinelNet. All infrastructure is defined as Terraform modules under `infra/terraform/`. You don't click in the AWS console; you run `terraform apply` from `infra/terraform/`.
+
+**Do not deploy without approval** — deploying changes live AWS resources. See the main repo README for the team workflow.
 
 ---
 
-## What’s in this folder
+## What's in this folder
 
 | Path | What it is |
 |------|------------|
-| **`app.py`** | The entry point. It creates all four stacks; Website gets UserData (profile API), Backend gets Network (VPC + subnets). **Don’t** rename stack names or deploys get confused. |
-| **`cdk.json`** | Tells the CDK CLI to run `app.py` when you run `cdk` commands. You usually don’t need to touch this. |
-| **`requirements.txt`** | Python packages needed for CDK. Run `pip install -r requirements.txt` from this directory before your first `cdk` command. |
-| **`stacks/`** | One Python file per stack. This is where you **edit** when you want to add or change AWS resources. |
-| **`lambda/`** | Lambda function code that gets deployed by the Website stack. **`profile_api_py/`** = profile GET/PATCH. **`admin_access_api_py/`** = admin-only Cognito access management API. |
-| **`HOW-TO-DEPLOY.md`** | Step-by-step deploy instructions (credentials, build frontend, deploy order). Use this when you’re actually deploying. |
-| **`DEPLOY.md`** | Extra deploy notes (e.g. not committing keys, rotating if leaked). |
+| **`terraform/`** | All Terraform code. This is where you work. |
+| **`terraform/modules/`** | One module per concern (network, auth, frontend, soc_backend, etc.). Edit here to add or change AWS resources. |
+| **`terraform/envs/`** | Per-environment tfvars files (`dev.tfvars`, `prod.tfvars.example`). |
+| **`terraform/scripts/`** | Helper shell scripts: build frontend, deploy, destroy, render local config. |
+| **`HOW-TO-DEPLOY.md`** | Step-by-step deploy instructions. Start here when you're actually deploying. |
+| **`DEPLOY.md`** | Credential safety reminders. |
+| **`lambda/`** | Python Lambda source code deployed by the `backend_api` module. |
+| **`AWS/`** | Network specs and reference docs for the AWS account. |
 
-You run **all** `cdk` commands from **this directory** (`infra/`). Not from the repo root. Not from `stacks/`. From `infra/`.
-
----
-
-## The four stacks (what each one does)
-
-| Stack name | File | What it creates in AWS |
-|------------|------|-------------------------|
-| **SentinelNet-Network** | `stacks/network_stack.py` | **VPC** with public, private, and internal subnets. Outputs VPC ID and subnet IDs. Backend uses this VPC. |
-| **SentinelNet-UserData** | `stacks/user_data_stack.py` | **DynamoDB** (profiles) and **S3** bucket. No Lambda here — just storage. |
-| **SentinelNet-Website** | `stacks/website_stack.py` | **Live site**: S3 + CloudFront, **Cognito**, the **profile API**, and the **admin access API**. Writes `config.json` for the frontend. |
-| **SentinelNet-Backend** | `stacks/backend_stack.py` | **SOC EC2**: t3.medium running Wazuh, TheHive 5, etc. + SQS/Lambda/S3 alert data lake. |
-
-**Dependencies:** Website uses UserData (profile API). Backend uses Network (VPC + private subnets). **Backend does not deploy Network** — you deploy Network first, then Backend.
-
-**Deploy order:** Network → UserData → Website (`--exclusively`) → Backend. Use `./deploy-all.sh` to run them in order. If Network fails with “export in use by SentinelNet-Backend”, run `./fix-network-export-conflict.sh` once (see HOW-TO-DEPLOY.md).
+All `terraform` commands run from **`infra/terraform/`**, not from `infra/`.
 
 ---
 
-## Commands you’ll use (all from `infra/`)
+## Terraform modules (what each one does)
 
-- **First time on this machine:**  
-  `pip install -r requirements.txt`  
-  then  
-  `cdk bootstrap`  
-  (If `cdk` isn’t found, run `npm install -g aws-cdk` and open a new terminal.)
+| Module | AWS resources |
+|--------|--------------|
+| `network` | VPC, public subnets, IGW, security groups |
+| `auth` | Cognito user pool, domain, groups, app clients (web + soc) |
+| `userdata` | DynamoDB profiles table, S3 profile pictures bucket |
+| `frontend` | S3 website bucket, CloudFront OAC distribution, optional ACM + Route 53 |
+| `backend_api` | Profile API, Admin Access API, Telemetry API — Lambda + HTTP API Gateway |
+| `soc_backend` | EC2 (Wazuh/TheHive/Grafana), ALB, docker-compose user data, Wazuh ingest Lambda |
+| `alert_pipeline` | SQS queue + DLQ, S3 alerts data lake |
+| `monitoring` | CloudWatch log groups, optional GuardDuty |
 
-- **See what would be deployed (no changes):**  
-  `cdk diff`  
-  or  
-  `cdk diff SentinelNet-Website`
+---
 
-- **Deploy one stack:**  
-  `cdk deploy SentinelNet-Network --require-approval never`  
-  (Same pattern for `SentinelNet-UserData` or `SentinelNet-Website` — and for Website you use `--exclusively`; see HOW-TO-DEPLOY.md.)
+## Commands (all from `infra/terraform/`)
 
-- **List stacks:**  
-  `cdk list`
+```bash
+# First time on this machine
+terraform init
 
-Don’t run `cdk deploy` without approval. The main repo README explains the workflow.
+# See what would change (no apply)
+terraform plan -var-file=envs/dev.tfvars
+
+# Deploy dev environment
+terraform apply -var-file=envs/dev.tfvars
+
+# One-shot deploy + frontend build
+./scripts/deploy-dev-cloudfront.sh
+
+# Deploy prod (custom domain)
+./scripts/deploy-prod-domain.sh
+```
 
 ---
 
 ## Where to change what
 
-- **VPC / subnets:** Edit `stacks/network_stack.py`.
-- **DynamoDB / S3 for user data:** Edit `stacks/user_data_stack.py`.
-- **Site, CloudFront, Cognito, profile API, admin access API:** Edit `stacks/website_stack.py`. Profile Lambda: `lambda/profile_api_py/handler.py`. Admin access Lambda: `lambda/admin_access_api_py/handler.py`.
-- **SOC EC2 (Backend):** Edit `stacks/backend_stack.py`. Contains Docker settings and alert pipeline.
-- **New stack:** Add a new file in `stacks/`, extend `Stack`, then in `app.py` instantiate it (e.g. `SomethingStack(app, "SentinelNet-Something", env=env)`).
+- **VPC / subnets / security groups:** `modules/network/`
+- **Cognito (user pool, groups, clients):** `modules/auth/`
+- **DynamoDB / S3 for user profiles:** `modules/userdata/`
+- **CloudFront, S3 site bucket, ACM, Route 53:** `modules/frontend/`
+- **Profile API / Admin API / Telemetry API Lambdas:** `modules/backend_api/` and `../lambda/`
+- **EC2 (SOC), ALB, docker-compose:** `modules/soc_backend/`
+- **SQS + S3 alert pipeline:** `modules/alert_pipeline/`
+
+---
+
+## Deployment modes
+
+| Mode | Domain | Use case |
+|------|--------|----------|
+| `cloudfront_only` (dev default) | `xxxx.cloudfront.net` | Demos, testing, no custom domain needed |
+| `custom_domain` | your domain | Production — full CloudFront → ALB routing for TheHive/Grafana |
+
+Set `enable_custom_domain = true` in tfvars and provide `domain_name` + `hosted_zone_id` for the production path.
 
 ---
 
 ## Live site
 
-After a successful Website deploy, the output shows **WebsiteURL**. The current live URL is in the **main repo README** (e.g. `https://sentinelnetsolutions.com/`). That’s the custom domain; the React app and sign-in run there.
+After a successful apply, `terraform output website_url` gives the live URL. Current production URL: **https://sentinelnetsolutions.com/**
 
 ---
 
-## If something breaks
+## Full documentation
 
-- **“cdk: command not found”** → Run `npm install -g aws-cdk`, then open a new terminal.
-- **“credentials could not be used” / “security token invalid”** → Set AWS credentials (see HOW-TO-DEPLOY.md or the main README).
-- **“Cannot delete export … in use by SentinelNet-Website”** → You must deploy the Website stack with `--exclusively`. Don’t deploy UserData and Website together without that flag. See HOW-TO-DEPLOY.md.
-- **“No such file or directory: frontend/dist”** → Someone needs to run `npm run build` in the `frontend/` folder before deploying the Website stack. The deploy uploads the contents of `frontend/dist/`.
-- **“Cannot delete export … in use by SentinelNet-Backend”** (when deploying Network) → Backend is using an export from Network. Run `cdk destroy SentinelNet-Backend --force`, then `cdk deploy SentinelNet-Network --exclusively`, then `cdk deploy SentinelNet-Backend`. See HOW-TO-DEPLOY.md.
-
-More detail: **HOW-TO-DEPLOY.md** and **DEPLOY.md**.
+- **HOW-TO-DEPLOY.md** — deploy walkthrough, credential setup, SOC start/stop, teardown
+- **terraform/README.md** — full module reference, architecture diagram, troubleshooting
+- **terraform/AGENT.md** — migration notes, known issues, design decisions
