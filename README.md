@@ -10,7 +10,8 @@ A security operations platform: marketing pages (Home, Product, Pricing) + a das
 |--------|------------|
 | **frontend/** | The website. React app. You edit code here. |
 | **infra/** | AWS deployment (Terraform). One command deploys the site and SOC. |
-| **backend/** | Lambda functions for alert ingestion and the Telemetry API. |
+| **backend/lambda/** | Lambdas for the profile API, telemetry alerts API, admin access terminal API, and the SQS → S3 alert ingester. |
+| **backend/dashboard_api/** | Flask container that runs on the SOC EC2. Queries Wazuh (indexer + manager), TheHive, Grafana, Elasticsearch, and Cassandra and powers the live dashboard at `/api/dashboard/*`. |
 
 That’s it. **SentinelNet** includes a full backend SOC running on a cost-optimized EC2 instance, with a dedicated SQS/Lambda alert ingestion pipeline.
 
@@ -126,12 +127,14 @@ When apply finishes, Terraform prints `website_url`. That’s the live site. Cog
 
 | Tool | Access URL | Authentication |
 | :--- | :--- | :--- |
-| **Analyst Portal** | [https://sentinelnetsolutions.com](https://sentinelnetsolutions.com) | **Cognito SSO** |
-| **TheHive 5** | `https://sentinelnetsolutions.com/thehive/` | **Cognito SSO** (or `admin` / `thehive1234`) |
-| **Grafana** | `https://sentinelnetsolutions.com/grafana/` | **Cognito SSO** (or `admin` / `sentinel`) |
-| **Wazuh Agent** | Port **1514** (TCP) | (Public IP Registration) |
+| **Analyst Portal** | [https://sentinelnetsolutions.com](https://sentinelnetsolutions.com) | Cognito SSO |
+| **Console** *(admin + analyst only)* | `https://sentinelnetsolutions.com/console` | Inherits the analyst portal session — has the service links below + agent enrollment snippets |
+| **TheHive 5** | `https://sentinelnetsolutions.com/thehive/` | Cognito SSO (fallback: `admin@thehive.local` / `secret`) |
+| **Grafana** | `https://sentinelnetsolutions.com/grafana/` | Cognito SSO only — local login form is disabled |
+| **Wazuh Dashboard** | `https://sentinelnetsolutions.com/wazuh/` | Cognito SSO only — auto-redirects via OpenSearch security plugin OIDC |
+| **Wazuh Agent endpoints** | Manager public IP, ports **1514** (events), **1515** (registration), **55000** (REST API) | Open enrollment (no password) |
 
-> **Note:** For TheHive and Grafana, always use the **"Sign in with SentinelNet"** button to log in automatically using your main project credentials.
+> Always use the **"Sign in with SentinelNet"** button on TheHive — that's the Cognito flow. Wazuh and Grafana redirect to Cognito automatically. Get the agent enrollment commands from the Console tab.
 
 ---
 
