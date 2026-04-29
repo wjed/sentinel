@@ -152,6 +152,14 @@ module "soc_backend" {
   soc_client_id      = module.auth.soc_client_id
   soc_client_secret  = module.auth.soc_client_secret
 
+  # Web client + group names for the dashboard-api container (Wazuh + TheHive
+  # KPI service).  The container validates the React app's Cognito JWT in-app.
+  web_client_id      = module.auth.user_pool_client_id
+  admin_group_name   = var.admin_group_name
+  analyst_group_name = var.analyst_group_name
+  viewer_group_name  = var.viewer_group_name
+  dashboard_api_src_dir = "${path.root}/../../backend/dashboard_api"
+
   # Site URL for OIDC redirect URIs in docker-compose
   site_url = local.site_url
 
@@ -194,7 +202,7 @@ locals {
     redirectUri       = "${module.frontend.website_url}/"
     logoutUri         = "${module.frontend.website_url}/"
     cognitoDomain     = module.auth.cognito_domain_url
-    scope             = "openid email"
+    scope             = "openid email profile"
     allowedGroups     = [var.admin_group_name, var.analyst_group_name, var.viewer_group_name]
     profileApiUrl     = module.backend_api.profile_api_url
     telemetryApiUrl   = module.backend_api.telemetry_api_url

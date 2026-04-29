@@ -80,6 +80,33 @@ variable "soc_client_secret" {
   sensitive = true
 }
 
+# Web client and group names — used by the dashboard-api container to validate
+# the React app's Cognito JWT and gate access by group membership.
+variable "web_client_id" {
+  description = "Cognito user-pool client ID used by the React frontend."
+  type        = string
+}
+
+variable "admin_group_name" {
+  type    = string
+  default = "SentinelNetAdmins"
+}
+
+variable "analyst_group_name" {
+  type    = string
+  default = "SentinelNetAnalysts"
+}
+
+variable "viewer_group_name" {
+  type    = string
+  default = "SentinelNetViewers"
+}
+
+variable "dashboard_api_src_dir" {
+  description = "Path to backend/dashboard_api containing app.py."
+  type        = string
+}
+
 variable "site_url" {
   description = "Public site URL for OIDC redirect URIs (e.g. https://site.com or https://xxxx.cloudfront.net)."
   type        = string

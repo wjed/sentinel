@@ -90,7 +90,10 @@ resource "aws_cognito_user_pool_client" "web" {
 
   allowed_oauth_flows                  = ["code"]
   allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_scopes                 = ["openid", "email"]
+  # `profile` is required so cognito:groups appears in the ID token — without
+  # it, the React app can't read group membership and admins get "Forbidden"
+  # in the Access Terminal.
+  allowed_oauth_scopes                 = ["openid", "email", "profile"]
   supported_identity_providers         = ["COGNITO"]
 
   callback_urls = var.callback_urls

@@ -283,6 +283,106 @@ resource "aws_cloudfront_distribution" "main" {
     }
   }
 
+  # /wazuh and /wazuh/* → ALB (Wazuh Dashboard)
+  dynamic "ordered_cache_behavior" {
+    for_each = var.soc_alb_dns != null ? ["/wazuh"] : []
+    content {
+      path_pattern           = ordered_cache_behavior.value
+      target_origin_id       = "alb-soc"
+      viewer_protocol_policy = "redirect-to-https"
+      allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+      cached_methods         = ["GET", "HEAD"]
+      compress               = false
+
+      forwarded_values {
+        query_string = true
+        headers      = ["Host", "Origin", "Authorization", "Accept"]
+        cookies {
+          forward = "all"
+        }
+      }
+
+      min_ttl     = 0
+      default_ttl = 0
+      max_ttl     = 0
+    }
+  }
+
+  dynamic "ordered_cache_behavior" {
+    for_each = var.soc_alb_dns != null ? ["/wazuh/*"] : []
+    content {
+      path_pattern           = ordered_cache_behavior.value
+      target_origin_id       = "alb-soc"
+      viewer_protocol_policy = "redirect-to-https"
+      allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+      cached_methods         = ["GET", "HEAD"]
+      compress               = false
+
+      forwarded_values {
+        query_string = true
+        headers      = ["Host", "Origin", "Authorization", "Accept"]
+        cookies {
+          forward = "all"
+        }
+      }
+
+      min_ttl     = 0
+      default_ttl = 0
+      max_ttl     = 0
+    }
+  }
+
+  # /api/dashboard and /api/dashboard/* → ALB (dashboard-api container)
+  # The dashboard-api validates the Cognito Bearer token in-app, so the
+  # Authorization header must be forwarded.
+  dynamic "ordered_cache_behavior" {
+    for_each = var.soc_alb_dns != null ? ["/api/dashboard"] : []
+    content {
+      path_pattern           = ordered_cache_behavior.value
+      target_origin_id       = "alb-soc"
+      viewer_protocol_policy = "redirect-to-https"
+      allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+      cached_methods         = ["GET", "HEAD"]
+      compress               = true
+
+      forwarded_values {
+        query_string = true
+        headers      = ["Host", "Origin", "Authorization", "Accept"]
+        cookies {
+          forward = "none"
+        }
+      }
+
+      min_ttl     = 0
+      default_ttl = 0
+      max_ttl     = 0
+    }
+  }
+
+  dynamic "ordered_cache_behavior" {
+    for_each = var.soc_alb_dns != null ? ["/api/dashboard/*"] : []
+    content {
+      path_pattern           = ordered_cache_behavior.value
+      target_origin_id       = "alb-soc"
+      viewer_protocol_policy = "redirect-to-https"
+      allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+      cached_methods         = ["GET", "HEAD"]
+      compress               = true
+
+      forwarded_values {
+        query_string = true
+        headers      = ["Host", "Origin", "Authorization", "Accept"]
+        cookies {
+          forward = "none"
+        }
+      }
+
+      min_ttl     = 0
+      default_ttl = 0
+      max_ttl     = 0
+    }
+  }
+
   # /oauth2/idpresponse → ALB (for ALB Cognito auth relay)
   dynamic "ordered_cache_behavior" {
     for_each = var.soc_alb_dns != null ? ["/oauth2/idpresponse"] : []

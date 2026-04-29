@@ -1,24 +1,5 @@
 import { useState } from 'react'
-
-// ─── Mock data — realistic Wazuh agent list ───────────────────────────────────
-// These match the shape returned by GET /agents from the Wazuh Manager API.
-
-const MOCK_AGENTS = [
-  { id: '001', name: 'wazuh-manager',  ip: '10.0.1.10', os: 'Ubuntu 22.04', version: '4.7.2', status: 'active',       lastSeen: '2024-04-08T15:32:00Z', groups: ['default'] },
-  { id: '002', name: 'jump-host',      ip: '10.0.1.20', os: 'Debian 12',    version: '4.7.2', status: 'active',       lastSeen: '2024-04-08T15:31:44Z', groups: ['linux', 'jump'] },
-  { id: '003', name: 'prod-web-01',    ip: '10.0.2.11', os: 'Ubuntu 22.04', version: '4.7.2', status: 'active',       lastSeen: '2024-04-08T15:31:58Z', groups: ['linux', 'web'] },
-  { id: '004', name: 'prod-web-02',    ip: '10.0.2.12', os: 'Ubuntu 22.04', version: '4.7.2', status: 'active',       lastSeen: '2024-04-08T15:31:51Z', groups: ['linux', 'web'] },
-  { id: '005', name: 'db-primary',     ip: '10.0.3.10', os: 'Ubuntu 20.04', version: '4.7.1', status: 'active',       lastSeen: '2024-04-08T15:30:22Z', groups: ['linux', 'db'] },
-  { id: '006', name: 'db-replica',     ip: '10.0.3.11', os: 'Ubuntu 20.04', version: '4.7.1', status: 'active',       lastSeen: '2024-04-08T15:29:55Z', groups: ['linux', 'db'] },
-  { id: '007', name: 'fin-srv-03',     ip: '10.0.4.13', os: 'Windows Server 2022', version: '4.7.2', status: 'active', lastSeen: '2024-04-08T15:31:10Z', groups: ['windows', 'finance'] },
-  { id: '008', name: 'fin-workst-07',  ip: '10.0.4.57', os: 'Windows 11',   version: '4.6.0', status: 'disconnected', lastSeen: '2024-04-07T09:14:30Z', groups: ['windows', 'finance'] },
-  { id: '009', name: 'k8s-node-01',   ip: '10.0.5.21', os: 'Ubuntu 22.04', version: '4.7.2', status: 'active',       lastSeen: '2024-04-08T15:32:01Z', groups: ['linux', 'k8s'] },
-  { id: '010', name: 'k8s-node-02',   ip: '10.0.5.22', os: 'Ubuntu 22.04', version: '4.7.2', status: 'active',       lastSeen: '2024-04-08T15:31:47Z', groups: ['linux', 'k8s'] },
-  { id: '011', name: 'dmz-proxy-02',  ip: '10.0.6.12', os: 'Debian 11',    version: '4.7.0', status: 'active',       lastSeen: '2024-04-08T15:28:33Z', groups: ['linux', 'dmz'] },
-  { id: '012', name: 'legacy-app-01', ip: '10.0.7.30', os: 'CentOS 7',     version: '4.3.10', status: 'disconnected', lastSeen: '2024-04-06T18:04:11Z', groups: ['linux', 'legacy'] },
-  { id: '015', name: 'siem-backup',   ip: '10.0.1.50', os: 'Ubuntu 22.04', version: '4.7.2', status: 'active',       lastSeen: '2024-04-08T15:30:40Z', groups: ['default'] },
-  { id: '016', name: 'dev-workst-04', ip: '10.0.9.44', os: 'macOS 14.4',   version: '4.7.1', status: 'never_connected', lastSeen: null,                groups: [] },
-]
+import { useDashboardData } from '../contexts/DashboardDataContext'
 
 const OS_GROUPS = ['All OS', 'Ubuntu', 'Debian', 'CentOS', 'Windows', 'macOS']
 const STATUS_OPTS = ['All Statuses', 'active', 'disconnected', 'never_connected']
@@ -77,6 +58,10 @@ function fmtRelative(isoStr) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function Assets() {
+  const { data, errors } = useDashboardData()
+  const agents = data.agents?.agents || []
+  const error = errors.agents
+  const loading = data.agents === undefined && !error
   const [filters, setFilters] = useState({
     status: 'All Statuses',
     os:     'All OS',
@@ -96,7 +81,7 @@ export default function Assets() {
     cursor: 'pointer',
   }
 
-  const filtered = MOCK_AGENTS.filter(a => {
+  const filtered = agents.filter(a => {
     if (filters.status !== 'All Statuses' && a.status !== filters.status) return false
     if (filters.os     !== 'All OS'       && !a.os.toLowerCase().includes(filters.os.toLowerCase())) return false
     if (filters.group  !== 'All Groups'   && !a.groups.includes(filters.group)) return false
@@ -106,10 +91,10 @@ export default function Assets() {
   })
 
   const counts = {
-    total:        MOCK_AGENTS.length,
-    active:       MOCK_AGENTS.filter(a => a.status === 'active').length,
-    disconnected: MOCK_AGENTS.filter(a => a.status === 'disconnected').length,
-    never:        MOCK_AGENTS.filter(a => a.status === 'never_connected').length,
+    total:        agents.length,
+    active:       agents.filter(a => a.status === 'active').length,
+    disconnected: agents.filter(a => a.status === 'disconnected').length,
+    never:        agents.filter(a => a.status === 'never_connected').length,
   }
 
   const hasFilter = filters.status !== 'All Statuses' || filters.os !== 'All OS' || filters.group !== 'All Groups' || filters.search
@@ -127,9 +112,9 @@ export default function Assets() {
           <span style={{
             fontFamily: 'var(--font-mono)', fontSize: '0.6rem', padding: '0.25rem 0.6rem',
             background: 'var(--accent-bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
-            color: 'var(--accent)',
+            color: error ? '#ef4444' : 'var(--accent)',
           }}>
-            MOCK · WAZUH MANAGER API NOT CONNECTED
+            {error ? `OFFLINE · ${error}` : (loading ? 'LOADING...' : `LIVE · ${agents.length} AGENTS`)}
           </span>
         </div>
 
@@ -193,7 +178,7 @@ export default function Assets() {
               Agent Inventory
             </span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--text-dim)' }}>
-              {filtered.length} of {MOCK_AGENTS.length}
+              {filtered.length} of {agents.length}
             </span>
           </div>
           <div style={{ overflowX: 'auto' }}>

@@ -73,7 +73,7 @@ export function getOidcConfig() {
     client_id: getClientId(),
     redirect_uri: getRedirectUri(),
     response_type: 'code',
-    scope: (getResolvedConfig()?.scope) || 'openid email',
+    scope: (getResolvedConfig()?.scope) || 'openid profile email',
     automaticSilentRenew: true,
   }
 }

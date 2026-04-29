@@ -38,6 +38,7 @@ locals {
   soc_callback_urls = compact([
     "${local.site_url}/thehive/",
     "${local.site_url}/grafana/login/generic_oauth",
+    "${local.site_url}/wazuh/auth/openid/login",
     var.enable_custom_domain ? "https://api.${var.domain_name}/oauth2/idpresponse" : null,
     "${local.site_url}/oauth2/idpresponse",
     "http://localhost:5173/",

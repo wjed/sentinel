@@ -39,14 +39,264 @@ if [ ! -f /usr/local/bin/docker-compose ]; then
 fi
 
 # ── Directories ────────────────────────────────────────────────────────────────
-mkdir -p /opt/sentinel/data/{elasticsearch,wazuh_data,wazuh_etc,wazuh_logs/alerts}
+mkdir -p /opt/sentinel/data/{elasticsearch,wazuh_data,wazuh_etc,wazuh_indexer,wazuh_api}
+mkdir -p /opt/sentinel/data/wazuh_logs/{alerts,archives,firewall}
 mkdir -p /opt/sentinel/conf/grafana/provisioning/{datasources,dashboards}
 mkdir -p /opt/sentinel/conf/grafana/dashboards
+mkdir -p /opt/sentinel/conf/wazuh-dashboard
+mkdir -p /opt/sentinel/conf/wazuh-indexer
+mkdir -p /opt/sentinel/conf/wazuh-certs
+
+# ── Wazuh Dashboard config ────────────────────────────────────────────────────
+# Wazuh 4.8+ renamed the home app from /app/wazuh to /app/wz-home; without the
+# defaultRoute override, the dashboard lands on /app/wazuh and renders
+# "Application Not Found" client-side.
+cat > /opt/sentinel/conf/wazuh-dashboard/opensearch_dashboards.yml << OSD_EOF
+server.host: "0.0.0.0"
+server.port: 5601
+server.basePath: "/wazuh"
+server.rewriteBasePath: true
+opensearch.hosts: ["https://wazuh.indexer:9200"]
+opensearch.ssl.verificationMode: certificate
+opensearch.requestHeadersAllowlist: ["securitytenant","Authorization"]
+opensearch.ssl.certificateAuthorities: ["/usr/share/wazuh-dashboard/certs/root-ca.pem"]
+opensearch.ssl.certificate: "/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem"
+opensearch.ssl.key: "/usr/share/wazuh-dashboard/certs/wazuh-dashboard.key"
+opensearch.username: "kibanaserver"
+opensearch.password: "WazuhSentinel24"
+server.ssl.enabled: false
+opensearch_security.multitenancy.enabled: false
+uiSettings.overrides.defaultRoute: /app/wz-home
+# Cognito SSO via the OpenSearch security plugin's OIDC backend.  The
+# corresponding openid_auth_domain block is written to the indexer's
+# /opensearch-security/config.yml further below.
+opensearch_security.auth.type: "openid"
+opensearch_security.openid.connect_url: "https://cognito-idp.${aws_region}.amazonaws.com/${cognito_user_pool_id}/.well-known/openid-configuration"
+opensearch_security.openid.client_id: "${soc_client_id}"
+opensearch_security.openid.client_secret: "${soc_client_secret}"
+opensearch_security.openid.scope: "openid email profile"
+opensearch_security.openid.base_redirect_url: "${site_url}/wazuh"
+opensearch_security.openid.logout_url: "${cognito_domain_url}/logout?client_id=${soc_client_id}&logout_uri=${site_url}/wazuh/"
+OSD_EOF
+
+# wazuh.yml must be read-only (444); the wazuh dashboard image's entrypoint
+# (wazuh_app_config.sh) re-runs on every container start and appends a second
+# `hosts:` block when the file is writable, producing a "duplicated mapping
+# key" YAML parse error and crash-looping the dashboard.
+cat > /opt/sentinel/conf/wazuh-dashboard/wazuh.yml << 'WAZUH_YML_EOF'
+hosts:
+  - default:
+      url: "https://wazuh-manager"
+      port: 55000
+      username: "wazuh-wui"
+      password: "WazuhSentinel24!"
+      run_as: false
+WAZUH_YML_EOF
+chmod 444 /opt/sentinel/conf/wazuh-dashboard/wazuh.yml
 
 # Elasticsearch writes as UID 1000 inside the container
 chown -R 1000:1000 /opt/sentinel/data/elasticsearch
-# Wazuh writes alerts as root inside the container
-chmod 777 /opt/sentinel/data/wazuh_logs/alerts
+# Wazuh manager runs as uid 999 inside the container; analysisd needs to create
+# year subdirectories under logs/{alerts,archives,firewall}, so the entire
+# wazuh_logs tree must be writable by uid 999. Without this, analysisd crashes
+# with "Could not create directory 'logs/firewall/2026/'" and the API returns
+# 500, which breaks the dashboard's wazuh plugin.
+chown -R 999:999 /opt/sentinel/data/wazuh_logs
+chmod -R u+rwX,g+rX /opt/sentinel/data/wazuh_logs
+# wazuh.indexer (OpenSearch fork) runs as uid 1000 inside the container
+chown -R 1000:1000 /opt/sentinel/data/wazuh_indexer
+
+# ── Wazuh stack TLS certs ─────────────────────────────────────────────────────
+# Self-signed CA + server certs for wazuh.indexer, wazuh-dashboard, wazuh-manager
+# (filebeat module), and an admin client cert for the OpenSearch security
+# plugin. AL2 ships openssl 1.0.2 which lacks -addext, so we drive SAN via an
+# openssl config file.
+WZ_CERTS=/opt/sentinel/conf/wazuh-certs
+if [ ! -f "$WZ_CERTS/root-ca.pem" ]; then
+  cd "$WZ_CERTS"
+  # Docker bind-mounts auto-create missing source paths as DIRECTORIES,
+  # so a prior failed boot may have left empty dirs where files should go.
+  # Wipe anything that's a dir so openssl can write actual files.
+  for path in *.pem *.key; do
+    [ -d "$path" ] && rm -rf "$path"
+  done
+  openssl genrsa -out root-ca.key 2048 2>/dev/null
+  openssl req -x509 -new -nodes -key root-ca.key -sha256 -days 3650 \
+    -subj "/CN=SentinelNet Root CA" -out root-ca.pem 2>/dev/null
+  for name in wazuh.indexer wazuh-dashboard filebeat admin; do
+    openssl genrsa -out $name.key 2048
+    # CSR with just CN; SAN goes in via -extfile at sign time (works on
+    # AL2's openssl 1.0.2 which lacks `-addext`).
+    openssl req -new -key $name.key -subj "/CN=$name" -out $name.csr
+    cat > $name.ext <<EXT
+subjectAltName = DNS:$name,DNS:wazuh-manager,DNS:localhost,IP:127.0.0.1
+EXT
+    openssl x509 -req -in $name.csr -CA root-ca.pem -CAkey root-ca.key \
+      -CAcreateserial -out $name.pem -days 3650 -sha256 -extfile $name.ext
+    rm -f $name.csr $name.ext
+  done
+  # OpenSearch indexer requires PKCS#8 keys; convert PKCS#1 → PKCS#8
+  for name in wazuh.indexer wazuh-dashboard filebeat admin; do
+    openssl pkcs8 -inform PEM -outform PEM -in $name.key -topk8 -nocrypt \
+      -out $name.key.pk8 2>/dev/null
+    mv $name.key.pk8 $name.key
+  done
+  chmod 644 *.pem *.key
+  chown -R 1000:1000 "$WZ_CERTS"
+  cd -
+fi
+
+# ── Wazuh Indexer (OpenSearch fork) config ────────────────────────────────────
+cat > /opt/sentinel/conf/wazuh-indexer/opensearch.yml << 'OS_YML_EOF'
+network.host: 0.0.0.0
+node.name: "wazuh.indexer"
+cluster.name: "wazuh-cluster"
+discovery.type: single-node
+bootstrap.memory_lock: true
+plugins.security.ssl.http.pemcert_filepath: certs/wazuh.indexer.pem
+plugins.security.ssl.http.pemkey_filepath: certs/wazuh.indexer.key
+plugins.security.ssl.http.pemtrustedcas_filepath: certs/root-ca.pem
+plugins.security.ssl.transport.pemcert_filepath: certs/wazuh.indexer.pem
+plugins.security.ssl.transport.pemkey_filepath: certs/wazuh.indexer.key
+plugins.security.ssl.transport.pemtrustedcas_filepath: certs/root-ca.pem
+plugins.security.ssl.http.enabled: true
+plugins.security.ssl.transport.enforce_hostname_verification: false
+plugins.security.ssl.transport.resolve_hostname: false
+plugins.security.authcz.admin_dn:
+  - "CN=admin"
+plugins.security.check_snapshot_restore_write_privileges: true
+plugins.security.enable_snapshot_restore_privilege: true
+plugins.security.nodes_dn:
+  - "CN=wazuh.indexer"
+plugins.security.restapi.roles_enabled: ["all_access", "security_rest_api_access"]
+plugins.security.system_indices.enabled: true
+plugins.security.system_indices.indices:
+  [".opendistro-alerting-config", ".opendistro-alerting-alert*",
+   ".opendistro-anomaly-results*", ".opendistro-anomaly-detector*",
+   ".opendistro-anomaly-checkpoints", ".opendistro-anomaly-detection-state",
+   ".opendistro-reports-*", ".opensearch-notifications-*",
+   ".opensearch-notebooks", ".opensearch-observability",
+   ".opendistro-asynchronous-search-response*", ".replication-metadata-store"]
+compatibility.override_main_response_version: true
+OS_YML_EOF
+
+# Internal users — bcrypt hashes for "WazuhSentinel24" computed at boot so we
+# don't ship credentials in the rendered user_data. python3 + bcrypt is enough.
+pip3 install bcrypt --quiet 2>/dev/null || true
+ADMIN_HASH=$(python3 -c "import bcrypt; print(bcrypt.hashpw(b'WazuhSentinel24', bcrypt.gensalt(12)).decode())")
+KIBANASERVER_HASH=$(python3 -c "import bcrypt; print(bcrypt.hashpw(b'WazuhSentinel24', bcrypt.gensalt(12)).decode())")
+# OpenSearch security config — OIDC auth domain pointing at Cognito so users
+# hitting the dashboard get redirected to Cognito instead of the local login
+# form. Basic auth still works as a fallback (via `kibanaserver` etc.) for
+# the dashboard's own backend connection.
+cat > /opt/sentinel/conf/wazuh-indexer/config.yml << OSC_YML_EOF
+---
+_meta:
+  type: "config"
+  config_version: 2
+config:
+  dynamic:
+    http:
+      anonymous_auth_enabled: false
+      xff:
+        enabled: false
+    authc:
+      openid_auth_domain:
+        description: "Authenticate via Cognito OpenID Connect"
+        http_enabled: true
+        transport_enabled: true
+        order: 0
+        http_authenticator:
+          type: openid
+          challenge: false
+          config:
+            subject_key: email
+            roles_key: "cognito:groups"
+            openid_connect_url: "https://cognito-idp.${aws_region}.amazonaws.com/${cognito_user_pool_id}/.well-known/openid-configuration"
+        authentication_backend:
+          type: noop
+      basic_internal_auth_domain:
+        description: "Authenticate via HTTP Basic against internal users database"
+        http_enabled: true
+        transport_enabled: true
+        order: 4
+        http_authenticator:
+          type: basic
+          challenge: true
+        authentication_backend:
+          type: intern
+OSC_YML_EOF
+
+# Roles mapping — give Cognito-authenticated users full dashboard access by
+# mapping the SentinelNet groups to the OpenSearch all_access + kibana_user
+# roles. Without this, OIDC users have no permissions and the wazuh plugin
+# blows up with "resp.saved_objects.map of undefined".
+cat > /opt/sentinel/conf/wazuh-indexer/roles_mapping.yml << RM_YML_EOF
+---
+_meta:
+  type: "rolesmapping"
+  config_version: 2
+all_access:
+  reserved: false
+  backend_roles:
+    - "admin"
+    - "${admin_group_name}"
+    - "${analyst_group_name}"
+    - "${viewer_group_name}"
+  description: "admin + cognito groups → all_access"
+own_index:
+  reserved: false
+  users:
+    - "*"
+kibana_user:
+  reserved: false
+  backend_roles:
+    - "kibanauser"
+    - "${admin_group_name}"
+    - "${analyst_group_name}"
+    - "${viewer_group_name}"
+kibana_server:
+  reserved: true
+  users:
+    - "kibanaserver"
+  description: "Required for the dashboard's backend connection"
+manage_wazuh_index:
+  reserved: true
+  users:
+    - "kibanaserver"
+  description: "Lets the dashboard write to wazuh-* templates"
+manage_snapshots:
+  reserved: false
+  backend_roles:
+    - "snapshotrestore"
+logstash:
+  reserved: false
+  backend_roles:
+    - "logstash"
+readall:
+  reserved: false
+  backend_roles:
+    - "readall"
+    - "${viewer_group_name}"
+RM_YML_EOF
+
+cat > /opt/sentinel/conf/wazuh-indexer/internal_users.yml <<IU_YML_EOF
+---
+_meta:
+  type: "internalusers"
+  config_version: 2
+admin:
+  hash: "$ADMIN_HASH"
+  reserved: true
+  backend_roles: ["admin"]
+kibanaserver:
+  hash: "$KIBANASERVER_HASH"
+  reserved: true
+wazuh-wui:
+  hash: "$ADMIN_HASH"
+  reserved: false
+  backend_roles: ["admin"]
+IU_YML_EOF
 
 # ── TheHive configuration ──────────────────────────────────────────────────────
 cat > /opt/sentinel/conf/thehive.conf << 'THEHIVE_EOF'
@@ -664,7 +914,8 @@ services:
 
   # ── Wazuh Manager (SIEM / EDR) ──────────────────────────────────────────────
   # Agents connect on 1514 (events), 1515 (registration), 55000 (REST API).
-  # Alerts are written to /var/ossec/logs/alerts/alerts.json as newline-JSON.
+  # Alerts are written to /var/ossec/logs/alerts/alerts.json as newline-JSON,
+  # then shipped by the manager's bundled filebeat directly to wazuh.indexer.
   wazuh:
     image: wazuh/wazuh-manager:4.9.2
     hostname: wazuh-manager
@@ -674,10 +925,86 @@ services:
       - "1514:1514/udp"
       - "1515:1515/tcp"
       - "55000:55000/tcp"
+    environment:
+      INDEXER_URL: https://wazuh.indexer:9200
+      INDEXER_USERNAME: admin
+      INDEXER_PASSWORD: WazuhSentinel24
+      FILEBEAT_SSL_VERIFICATION_MODE: full
+      SSL_CERTIFICATE_AUTHORITIES: /etc/ssl/root-ca.pem
+      SSL_CERTIFICATE: /etc/ssl/filebeat.pem
+      SSL_KEY: /etc/ssl/filebeat.key
+      # Wazuh-manager API user used by the dashboard plugin and our
+      # dashboard-api service. The image creates wazuh-wui with default
+      # password "wazuh-wui" on first boot; we reset it post-startup
+      # via /security/users to the value below (see post-compose-up
+      # block further down in this script).
+      API_USERNAME: wazuh-wui
+      API_PASSWORD: WazuhSentinel24!
     volumes:
       - /opt/sentinel/data/wazuh_data:/var/ossec/data
       - /opt/sentinel/data/wazuh_etc:/var/ossec/etc
       - /opt/sentinel/data/wazuh_logs:/var/ossec/logs
+      # Persist API rbac.db so the wazuh-wui password change survives
+      # container recreates (otherwise the default "wazuh-wui" password
+      # comes back on every fresh container).
+      - /opt/sentinel/data/wazuh_api:/var/ossec/api/configuration
+      - /opt/sentinel/conf/wazuh-certs/root-ca.pem:/etc/ssl/root-ca.pem:ro
+      - /opt/sentinel/conf/wazuh-certs/filebeat.pem:/etc/ssl/filebeat.pem:ro
+      - /opt/sentinel/conf/wazuh-certs/filebeat.key:/etc/ssl/filebeat.key:ro
+
+  # ── Wazuh Indexer (OpenSearch fork — stores wazuh-alerts-* indices) ─────────
+  wazuh.indexer:
+    image: wazuh/wazuh-indexer:4.9.2
+    hostname: wazuh.indexer
+    restart: unless-stopped
+    environment:
+      OPENSEARCH_JAVA_OPTS: "-Xms1g -Xmx1g"
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile:  { soft: 65536, hard: 65536 }
+    volumes:
+      - /opt/sentinel/data/wazuh_indexer:/var/lib/wazuh-indexer
+      - /opt/sentinel/conf/wazuh-certs/root-ca.pem:/usr/share/wazuh-indexer/certs/root-ca.pem:ro
+      - /opt/sentinel/conf/wazuh-certs/wazuh.indexer.pem:/usr/share/wazuh-indexer/certs/wazuh.indexer.pem:ro
+      - /opt/sentinel/conf/wazuh-certs/wazuh.indexer.key:/usr/share/wazuh-indexer/certs/wazuh.indexer.key:ro
+      - /opt/sentinel/conf/wazuh-certs/admin.pem:/usr/share/wazuh-indexer/certs/admin.pem:ro
+      - /opt/sentinel/conf/wazuh-certs/admin.key:/usr/share/wazuh-indexer/certs/admin.key:ro
+      - /opt/sentinel/conf/wazuh-indexer/opensearch.yml:/usr/share/wazuh-indexer/opensearch.yml:ro
+      - /opt/sentinel/conf/wazuh-indexer/internal_users.yml:/usr/share/wazuh-indexer/opensearch-security/internal_users.yml:ro
+      - /opt/sentinel/conf/wazuh-indexer/config.yml:/usr/share/wazuh-indexer/opensearch-security/config.yml:ro
+      - /opt/sentinel/conf/wazuh-indexer/roles_mapping.yml:/usr/share/wazuh-indexer/opensearch-security/roles_mapping.yml:ro
+    healthcheck:
+      # Just probe that the HTTPS port is responding — auth requires the
+      # security plugin to be initialized, which we do post-compose-up via
+      # securityadmin.sh below. Any HTTP response (200/401/503) is enough
+      # to signal "indexer is alive".
+      test: ["CMD-SHELL", "curl -sk -o /dev/null -m 3 https://localhost:9200/"]
+      interval: 15s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # ── Wazuh Dashboard (OpenSearch Dashboards fork w/ wazuh plugin) ────────────
+  wazuh-dashboard:
+    image: wazuh/wazuh-dashboard:4.9.2
+    hostname: wazuh-dashboard
+    restart: unless-stopped
+    depends_on:
+      wazuh.indexer: { condition: service_healthy }
+    ports:
+      - "5601:5601"
+    environment:
+      INDEXER_USERNAME: kibanaserver
+      INDEXER_PASSWORD: WazuhSentinel24
+      WAZUH_API_URL: https://wazuh-manager
+      DASHBOARD_USERNAME: kibanaserver
+      DASHBOARD_PASSWORD: WazuhSentinel24
+    volumes:
+      - /opt/sentinel/conf/wazuh-certs/root-ca.pem:/usr/share/wazuh-dashboard/certs/root-ca.pem:ro
+      - /opt/sentinel/conf/wazuh-certs/wazuh-dashboard.pem:/usr/share/wazuh-dashboard/certs/wazuh-dashboard.pem:ro
+      - /opt/sentinel/conf/wazuh-certs/wazuh-dashboard.key:/usr/share/wazuh-dashboard/certs/wazuh-dashboard.key:ro
+      - /opt/sentinel/conf/wazuh-dashboard/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml
+      - /opt/sentinel/conf/wazuh-dashboard/wazuh.yml:/usr/share/wazuh-dashboard/data/wazuh/config/wazuh.yml:ro
 
   # ── Filebeat (ships Wazuh alerts → Elasticsearch wazuh-alerts-* index) ──────
   # Must match Elasticsearch major version (7.x here).
@@ -711,6 +1038,8 @@ services:
       GF_SERVER_SERVE_FROM_SUB_PATH: "true"
       GF_SECURITY_COOKIE_SECURE: "true"
       GF_SECURITY_COOKIE_SAMESITE: "none"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_AUTH_OAUTH_AUTO_LOGIN: "true"
       GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
       GF_AUTH_GENERIC_OAUTH_NAME: "SentinelNet"
       GF_AUTH_GENERIC_OAUTH_CLIENT_ID: "${soc_client_id}"
@@ -734,10 +1063,158 @@ volumes:
   grafana_data:
 COMPOSE_EOF
 
+# ── Dashboard API container source ─────────────────────────────────────────────
+# Pulled from S3 (uploaded by Terraform via aws_s3_object.dashboard_api_app).
+# Inlining the Python source pushed user_data over the 25,600-byte limit, so
+# we externalize it. The EC2 IAM role grants s3:GetObject on _artifacts/*.
+mkdir -p /opt/sentinel/dashboard_api
+cat > /opt/sentinel/dashboard_api/Dockerfile << 'DASH_DF_EOF'
+FROM python:3.12-slim
+WORKDIR /app
+RUN pip install --no-cache-dir flask==3.0.3 pyjwt[crypto]==2.9.0 cryptography==43.0.1
+COPY app.py .
+EXPOSE 8090
+CMD ["python", "-u", "app.py"]
+DASH_DF_EOF
+aws s3 cp ${dashboard_api_s3_uri} /opt/sentinel/dashboard_api/app.py --region ${aws_region}
+
 # ── Start all services ─────────────────────────────────────────────────────────
 cd /opt/sentinel
 /usr/local/bin/docker-compose pull --quiet
 /usr/local/bin/docker-compose up -d
+
+# ── Initialize OpenSearch security plugin (one-time) ──────────────────────────
+# wazuh.indexer ships without the .opendistro_security index; until it's
+# bootstrapped, the indexer rejects all auth and the dashboard can't connect.
+# Run securityadmin.sh once after the indexer responds; idempotent on re-runs.
+for i in $(seq 1 60); do
+  if docker exec sentinel-wazuh.indexer-1 curl -sk -o /dev/null -m 3 https://localhost:9200/ 2>/dev/null; then
+    break
+  fi
+  sleep 5
+done
+docker exec -e OPENSEARCH_JAVA_HOME=/usr/share/wazuh-indexer/jdk sentinel-wazuh.indexer-1 \
+  /usr/share/wazuh-indexer/plugins/opensearch-security/tools/securityadmin.sh \
+  -cd /usr/share/wazuh-indexer/opensearch-security/ \
+  -nhnv \
+  -cacert /usr/share/wazuh-indexer/certs/root-ca.pem \
+  -cert /usr/share/wazuh-indexer/certs/admin.pem \
+  -key /usr/share/wazuh-indexer/certs/admin.key \
+  -h localhost 2>&1 | tail -10 || echo "[security-init] failed (will retry on next boot)" >> /var/log/sentinel-bootstrap.log
+
+# ── Reset wazuh-manager API password (one-time, idempotent) ───────────────────
+# wazuh-manager's rbac.db creates wazuh-wui with the default password
+# "wazuh-wui" on first boot, regardless of API_PASSWORD env. We log in with
+# the default, then PUT the desired password. If the password is already
+# changed (re-runs), the default login fails and we just skip — that's fine.
+(
+  for i in $(seq 1 60); do
+    code=$(docker exec sentinel-wazuh-1 sh -c 'curl -sk -o /dev/null -w "%%{http_code}" -u wazuh-wui:wazuh-wui -X POST https://wazuh-manager:55000/security/user/authenticate' 2>/dev/null || echo 000)
+    if [ "$code" = "200" ]; then
+      TOK=$(docker exec sentinel-wazuh-1 sh -c 'curl -sk -u wazuh-wui:wazuh-wui -X POST https://wazuh-manager:55000/security/user/authenticate' \
+        | python3 -c 'import json,sys; print(json.load(sys.stdin)["data"]["token"])')
+      docker exec sentinel-wazuh-1 sh -c "curl -sk -X PUT -H 'Authorization: Bearer $TOK' -H 'Content-Type: application/json' 'https://wazuh-manager:55000/security/users/2' -d '{\"password\": \"WazuhSentinel24!\"}'" >/dev/null
+      echo "[wazuh-manager] api password reset" >> /var/log/sentinel-bootstrap.log
+      break
+    fi
+    if [ $i -ge 30 ]; then
+      # Already changed — that's fine, password is already what we want.
+      echo "[wazuh-manager] default password no longer accepted (already reset)" >> /var/log/sentinel-bootstrap.log
+      break
+    fi
+    sleep 5
+  done
+) &
+
+# ── Wazuh dashboard index patterns (one-time) ────────────────────────────────
+# A fresh wazuh.indexer has no saved index-pattern docs in .kibana, which makes
+# the wazuh app's home check throw `resp.saved_objects.map of undefined`. We
+# create the three standard patterns once after the indexer + dashboard are
+# both up. Using basic auth header (the OIDC config disables /auth/login).
+(
+  for i in $(seq 1 90); do
+    code=$(curl -sk -o /dev/null -w '%%{http_code}' http://localhost:5601/wazuh/api/status 2>/dev/null || echo 000)
+    [ "$code" = "200" ] || [ "$code" = "401" ] && break
+    sleep 5
+  done
+  for pat in wazuh-alerts wazuh-monitoring wazuh-statistics; do
+    FIELDS=$(docker exec sentinel-wazuh-dashboard-1 sh -c "curl -sk -u admin:WazuhSentinel24 'http://localhost:5601/wazuh/api/index_patterns/_fields_for_wildcard?pattern=$pat-*&meta_fields=_source&meta_fields=_id&meta_fields=_type&meta_fields=_index&meta_fields=_score' -H 'osd-xsrf:true'" \
+      | python3 -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps(d.get("fields",[])))')
+    ESC=$(echo "$FIELDS" | python3 -c 'import json,sys; print(json.dumps(json.dumps(json.load(sys.stdin))))')
+    echo "{\"attributes\":{\"title\":\"$pat-*\",\"timeFieldName\":\"timestamp\",\"fields\":$ESC}}" > /tmp/p.json
+    docker cp /tmp/p.json sentinel-wazuh-dashboard-1:/tmp/p.json 2>/dev/null
+    docker exec sentinel-wazuh-dashboard-1 sh -c "curl -sk -u admin:WazuhSentinel24 -X POST 'http://localhost:5601/wazuh/api/saved_objects/index-pattern/$pat-*?overwrite=true' -H 'osd-xsrf:true' -H 'Content-Type:application/json' --data @/tmp/p.json" >/dev/null
+  done
+  docker exec sentinel-wazuh-dashboard-1 sh -c "curl -sk -u admin:WazuhSentinel24 -X POST 'http://localhost:5601/wazuh/api/opensearch-dashboards/settings/defaultIndex' -H 'osd-xsrf:true' -H 'Content-Type:application/json' -d '{\"value\":\"wazuh-alerts-*\"}'" >/dev/null
+  echo "[wazuh-dashboard] index patterns created" >> /var/log/sentinel-bootstrap.log
+) &
+
+# ── Bootstrap dashboard-api after TheHive is reachable ────────────────────────
+# Runs in the background so the rest of cloud-init completes promptly. Waits
+# for TheHive's login endpoint, generates an API key for admin@thehive.local,
+# writes a compose override with the necessary env vars, and brings up the
+# dashboard-api container. Port 8090 is exposed on the EC2 primary interface
+# so the ALB can reach it (SG restricts ingress to the ALB's SG only).
+(
+  for i in $(seq 1 120); do
+    code=$(curl -sk -o /dev/null -w '%%{http_code}' -X POST http://localhost:9000/thehive/api/login \
+      -H 'Content-Type: application/json' \
+      -d '{"user":"admin@thehive.local","password":"secret"}' 2>/dev/null || echo 000)
+    if [ "$code" = "200" ]; then break; fi
+    sleep 5
+  done
+
+  rm -f /tmp/th.cookie
+  curl -sk -c /tmp/th.cookie -X POST http://localhost:9000/thehive/api/login \
+    -H 'Content-Type: application/json' \
+    -d '{"user":"admin@thehive.local","password":"secret"}' >/dev/null
+  TH_KEY=$(curl -sk -b /tmp/th.cookie -X POST 'http://localhost:9000/thehive/api/v1/user/admin@thehive.local/key/renew')
+
+  if [ -n "$TH_KEY" ] && [ "$${#TH_KEY}" -ge 16 ]; then
+    echo "$TH_KEY" > /opt/sentinel/.dashboard_api_thehive_key
+    chmod 600 /opt/sentinel/.dashboard_api_thehive_key
+
+    PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+
+    cat > /opt/sentinel/docker-compose.dashapi.yml << DASH_OVERRIDE_EOF
+services:
+  dashboard-api:
+    build: /opt/sentinel/dashboard_api
+    image: sentinel-dashboard-api:latest
+    hostname: dashboard-api
+    restart: unless-stopped
+    depends_on:
+      - thehive
+    ports:
+      - "8090:8090"
+    environment:
+      COGNITO_REGION: ${aws_region}
+      COGNITO_USER_POOL_ID: ${cognito_user_pool_id}
+      COGNITO_CLIENT_ID: ${cognito_web_client_id}
+      ALLOWED_GROUPS: ${admin_group_name},${analyst_group_name},${viewer_group_name}
+      INDEXER_URL: https://wazuh.indexer:9200
+      INDEXER_USER: admin
+      INDEXER_PASS: WazuhSentinel24
+      THEHIVE_URL: http://thehive:9000
+      THEHIVE_API_KEY: $TH_KEY
+      WAZUH_MANAGER_URL: https://wazuh-manager:55000
+      WAZUH_MANAGER_USER: wazuh-wui
+      WAZUH_MANAGER_PASS: WazuhSentinel24!
+      GRAFANA_URL: http://grafana:3000
+      WAZUH_DASHBOARD_URL: http://wazuh-dashboard:5601
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      MANAGER_PUBLIC_IP: $PUBLIC_IP
+DASH_OVERRIDE_EOF
+
+    cd /opt/sentinel && /usr/local/bin/docker-compose \
+      -f docker-compose.yml \
+      -f docker-compose.dashapi.yml \
+      up -d --build dashboard-api
+    echo "[dashboard-api] bootstrap complete" >> /var/log/sentinel-bootstrap.log
+  else
+    echo "[dashboard-api] FAILED: could not get TheHive API key" >> /var/log/sentinel-bootstrap.log
+  fi
+) &
 
 # ── Wazuh → SQS forwarder ─────────────────────────────────────────────────────
 # Tails alerts.json and sends each alert as a message to SQS.

@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { useAuth } from 'react-oidc-context'
-import { getResolvedConfig } from '../auth/resolvedConfig'
-import { hasAllowedGroup } from '../auth/access'
+import React, { useState } from 'react'
+import { useDashboardData } from '../contexts/DashboardDataContext'
 
 function severityLabel(level) {
   if (level >= 12) return { label: 'CRIT', color: '#ef4444' }
@@ -30,26 +28,6 @@ function SeverityBadge({ level }) {
   )
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-// Realistic Wazuh alert shapes. In production these come from GET /alerts.
-
-const MOCK_ALERTS = [
-  { sk: 'alert-001', timestamp: '2024-04-08T14:52:11.000Z', agent: { id: '003', name: 'prod-web-01' }, rule: { id: '5710', description: 'SSH brute force: multiple authentication failures', level: 10 }, data: { srcip: '185.220.101.47' } },
-  { sk: 'alert-002', timestamp: '2024-04-08T14:51:04.000Z', agent: { id: '007', name: 'fin-srv-03'   }, rule: { id: '87105', description: 'Malware - EICAR test file detected', level: 14 }, data: { srcip: null } },
-  { sk: 'alert-003', timestamp: '2024-04-08T14:49:37.000Z', agent: { id: '003', name: 'prod-web-01' }, rule: { id: '5710', description: 'SSH brute force: multiple authentication failures', level: 10 }, data: { srcip: '185.220.101.47' } },
-  { sk: 'alert-004', timestamp: '2024-04-08T14:47:19.000Z', agent: { id: '011', name: 'dmz-proxy-02' }, rule: { id: '80792', description: 'sudo: command execution by non-root user', level: 6 }, data: { srcip: null } },
-  { sk: 'alert-005', timestamp: '2024-04-08T14:45:02.000Z', agent: { id: '005', name: 'db-primary'  }, rule: { id: '554',   description: 'File modified in /etc directory', level: 5 }, data: { srcip: null } },
-  { sk: 'alert-006', timestamp: '2024-04-08T14:43:55.000Z', agent: { id: '003', name: 'prod-web-01' }, rule: { id: '5503',  description: 'SSH login success from unknown IP address', level: 9 }, data: { srcip: '91.108.56.130' } },
-  { sk: 'alert-007', timestamp: '2024-04-08T14:41:22.000Z', agent: { id: '002', name: 'jump-host'   }, rule: { id: '530',   description: 'Attempt to login using a non-existent user', level: 5 }, data: { srcip: '45.83.66.200' } },
-  { sk: 'alert-008', timestamp: '2024-04-08T14:38:11.000Z', agent: { id: '009', name: 'k8s-node-01' }, rule: { id: '31103', description: 'Web attack: SQL injection attempt detected', level: 12 }, data: { srcip: '103.27.228.11' } },
-  { sk: 'alert-009', timestamp: '2024-04-08T14:36:48.000Z', agent: { id: '007', name: 'fin-srv-03'  }, rule: { id: '510',   description: 'Host-based anomaly detection event', level: 7 }, data: { srcip: null } },
-  { sk: 'alert-010', timestamp: '2024-04-08T14:34:03.000Z', agent: { id: '011', name: 'dmz-proxy-02'}, rule: { id: '31151', description: 'Web attack: XSS attempt in HTTP request', level: 8 }, data: { srcip: '62.204.41.183' } },
-  { sk: 'alert-011', timestamp: '2024-04-08T14:31:57.000Z', agent: { id: '003', name: 'prod-web-01' }, rule: { id: '5710',  description: 'SSH brute force: multiple authentication failures', level: 10 }, data: { srcip: '185.220.101.47' } },
-  { sk: 'alert-012', timestamp: '2024-04-08T14:29:14.000Z', agent: { id: '005', name: 'db-primary'  }, rule: { id: '31108', description: 'Web attack: Remote file inclusion attempt', level: 11 }, data: { srcip: '194.165.16.78' } },
-  { sk: 'alert-013', timestamp: '2024-04-08T14:26:30.000Z', agent: { id: '002', name: 'jump-host'   }, rule: { id: '5503',  description: 'SSH login success from unknown IP address', level: 9 }, data: { srcip: '77.83.142.22' } },
-  { sk: 'alert-014', timestamp: '2024-04-08T14:22:07.000Z', agent: { id: '009', name: 'k8s-node-01' }, rule: { id: '80792', description: 'sudo: command execution by non-root user', level: 6 }, data: { srcip: null } },
-  { sk: 'alert-015', timestamp: '2024-04-08T14:18:44.000Z', agent: { id: '007', name: 'fin-srv-03'  }, rule: { id: '554',   description: 'File modified in /etc directory', level: 5 }, data: { srcip: null } },
-]
 
 // Hourly alert counts for the last 24h (index 0 = 00:00, index 23 = 23:00)
 const HOURLY_COUNTS = [18,12,8,6,14,22,45,92,110,88,74,63,58,71,84,99,87,76,68,55,48,42,37,31]
@@ -139,14 +117,13 @@ function AlertVolumeChart({ counts }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function Alerts() {
-  const auth = useAuth()
-  const [alerts, setAlerts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { data, errors } = useDashboardData()
+  const alerts = data.alerts?.alerts ?? []
+  const loading = data.alerts === undefined && !errors.alerts
+  const error = errors.alerts
   const [filters, setFilters] = useState({ severity: 'All Severities', agent: 'All Agents', ruleId: '', range: 'Last 24h' })
 
-  const liveAlerts = alerts
-  const source = liveAlerts.length > 0 ? liveAlerts : MOCK_ALERTS
+  const source = alerts
   const totalToday = source.length
 
   const filtered = source.filter(a => {
@@ -161,39 +138,6 @@ export default function Alerts() {
     if (filters.ruleId && !String(a.rule?.id || '').includes(filters.ruleId)) return false
     return true
   })
-
-  const fetchAlerts = async () => {
-    const config = getResolvedConfig()
-    const apiUrl = config?.telemetryApiUrl
-    const token = auth.user?.access_token ?? auth.user?.id_token
-    if (!apiUrl || !token || !hasAllowedGroup(auth.user)) {
-      setLoading(false)
-      return
-    }
-
-    try {
-      const response = await fetch(`${apiUrl}/alerts`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (response.status === 403) throw new Error('Access denied')
-      if (!response.ok) throw new Error('Failed to fetch alerts')
-      const data = await response.json()
-      setAlerts(Array.isArray(data) ? data : [])
-      setError(null)
-    } catch (err) {
-      console.error(err)
-      setError('Connection lost. Retrying...')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (!auth.isAuthenticated) return
-    fetchAlerts()
-    const interval = setInterval(fetchAlerts, 10000) // Polling every 10s for POC
-    return () => clearInterval(interval)
-  }, [auth.isAuthenticated, auth.user])
 
   return (
     <div className="page-wrap">
@@ -253,7 +197,7 @@ export default function Alerts() {
           <div className="panel-header">
             <span>Live Alert Feed</span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.55rem', color: 'var(--text-dim)' }}>
-              {liveAlerts.length > 0 ? 'LIVE · POLLING 10s' : 'MOCK DATA · CONNECT API TO GO LIVE'}
+              {error ? `OFFLINE · ${error}` : (alerts.length > 0 ? `LIVE · ${alerts.length} ALERTS · POLLING 10s` : 'NO ALERTS')}
             </span>
           </div>
           <div className="panel-body" style={{ minHeight: 400, flexDirection: 'column', padding: 0 }}>

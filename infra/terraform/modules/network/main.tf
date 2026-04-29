@@ -165,3 +165,25 @@ resource "aws_security_group_rule" "ec2_grafana_from_alb" {
   security_group_id        = aws_security_group.ec2.id
   description              = "Grafana from ALB"
 }
+
+# Wazuh Dashboard (5601) from ALB
+resource "aws_security_group_rule" "ec2_wazuh_dashboard_from_alb" {
+  type                     = "ingress"
+  from_port                = 5601
+  to_port                  = 5601
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.alb.id
+  security_group_id        = aws_security_group.ec2.id
+  description              = "Wazuh Dashboard from ALB"
+}
+
+# dashboard-api container (Wazuh + TheHive aggregations) from ALB
+resource "aws_security_group_rule" "ec2_dashboard_api_from_alb" {
+  type                     = "ingress"
+  from_port                = 8090
+  to_port                  = 8090
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.alb.id
+  security_group_id        = aws_security_group.ec2.id
+  description              = "Dashboard API from ALB"
+}

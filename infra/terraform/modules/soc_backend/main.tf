@@ -71,6 +71,13 @@ resource "aws_iam_role_policy" "ec2_sqs_s3" {
         Action   = ["s3:PutObject"]
         Resource = "${var.alerts_bucket_arn}/*"
       },
+      # Read the dashboard-api source uploaded by Terraform so user_data
+      # can bootstrap the container on a fresh EC2.
+      {
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = "${var.alerts_bucket_arn}/_artifacts/*"
+      },
     ]
   })
 }
@@ -83,8 +90,10 @@ resource "aws_iam_instance_profile" "ec2" {
 # ── User data rendered from template ─────────────────────────────────────────
 
 locals {
-  # Rendered script is ~40KB — gzip gets it well under EC2's 16KB user_data limit.
-  # Amazon Linux 2 cloud-init decompresses gzip user_data transparently.
+  # Rendered script is ~40KB; gzip + base64 must stay under EC2's 25,600-byte
+  # encoded user_data limit. We do NOT inline the dashboard-api Python source
+  # (~12KB → +16KB base64) — it's uploaded to S3 by Terraform and downloaded
+  # by user_data at boot time. See aws_s3_object.dashboard_api_app below.
   user_data_rendered = templatefile("${path.module}/user_data.sh.tpl", {
     site_url           = var.site_url
     cognito_domain_url = var.cognito_domain_url
@@ -92,7 +101,26 @@ locals {
     soc_client_secret  = var.soc_client_secret
     sqs_queue_url      = var.sqs_queue_url
     aws_region         = var.aws_region
+
+    # dashboard-api container bootstrap (Wazuh + TheHive KPIs for React)
+    cognito_user_pool_id  = var.user_pool_id
+    cognito_web_client_id = var.web_client_id
+    admin_group_name      = var.admin_group_name
+    analyst_group_name    = var.analyst_group_name
+    viewer_group_name     = var.viewer_group_name
+    dashboard_api_s3_uri  = "s3://${var.alerts_bucket_name}/_artifacts/dashboard_api/app.py"
   })
+}
+
+# Upload the dashboard-api Python source to S3 so user_data can fetch it at
+# boot. Versioned by source_hash so a code change triggers re-upload + EC2
+# user_data drift (which Terraform applies in-place; cloud-init only runs on
+# fresh boot, so existing EC2s need a redeploy via SSM).
+resource "aws_s3_object" "dashboard_api_app" {
+  bucket      = var.alerts_bucket_name
+  key         = "_artifacts/dashboard_api/app.py"
+  source      = "${var.dashboard_api_src_dir}/app.py"
+  source_hash = filemd5("${var.dashboard_api_src_dir}/app.py")
 }
 
 # ── EC2 Instance ──────────────────────────────────────────────────────────────
@@ -190,6 +218,61 @@ resource "aws_lb_target_group_attachment" "grafana" {
   port             = 3000
 }
 
+resource "aws_lb_target_group" "wazuh_dashboard" {
+  count    = var.create_alb ? 1 : 0
+  name     = "${local.prefix}-wazuh-tg"
+  port     = 5601
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+
+  health_check {
+    path                = "/wazuh/api/status"
+    interval            = 30
+    healthy_threshold   = 2
+    unhealthy_threshold = 5
+    matcher             = "200-499"
+  }
+
+  tags = { Name = "${local.prefix}-wazuh-tg" }
+}
+
+resource "aws_lb_target_group_attachment" "wazuh_dashboard" {
+  count            = var.create_alb ? 1 : 0
+  target_group_arn = aws_lb_target_group.wazuh_dashboard[0].arn
+  target_id        = aws_instance.soc.id
+  port             = 5601
+}
+
+# ── dashboard-api target group (Wazuh + TheHive aggregations) ────────────────
+# The dashboard-api container validates the caller's Cognito JWT in-app, so we
+# don't add `authenticate-cognito` to its listener rules — that flow is for
+# server-rendered apps and breaks browser fetch() AJAX with 302 redirects.
+
+resource "aws_lb_target_group" "dashboard_api" {
+  count    = var.create_alb ? 1 : 0
+  name     = "${local.prefix}-dash-api-tg"
+  port     = 8090
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+
+  health_check {
+    path                = "/healthz"
+    interval            = 30
+    healthy_threshold   = 2
+    unhealthy_threshold = 5
+    matcher             = "200"
+  }
+
+  tags = { Name = "${local.prefix}-dash-api-tg" }
+}
+
+resource "aws_lb_target_group_attachment" "dashboard_api" {
+  count            = var.create_alb ? 1 : 0
+  target_group_arn = aws_lb_target_group.dashboard_api[0].arn
+  target_id        = aws_instance.soc.id
+  port             = 8090
+}
+
 # ── ALB HTTPS listener + ACM cert (custom_domain + ALB only) ─────────────────
 
 resource "aws_acm_certificate" "alb" {
@@ -279,6 +362,40 @@ resource "aws_lb_listener_rule" "grafana_http" {
   }
 }
 
+resource "aws_lb_listener_rule" "wazuh_dashboard_http" {
+  count        = var.create_alb ? 1 : 0
+  listener_arn = aws_lb_listener.http[0].arn
+  priority     = 30
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.wazuh_dashboard[0].arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/wazuh", "/wazuh/*"]
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "dashboard_api_http" {
+  count        = var.create_alb ? 1 : 0
+  listener_arn = aws_lb_listener.http[0].arn
+  priority     = 40
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.dashboard_api[0].arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/dashboard", "/api/dashboard/*"]
+    }
+  }
+}
+
 # ── HTTPS listener (custom_domain + ALB only, with Cognito auth) ──────────────
 
 resource "aws_lb_listener" "https" {
@@ -356,6 +473,52 @@ resource "aws_lb_listener_rule" "grafana_https" {
   condition {
     path_pattern {
       values = ["/grafana", "/grafana/*"]
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "wazuh_dashboard_https" {
+  count        = var.create_alb && var.enable_custom_domain ? 1 : 0
+  listener_arn = aws_lb_listener.https[0].arn
+  priority     = 30
+
+  action {
+    order = 1
+    type  = "authenticate-cognito"
+    authenticate_cognito {
+      user_pool_arn              = var.user_pool_arn
+      user_pool_client_id        = var.soc_client_id
+      user_pool_domain           = var.user_pool_domain
+      on_unauthenticated_request = "authenticate"
+    }
+  }
+
+  action {
+    order            = 2
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.wazuh_dashboard[0].arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/wazuh", "/wazuh/*"]
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "dashboard_api_https" {
+  count        = var.create_alb && var.enable_custom_domain ? 1 : 0
+  listener_arn = aws_lb_listener.https[0].arn
+  priority     = 40
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.dashboard_api[0].arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/dashboard", "/api/dashboard/*"]
     }
   }
 }
