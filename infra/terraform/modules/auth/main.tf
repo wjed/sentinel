@@ -128,7 +128,7 @@ resource "aws_cognito_user_pool_client" "soc" {
 
 resource "aws_cognito_user" "default_admin" {
   user_pool_id = aws_cognito_user_pool.main.id
-  username     = var.default_admin_username
+  username     = var.default_admin_email
 
   attributes = {
     email          = var.default_admin_email
