@@ -40,7 +40,7 @@ resource "aws_cognito_user_pool" "main" {
   tags = { Name = "${local.prefix}-user-pool" }
 
   lifecycle {
-    ignore_changes = [name]
+    ignore_changes = [name, schema]
   }
 }
 
