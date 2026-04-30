@@ -39,10 +39,8 @@ There is **no** `Layout.jsx` with a sidebar. The layout is: **TopNav** at the to
 - **`/reports`** — Reports (protected)  
 - **`/settings`** — Settings (protected)  
 - **`/account`** — Account / profile (protected; edit display name, icon, job, bio)
-- **`/admin/access`** — Access Management Terminal (protected; admin-only)
 
 Protected = you must be signed in; otherwise you’re sent to login.
-Admin-only = you must also be in `SentinelNetAdmins`.
 
 ---
 
@@ -86,8 +84,6 @@ npm run dev
 - **Add reusable UI** — Put it in `src/components/` and import it where needed.
 - **Change colors / fonts** — Edit `:root` and other rules in `src/index.css`.
 - **Call a new API** — Add a client in `src/api/` (like `profile.js`) and use it from the page or component that needs it.
-
-The Access Management Terminal intentionally does not pass raw commands to the backend. The frontend parser validates supported commands first, then maps them to explicit REST calls against the admin access API.
 
 ---
 

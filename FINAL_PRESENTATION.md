@@ -51,7 +51,6 @@
 **Frontend (React + Vite):**
 - **Marketing Website:** 4-page SPA with Home, Product, Pricing, and About sections
 - **Dashboard Interface:** Real-time SOC monitoring with Cognito authentication
-- **Admin Terminal:** Secure command-line interface for user management
 - **Responsive Design:** Dark theme optimized for security operations
 
 **Backend SOC Stack:**

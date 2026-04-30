@@ -13,7 +13,6 @@ Each file here is a **page** — a top-level screen that appears when the user h
 | **`Data.jsx`** | `/data` | Security data ingestion, logs, pipeline status. Add data sources and log viewers. |
 | **`Settings.jsx`** | `/settings` | Platform and account configuration. Add forms and preferences. |
 | **`Login.jsx`** | `/login` | Sign-in (no sidebar). Add auth (e.g. OAuth / SSO) when ready. |
-| **`AdminAccessTerminal.jsx`** | `/admin/access` | Admin-only terminal-style UI for Cognito group access management through safe structured API calls. |
 
 ---
 

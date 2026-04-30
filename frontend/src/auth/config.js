@@ -62,11 +62,6 @@ export function getProfileApiUrl() {
   return c?.profileApiUrl ?? ''
 }
 
-export function getAdminAccessApiUrl() {
-  const c = getResolvedConfig()
-  return c?.adminAccessApiUrl ?? ''
-}
-
 export function getOidcConfig() {
   return {
     authority: getAuthority(),
