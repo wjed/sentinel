@@ -49,22 +49,42 @@
 ### Core Components
 
 **Frontend (React + Vite):**
-- Marketing pages: Home, Product, Pricing, About
-- Dashboard with real-time SOC data
-- Cognito authentication integration
-- Responsive dark theme design
+- **Marketing Website:** 4-page SPA with Home, Product, Pricing, and About sections
+- **Dashboard Interface:** Real-time SOC monitoring with Cognito authentication
+- **Admin Terminal:** Secure command-line interface for user management
+- **Responsive Design:** Dark theme optimized for security operations
 
 **Backend SOC Stack:**
-- **Wazuh Manager:** SIEM/EDR for log ingestion and alerting
-- **TheHive 5:** Security incident response platform
-- **Grafana:** Dashboarding and visualization
-- **Cassandra + Elasticsearch:** Data persistence and search
+- **Wazuh Manager:** Open-source SIEM/EDR for log aggregation and threat detection
+- **TheHive 5:** Security incident response platform for case management
+- **Grafana:** Visualization dashboard for metrics and alerts
+- **Cassandra + Elasticsearch:** NoSQL database and search indexing
 
 **Infrastructure (AWS):**
-- CloudFront + S3 for frontend hosting
-- Lambda APIs for profile management
-- SQS/Lambda pipeline for alert ingestion
-- Cost-optimized t3.medium EC2 instance
+- **Network:** VPC with public subnets, security groups, and ALB
+- **Compute:** Single t3.medium EC2 instance running Docker Compose
+- **Storage:** S3 for website hosting and alert data lake
+- **Serverless:** Lambda functions for API endpoints and data processing
+
+### Security Tool Integration
+
+**Wazuh SIEM:**
+- Agent-based log collection from endpoints
+- Real-time rule evaluation and alerting
+- Integration with TheHive for incident escalation
+- REST API for programmatic access
+
+**TheHive Incident Response:**
+- Case management with customizable workflows
+- Observable tracking and analysis
+- Integration with MISP threat intelligence
+- User assignment and collaboration features
+
+**Grafana Monitoring:**
+- Custom dashboards for SOC metrics
+- Alert visualization and historical trends
+- Integration with Elasticsearch data sources
+- Real-time KPI monitoring
 
 ---
 
@@ -180,6 +200,49 @@ Agent Logs → Wazuh Manager → SQS Queue → Lambda → S3 Data Lake
 - **4GB Swap File:** Prevents OOM kills
 - **1-day S3 Lifecycle:** Automatic old alert deletion
 
+### Data Flow Architecture
+
+**Alert Ingestion Pipeline:**
+1. **Wazuh Agents** on endpoints collect logs and events
+2. **Wazuh Manager** evaluates rules and generates alerts
+3. **Alerts** are sent to SQS queue via HTTP POST
+4. **Lambda function** processes and normalizes alert data
+5. **JSON alerts** stored in S3 data lake with partitioning
+
+**User Authentication Flow:**
+1. **Cognito Hosted UI** handles login/registration
+2. **JWT tokens** issued for authenticated sessions
+3. **API Gateway** validates tokens via Lambda authorizer
+4. **Backend services** receive authenticated requests
+5. **ALB** provides additional authentication for SOC tools
+
+**Dashboard Data Retrieval:**
+1. **Frontend** makes authenticated API calls
+2. **Lambda APIs** query S3, DynamoDB, and Elasticsearch
+3. **Real-time data** aggregated and returned as JSON
+4. **React components** render interactive visualizations
+5. **WebSocket connections** for live alert streaming
+
+### Development Workflow
+
+**Infrastructure as Code:**
+- **Terraform modules** for each AWS service component
+- **Version-controlled** infrastructure definitions
+- **Automated deployment** with CI/CD pipelines
+- **Environment separation** (dev/prod) with tfvars
+
+**Container Orchestration:**
+- **Docker Compose** for multi-service SOC stack
+- **Memory optimization** with JVM heap limits
+- **Health monitoring** and automatic restarts
+- **Log aggregation** to CloudWatch
+
+**Security Hardening:**
+- **Least-privilege IAM** roles and policies
+- **Security groups** with minimal required access
+- **HTTPS everywhere** with ACM certificates
+- **Regular security** scanning and updates
+
 ---
 
 ## Implementation Guide
@@ -289,10 +352,6 @@ systemctl enable wazuh-agent && systemctl start wazuh-agent
 - **Solution:** Cognito as central identity provider with OIDC
 - **Tools:** Custom Lambda authorizers and ALB authentication
 
----
-
-## Obstacles Encountered (Continued)
-
 ### Deployment Automation
 - **Challenge:** Complex multi-service deployment
 - **Solution:** Comprehensive Terraform modules with user data scripts
@@ -308,8 +367,9 @@ systemctl enable wazuh-agent && systemctl start wazuh-agent
 ### Security Hardening
 - **Challenge:** Balancing security with usability
 - **Solutions:**
-  - Least-privilege IAM roles
+  - Least-privilege IAM roles and policies
   - Security groups and NACLs
+  - HTTPS everywhere with ACM certificates
   - Regular security assessments
 
 ---
@@ -317,22 +377,34 @@ systemctl enable wazuh-agent && systemctl start wazuh-agent
 ## Future Implementation Suggestions
 
 ### Immediate Enhancements (3-6 months)
-- **Container Orchestration:** Migrate to Amazon EKS
-- **CI/CD Pipeline:** GitHub Actions for automated testing and deployment
-- **Monitoring & Logging:** CloudWatch dashboards and alerts
-- **Backup Strategy:** Automated snapshots and cross-region replication
+- **Container Orchestration Migration:** Move from Docker Compose to Amazon EKS for better scalability
+- **CI/CD Pipeline:** Implement GitHub Actions for automated testing and deployment
+- **Monitoring & Alerting:** Add CloudWatch dashboards and automated incident response
+- **Database Optimization:** Implement connection pooling and query optimization
 
 ### Medium-term Goals (6-12 months)
-- **Multi-region Support:** Global deployment capability
-- **Advanced Threat Detection:** ML-based anomaly detection
-- **API Gateway Integration:** RESTful APIs for third-party integrations
-- **Compliance Automation:** SOC 2 and GDPR compliance features
+- **Multi-region Deployment:** Global infrastructure with cross-region failover
+- **Advanced Threat Detection:** Integrate AWS SageMaker for ML-based anomaly detection
+- **API Gateway Enhancement:** Implement GraphQL APIs for flexible data querying
+- **Compliance Automation:** Add SOC 2, GDPR, and HIPAA compliance features
 
 ### Long-term Vision (1-2 years)
-- **SaaS Platform:** Multi-tenant architecture
-- **AI/ML Integration:** Predictive threat analysis
-- **IoT Security:** Specialized agent for IoT devices
-- **Partnership Ecosystem:** Integration marketplace
+- **SaaS Platform:** Multi-tenant architecture supporting multiple organizations
+- **AI/ML Integration:** Predictive threat analysis using historical data patterns
+- **IoT Security:** Specialized agent support for IoT device monitoring
+- **Marketplace Ecosystem:** Third-party integration marketplace for security tools
+
+### Technical Improvements
+- **Microservices Architecture:** Break down monolithic components into independent services
+- **Event-Driven Architecture:** Implement EventBridge for decoupled system communication
+- **Advanced Analytics:** Real-time streaming analytics with Kinesis and Athena
+- **Zero-Trust Security:** Implement beyondCorp access patterns and continuous authentication
+
+### Scalability Enhancements
+- **Auto Scaling Groups:** Dynamic EC2 scaling based on load and alert volume
+- **Database Sharding:** Horizontal scaling for alert data across multiple S3 buckets
+- **CDN Optimization:** Global CloudFront distribution with Lambda@Edge processing
+- **Caching Layers:** Redis/ElastiCache for frequently accessed security data
 
 ---
 
