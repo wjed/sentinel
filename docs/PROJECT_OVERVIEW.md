@@ -7,7 +7,7 @@ The entire AWS infrastructure is described as Infrastructure as Code (IaC) using
 - **network module:** Provisions a simplified VPC with only public subnets (to save costs on NAT Gateways) and restrictive Security Groups.
 - **auth + userdata modules:** Provisions the Cognito User Pool for authentication and DynamoDB/S3 for user profile data.
 - **frontend + backend_api modules:** Creates the S3 bucket and CloudFront distribution to host the React SPA. Also deploys the Profile API, Admin Access API, and Telemetry API via Lambda + HTTP API Gateway.
-- **soc_backend + alert_pipeline modules:** Provisions the core SOC compute layer (a `t3.large` EC2 instance), the Application Load Balancer (ALB), the SQS queues, the S3 Data Lake, and the ingestion/telemetry serverless functions.
+- **soc_backend + alert_pipeline modules:** Provisions the core SOC compute layer (a `t3.medium` EC2 instance), the Application Load Balancer (ALB), the SQS queues, the S3 Data Lake, and the ingestion/telemetry serverless functions.
 
 ---
 

@@ -59,7 +59,7 @@ Lambda APIs (HTTP API Gateway, JWT auth via Cognito):
 
 SQS → Lambda → S3 (Wazuh alert ingestion pipeline)
 
-EC2 (t3.large, 50 GB GP3):
+EC2 (t3.medium, 50 GB GP3):
   Docker-compose: Cassandra + Elasticsearch + TheHive 5 + Wazuh + Grafana
 ```
 
@@ -185,7 +185,7 @@ npm run dev
 
 ### Stop the EC2 to save cost
 
-The EC2 instance running Wazuh/TheHive/Grafana is the main ongoing cost (~$60-80/month for t3.large). Stop it when not in use:
+The EC2 instance running Wazuh/TheHive/Grafana is the main ongoing cost (~$30-40/month for t3.medium). Stop it when not in use:
 
 ```bash
 INSTANCE_ID=$(cd infra/terraform && terraform output -raw soc_instance_id)
@@ -228,12 +228,12 @@ terraform apply -var-file=envs/dev.tfvars -var="create_soc_backend=false"
 | Scenario | Monthly cost (us-east-1) |
 |----------|--------------------------|
 | Frontend + APIs only (`create_soc_backend=false`) | ~$5–15 |
-| Full deploy with t3.large running 24/7 | ~$80–120 |
+| Full deploy with t3.medium running 24/7 | ~$50–90 |
 | Full deploy, EC2 stopped (storage only) | ~$10–20 (EBS + ALB idle) |
 | Destroy dev entirely | $0 |
 
 **Cost drivers:**
-- EC2 t3.large = ~$60/month
+- EC2 t3.medium = ~$30/month
 - ALB = ~$18/month
 - CloudFront = pay-per-use (~$0.01/GB after free tier)
 - Lambda + DynamoDB + SQS = essentially free at low volume

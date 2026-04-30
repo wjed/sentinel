@@ -12,8 +12,7 @@
 ---
 
 ## 🛠 Features & Workflows
-- **[Data Storage](architecture/Data_Storage.md)** — Details on DynamoDB tables and structures.
-- **[Escalation Logic](architecture/Escalation_Logic.md)** — How alerts are promoted to cases (WIP).
+- **[Escalation Logic](architecture/Escalation_Logic.md)** — How alerts are promoted to cases.
 
 ---
 

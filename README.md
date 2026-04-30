@@ -197,7 +197,7 @@ INSTANCE_ID=$(cd infra/terraform && terraform output -raw soc_instance_id)
 aws ec2 stop-instances --instance-ids "$INSTANCE_ID"
 ```
 
-You only pay for 50GB EBS storage (~$4/mo) while stopped, instead of the full ~$60–80/mo for a running t3.large.
+You only pay for 50GB EBS storage (~$4/mo) while stopped, instead of the full ~$30–40/mo for a running t3.medium.
 
 ### Restarting for a demo (CLI)
 
