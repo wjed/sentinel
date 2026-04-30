@@ -3,8 +3,11 @@
 To see live alerts in your dashboard, you need at least one machine (an "Agent") reporting to your Manager.
 
 ## 1. Get your Manager IP
-After running `./deploy-all.sh`, look at the outputs for `SentinelNet-Backend`.
-Copy the **`ManagerPublicIP`**.
+After running `cd infra/terraform && ./scripts/deploy-dev-cloudfront.sh`, run:
+```bash
+terraform output soc_public_ip
+```
+Copy the output IP address.
 
 ## 2. Install the Agent (Windows)
 Run this in **PowerShell as Administrator**:
