@@ -7,16 +7,17 @@
 ## Table of Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Architecture Overview](#architecture-overview)
-3. [Deployment Modes](#deployment-modes)
-4. [Quick Start — CloudFront-Only (Recommended for New Accounts)](#quick-start--cloudfront-only)
-5. [Production Deploy — Custom Domain](#production-deploy--custom-domain)
-6. [Updating the Frontend](#updating-the-frontend)
-7. [SOC Backend — Start / Stop / Deploy](#soc-backend)
-8. [Cost Estimates](#cost-estimates)
-9. [Destroy / Teardown](#destroy--teardown)
-10. [Module Reference](#module-reference)
-11. [Troubleshooting](#troubleshooting)
+2. [Remote State](#remote-state)
+3. [Architecture Overview](#architecture-overview)
+4. [Deployment Modes](#deployment-modes)
+5. [Quick Start — CloudFront-Only (Recommended for New Accounts)](#quick-start--cloudfront-only)
+6. [Production Deploy — Custom Domain](#production-deploy--custom-domain)
+7. [Updating the Frontend](#updating-the-frontend)
+8. [SOC Backend — Start / Stop / Deploy](#soc-backend)
+9. [Cost Estimates](#cost-estimates)
+10. [Destroy / Teardown](#destroy--teardown)
+11. [Module Reference](#module-reference)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -29,7 +30,7 @@
 | Node.js | >= 18 | https://nodejs.org |
 | npm | >= 9 | bundled with Node.js |
 
-Configure AWS credentials before running any Terraform commands:
+Configure AWS credentials before running any Terraform commands. State now lives in S3, so credentials are required even for `terraform init`:
 
 ```bash
 # Option A — environment variables
@@ -40,6 +41,39 @@ export AWS_DEFAULT_REGION=us-east-1
 # Option B — AWS profile
 export AWS_PROFILE=sentinelnet-dev
 ```
+
+---
+
+## Remote State
+
+Terraform state lives in an encrypted, versioned S3 bucket with DynamoDB-based locking. The backend is wired in `versions.tf`:
+
+| Setting | Value |
+|---------|-------|
+| Bucket | `sentinelnet-terraform-state-639418629910` |
+| Key | `sentinelnet/dev/terraform.tfstate` |
+| Lock table | `sentinelnet-terraform-locks` |
+| Region | `us-east-1` |
+| Encryption | AES256 (SSE-S3) |
+
+The bucket and lock table are provisioned by `bootstrap/`, a one-shot Terraform config that runs once per AWS account with its own local state.
+
+**Existing account (`639418629910`):** bootstrap is already applied — just run `terraform init` from `infra/terraform/`, which picks up the S3 backend automatically.
+
+**New AWS account:** bootstrap first, then init the root config.
+
+```bash
+cd infra/terraform/bootstrap
+# Edit variables.tf — bucket name must be globally unique
+terraform init
+terraform apply
+
+cd ..
+# Update versions.tf with the new bucket name, then:
+terraform init
+```
+
+If you ever need to re-migrate state (e.g. moving environments), use `terraform init -migrate-state`. Versioning is on, so prior state revisions are recoverable from the bucket.
 
 ---
 
