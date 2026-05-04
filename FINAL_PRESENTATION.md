@@ -8,6 +8,7 @@
 - Project Description
 - Technical Architecture
 - Implementation Guide
+- Competitive Cost Analysis
 - Obstacles Encountered
 - Future Enhancements
 - Demo & Q&A
@@ -433,6 +434,23 @@ graph TD
     D --> E[Lambda Authorizer]
     E --> F[Service Access]
 ```
+
+---
+
+## Competitive Cost Analysis
+
+| Expense Category | Traditional In-House SOC | SentinelNet (Ours) |
+| :--- | :--- | :--- |
+| **Annual Personnel** | $1,000,000+ (10+ Staff) | **Included / Part-time** |
+| **Software Licensing** | $150,000+ (Splunk/EDR) | **$0 (Open Source)** |
+| **Infrastructure** | $50,000+ (Cloud/HW) | **~$636 (AWS)** |
+| **Total Annual TCO** | **$1.2M - $4M** | **~$636** |
+
+**The 1% Factor:**
+SentinelNet provides enterprise-grade visibility at 0.1% of the traditional cost by:
+- **Consolidating** the entire stack onto a single cost-optimized EC2 instance.
+- **Leveraging** production-hardened open-source tools to eliminate licensing fees.
+- **Automating** deployment and maintenance to reduce staffing overhead.
 
 ---
 
