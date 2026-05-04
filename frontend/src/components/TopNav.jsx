@@ -82,12 +82,10 @@ export default function TopNav() {
   const [navVisible, setNavVisible] = useState(true)
   const lastScrollY = useRef(0)
   const canAccessConsole = auth.isAuthenticated && hasAllowedGroup(auth.user)
-  const isAdmin = auth.isAuthenticated && hasAllowedGroup(auth.user, [ADMIN_GROUP])
   const isOperator = auth.isAuthenticated && hasAllowedGroup(auth.user, [ADMIN_GROUP, ANALYST_GROUP])
   const visibleConsoleLinks = [
     ...consoleNavLinks,
     ...(isOperator ? [{ to: '/console', label: 'Console' }] : []),
-    ...(isAdmin    ? [{ to: '/admin/access', label: 'Access Terminal' }] : []),
   ]
 
   useEffect(() => {

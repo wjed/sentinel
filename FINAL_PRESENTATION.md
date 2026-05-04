@@ -8,6 +8,8 @@
 - Project Description
 - Technical Architecture
 - Implementation Guide
+- Competitive Cost Analysis
+- The Security Accessibility Gap
 - Obstacles Encountered
 - Future Enhancements
 - Demo & Q&A
@@ -51,7 +53,6 @@
 **Frontend (React + Vite):**
 - **Marketing Website:** 4-page SPA with Home, Product, Pricing, and About sections
 - **Dashboard Interface:** Real-time SOC monitoring with Cognito authentication
-- **Admin Terminal:** Secure command-line interface for user management
 - **Responsive Design:** Dark theme optimized for security operations
 
 **Backend SOC Stack:**
@@ -434,6 +435,52 @@ graph TD
     D --> E[Lambda Authorizer]
     E --> F[Service Access]
 ```
+
+---
+
+## Competitive Cost Analysis
+
+![Cost Comparison Graph](file:///C:/Users/MarvinsStarvin/.gemini/antigravity/brain/ac347e08-f52c-4c70-b327-a5259297f968/soc_cost_comparison_graph_1777905070884.png)
+
+```mermaid
+pie title "Annual Budget Comparison (Logarithmic Scale)"
+    "Traditional SOC ($1.2M+)" : 99.95
+    "SentinelNet ($636)" : 0.05
+```
+
+| Expense Category | Traditional In-House SOC | SentinelNet (Ours) |
+| :--- | :--- | :--- |
+| **Annual Personnel** | $1,000,000+ (10+ Staff) | **Included / Part-time** |
+| **Software Licensing** | $150,000+ (Splunk/EDR) | **$0 (Open Source)** |
+| **Infrastructure** | $50,000+ (Cloud/HW) | **~$636 (AWS)** |
+| **Total Annual TCO** | **$1.2M - $4M** | **~$636** |
+
+**The 1% Factor:**
+SentinelNet provides enterprise-grade visibility at 0.1% of the traditional cost by:
+- **Consolidating** the entire stack onto a single cost-optimized EC2 instance.
+- **Leveraging** production-hardened open-source tools to eliminate licensing fees.
+- **Automating** deployment and maintenance to reduce staffing overhead.
+
+---
+
+## The Security Accessibility Gap
+
+### **"Security should not be a luxury item."**
+
+**The Reality for SMBs:**
+- **Small Business Annual Revenue:** ~$50,000 - $250,000 (Typical for micro-enterprises)
+- **In-House SOC Cost:** $1,000,000+
+- **Result:** 99% of small businesses are left **completely unprotected** because they cannot afford the "entry fee" of modern security.
+
+**The "Overkill" Problem:**
+A small business does not need a 24/7 team of 12 analysts, but they **do** need:
+- Real-time threat detection
+- Automated incident logging
+- A centralized security dashboard
+- Production-ready EDR/SIEM tools
+
+**Our Solution:**
+SentinelNet provides the **essential 90%** of enterprise security features at a price point that fits into a standard monthly AWS bill (~$50). We bridge the gap between "No Security" and "Over-Engineered Complexity."
 
 ---
 

@@ -56,9 +56,13 @@ module "frontend" {
   # ALB origin for CloudFront — only wired in custom_domain + ALB mode.
   # When create_alb = false, CloudFront does not proxy /thehive/* or /grafana/*;
   # access those services directly via the EC2 public IP shown in outputs.
+  #
+  # We use api.<domain> (a Route53 alias to the ALB) instead of the raw ALB DNS
+  # because the ALB cert is issued for api.<domain>; using the raw DNS makes
+  # CloudFront's origin SNI mismatch the cert and the TLS handshake fails.
   soc_alb_dns = (
     var.enable_custom_domain && var.create_alb
-    ? one(module.soc_backend[*].alb_dns_name)
+    ? "api.${var.domain_name}"
     : null
   )
 

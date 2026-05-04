@@ -35,8 +35,10 @@ locals {
   ])
 
   # ── SOC-specific Cognito callback URLs ───────────────────────────────────
+  # TheHive 5 OIDC requires the callback at /api/ssoLogin (not the app root);
+  # auth.sso.autologin then redirects unauthenticated users straight to Cognito.
   soc_callback_urls = compact([
-    "${local.site_url}/thehive/",
+    "${local.site_url}/thehive/api/ssoLogin",
     "${local.site_url}/grafana/login/generic_oauth",
     "${local.site_url}/wazuh/auth/openid/login",
     var.enable_custom_domain ? "https://api.${var.domain_name}/oauth2/idpresponse" : null,
