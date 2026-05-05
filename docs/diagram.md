@@ -28,7 +28,7 @@ graph TD
                 REG[Wazuh Reg: 1515]
                 TH[TheHive: 9000]
                 GR[Grafana: 3000]
-                
+
                 SOC_EC2 --- FW
                 SOC_EC2 --- REG
                 SOC_EC2 --- TH
@@ -59,19 +59,19 @@ graph TD
     ALB -->|Forward:9000| TH
     ALB -->|Forward:3000| GR
     Agent -->|UDP/TCP:1514/1515| SOC_EC2
-    
+
     %% Internal Log Pipeline
     SOC_EC2 -->|HTTPS via IGW| SQS
     SQS -->|Trigger| LAMBDA_INGEST
     LAMBDA_INGEST -->|Write JSON| S3_ALERTS
-    
+
     %% API and Auth
     User -->|HTTPS:443| APIGW
     APIGW -->|Trigger| LAMBDA_API
     LAMBDA_API -->|Read| S3_ALERTS
     LAMBDA_API -->|Read/Write| DDB_PROFILES
     LAMBDA_API -->|Manage| COG
-    
+
     User -.->|SSO Login| COG
     ALB -.->|Authenticate| COG
 
