@@ -42,8 +42,11 @@ create_soc_backend = true
 create_alb         = true   # required for Cognito SSO on TheHive + Grafana
 
 # ── EC2 sizing ────────────────────────────────────────────────────────────────
-instance_type    = "t3.medium"   # 4 GB RAM; BerkeleyDB+Lucene fits comfortably
-root_volume_size = 30
+# t3.large (8 GB RAM) is the minimum for the full SOC stack: Cassandra + ES +
+# TheHive + Wazuh manager + Wazuh dashboard + Grafana + Filebeat + dashboard-api.
+# 60 GB root volume gives docker headroom — Wazuh/ES indices fill 30 GB fast.
+instance_type    = "t3.large"
+root_volume_size = 60
 
 # ── Cognito domain prefix (must be globally unique in AWS) ────────────────────
 # If "sentinelnet" is taken, try sentinelnet-yourname or sentinelnet-2025

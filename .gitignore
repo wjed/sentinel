@@ -19,6 +19,12 @@ build/
 *.tfstate.*
 .terraform/
 crash.log
+tfplan
+tfplan-*
+
+# CDK leftovers (project migrated to Terraform)
+cdk.out/
+cdk.context.json
 
 # Node / frontend
 node_modules/
