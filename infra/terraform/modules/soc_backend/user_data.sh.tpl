@@ -84,6 +84,7 @@ OSD_EOF
 # `hosts:` block when the file is writable, producing a "duplicated mapping
 # key" YAML parse error and crash-looping the dashboard.
 cat > /opt/sentinel/conf/wazuh-dashboard/wazuh.yml << 'WAZUH_YML_EOF'
+pattern: "wazuh-alerts-*"
 hosts:
   - default:
       url: "https://wazuh-manager"
