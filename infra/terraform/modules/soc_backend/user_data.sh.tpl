@@ -321,7 +321,6 @@ storage.local.directory = "/opt/thp/thehive/files"
 auth {
   providers = [
     {name: session}
-    {name: basic, realm: thehive}
     {name: local}
     {name: key}
     {name: oauth2}
