@@ -456,7 +456,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "query": "",
         "alias": "Total",
         "metrics": [{"type": "count", "id": "1"}],
-        "bucketAggs": [],
+        "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
         "timeField": "@timestamp"
       }],
       "options": {
@@ -495,7 +495,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "query": "rule.level:[12 TO *]",
         "alias": "Critical",
         "metrics": [{"type": "count", "id": "1"}],
-        "bucketAggs": [],
+        "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
         "timeField": "@timestamp"
       }],
       "options": {
@@ -533,7 +533,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "query": "rule.level:[7 TO 11]",
         "alias": "High",
         "metrics": [{"type": "count", "id": "1"}],
-        "bucketAggs": [],
+        "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
         "timeField": "@timestamp"
       }],
       "options": {
@@ -571,7 +571,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "query": "",
         "alias": "Agents",
         "metrics": [{"type": "cardinality", "id": "1", "field": "agent.name.keyword"}],
-        "bucketAggs": [],
+        "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
         "timeField": "@timestamp"
       }],
       "options": {
@@ -760,7 +760,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "query": "rule.level:[1 TO 3]",
           "alias": "Low (1-3)",
           "metrics": [{"type": "count", "id": "1"}],
-          "bucketAggs": [],
+          "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
           "timeField": "@timestamp"
         },
         {
@@ -769,7 +769,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "query": "rule.level:[4 TO 6]",
           "alias": "Medium (4-6)",
           "metrics": [{"type": "count", "id": "1"}],
-          "bucketAggs": [],
+          "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
           "timeField": "@timestamp"
         },
         {
@@ -778,7 +778,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "query": "rule.level:[7 TO 11]",
           "alias": "High (7-11)",
           "metrics": [{"type": "count", "id": "1"}],
-          "bucketAggs": [],
+          "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
           "timeField": "@timestamp"
         },
         {
@@ -787,7 +787,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "query": "rule.level:[12 TO *]",
           "alias": "Critical (12+)",
           "metrics": [{"type": "count", "id": "1"}],
-          "bucketAggs": [],
+          "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
           "timeField": "@timestamp"
         }
       ],
@@ -845,7 +845,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "datasource": {"type": "elasticsearch", "uid": "wazuh-es"},
         "query": "",
         "metrics": [{"type": "logs", "id": "1", "settings": {"limit": "100"}}],
-        "bucketAggs": [],
+        "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
         "timeField": "@timestamp"
       }],
       "options": {
