@@ -398,7 +398,7 @@ datasources:
     isDefault: true
     jsonData:
       index: "wazuh-alerts-*"
-      timeField: "timestamp"
+      timeField: "@timestamp"
       esVersion: "7.10.0"
       logMessageField: "full_log"
       logLevelField: "rule.level"
@@ -457,7 +457,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "alias": "Total",
         "metrics": [{"type": "count", "id": "1"}],
         "bucketAggs": [],
-        "timeField": "timestamp"
+        "timeField": "@timestamp"
       }],
       "options": {
         "reduceOptions": {"values": false, "calcs": ["sum"]},
@@ -496,7 +496,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "alias": "Critical",
         "metrics": [{"type": "count", "id": "1"}],
         "bucketAggs": [],
-        "timeField": "timestamp"
+        "timeField": "@timestamp"
       }],
       "options": {
         "reduceOptions": {"values": false, "calcs": ["sum"]},
@@ -534,7 +534,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "alias": "High",
         "metrics": [{"type": "count", "id": "1"}],
         "bucketAggs": [],
-        "timeField": "timestamp"
+        "timeField": "@timestamp"
       }],
       "options": {
         "reduceOptions": {"values": false, "calcs": ["sum"]},
@@ -572,7 +572,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "alias": "Agents",
         "metrics": [{"type": "cardinality", "id": "1", "field": "agent.name.keyword"}],
         "bucketAggs": [],
-        "timeField": "timestamp"
+        "timeField": "@timestamp"
       }],
       "options": {
         "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
@@ -607,9 +607,9 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "query": "",
           "alias": "All Alerts",
           "metrics": [{"type": "count", "id": "1"}],
-          "bucketAggs": [{"type": "date_histogram", "field": "timestamp", "id": "2",
+          "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2",
             "settings": {"interval": "auto", "min_doc_count": "0", "trimEdges": "0"}}],
-          "timeField": "timestamp"
+          "timeField": "@timestamp"
         },
         {
           "refId": "B",
@@ -617,9 +617,9 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "query": "rule.level:[7 TO *]",
           "alias": "High+Critical",
           "metrics": [{"type": "count", "id": "1"}],
-          "bucketAggs": [{"type": "date_histogram", "field": "timestamp", "id": "2",
+          "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2",
             "settings": {"interval": "auto", "min_doc_count": "0", "trimEdges": "0"}}],
-          "timeField": "timestamp"
+          "timeField": "@timestamp"
         }
       ],
       "options": {
@@ -666,7 +666,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "metrics": [{"type": "count", "id": "1"}],
         "bucketAggs": [{"type": "terms", "field": "rule.description.keyword", "id": "2",
           "settings": {"size": "10", "order": "desc", "orderBy": "1", "min_doc_count": "1"}}],
-        "timeField": "timestamp"
+        "timeField": "@timestamp"
       }],
       "options": {"showHeader": true, "footer": {"show": false}},
       "fieldConfig": {
@@ -697,7 +697,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "metrics": [{"type": "count", "id": "1"}],
         "bucketAggs": [{"type": "terms", "field": "agent.name.keyword", "id": "2",
           "settings": {"size": "10", "order": "desc", "orderBy": "1", "min_doc_count": "1"}}],
-        "timeField": "timestamp"
+        "timeField": "@timestamp"
       }],
       "options": {"showHeader": true, "footer": {"show": false}},
       "fieldConfig": {
@@ -735,7 +735,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "metrics": [{"type": "count", "id": "1"}],
         "bucketAggs": [{"type": "terms", "field": "rule.level", "id": "2",
           "settings": {"size": "15", "order": "desc", "orderBy": "1", "min_doc_count": "1"}}],
-        "timeField": "timestamp"
+        "timeField": "@timestamp"
       }],
       "options": {
         "pieType": "pie",
@@ -761,7 +761,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "alias": "Low (1-3)",
           "metrics": [{"type": "count", "id": "1"}],
           "bucketAggs": [],
-          "timeField": "timestamp"
+          "timeField": "@timestamp"
         },
         {
           "refId": "B",
@@ -770,7 +770,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "alias": "Medium (4-6)",
           "metrics": [{"type": "count", "id": "1"}],
           "bucketAggs": [],
-          "timeField": "timestamp"
+          "timeField": "@timestamp"
         },
         {
           "refId": "C",
@@ -779,7 +779,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "alias": "High (7-11)",
           "metrics": [{"type": "count", "id": "1"}],
           "bucketAggs": [],
-          "timeField": "timestamp"
+          "timeField": "@timestamp"
         },
         {
           "refId": "D",
@@ -788,7 +788,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "alias": "Critical (12+)",
           "metrics": [{"type": "count", "id": "1"}],
           "bucketAggs": [],
-          "timeField": "timestamp"
+          "timeField": "@timestamp"
         }
       ],
       "options": {
@@ -846,7 +846,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "query": "",
         "metrics": [{"type": "logs", "id": "1", "settings": {"limit": "100"}}],
         "bucketAggs": [],
-        "timeField": "timestamp"
+        "timeField": "@timestamp"
       }],
       "options": {
         "dedupStrategy": "none",
