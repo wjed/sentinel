@@ -84,6 +84,7 @@ OSD_EOF
 # `hosts:` block when the file is writable, producing a "duplicated mapping
 # key" YAML parse error and crash-looping the dashboard.
 cat > /opt/sentinel/conf/wazuh-dashboard/wazuh.yml << 'WAZUH_YML_EOF'
+pattern: "wazuh-alerts-*"
 hosts:
   - default:
       url: "https://wazuh-manager"
@@ -320,7 +321,6 @@ storage.local.directory = "/opt/thp/thehive/files"
 auth {
   providers = [
     {name: session}
-    {name: basic, realm: thehive}
     {name: local}
     {name: key}
     {name: oauth2}
@@ -397,7 +397,7 @@ datasources:
     isDefault: true
     jsonData:
       index: "wazuh-alerts-*"
-      timeField: "timestamp"
+      timeField: "@timestamp"
       esVersion: "7.10.0"
       logMessageField: "full_log"
       logLevelField: "rule.level"
@@ -455,8 +455,8 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "query": "",
         "alias": "Total",
         "metrics": [{"type": "count", "id": "1"}],
-        "bucketAggs": [],
-        "timeField": "timestamp"
+        "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
+        "timeField": "@timestamp"
       }],
       "options": {
         "reduceOptions": {"values": false, "calcs": ["sum"]},
@@ -494,8 +494,8 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "query": "rule.level:[12 TO *]",
         "alias": "Critical",
         "metrics": [{"type": "count", "id": "1"}],
-        "bucketAggs": [],
-        "timeField": "timestamp"
+        "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
+        "timeField": "@timestamp"
       }],
       "options": {
         "reduceOptions": {"values": false, "calcs": ["sum"]},
@@ -532,8 +532,8 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "query": "rule.level:[7 TO 11]",
         "alias": "High",
         "metrics": [{"type": "count", "id": "1"}],
-        "bucketAggs": [],
-        "timeField": "timestamp"
+        "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
+        "timeField": "@timestamp"
       }],
       "options": {
         "reduceOptions": {"values": false, "calcs": ["sum"]},
@@ -570,8 +570,8 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "query": "",
         "alias": "Agents",
         "metrics": [{"type": "cardinality", "id": "1", "field": "agent.name.keyword"}],
-        "bucketAggs": [],
-        "timeField": "timestamp"
+        "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
+        "timeField": "@timestamp"
       }],
       "options": {
         "reduceOptions": {"values": false, "calcs": ["lastNotNull"]},
@@ -606,9 +606,9 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "query": "",
           "alias": "All Alerts",
           "metrics": [{"type": "count", "id": "1"}],
-          "bucketAggs": [{"type": "date_histogram", "field": "timestamp", "id": "2",
+          "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2",
             "settings": {"interval": "auto", "min_doc_count": "0", "trimEdges": "0"}}],
-          "timeField": "timestamp"
+          "timeField": "@timestamp"
         },
         {
           "refId": "B",
@@ -616,9 +616,9 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "query": "rule.level:[7 TO *]",
           "alias": "High+Critical",
           "metrics": [{"type": "count", "id": "1"}],
-          "bucketAggs": [{"type": "date_histogram", "field": "timestamp", "id": "2",
+          "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2",
             "settings": {"interval": "auto", "min_doc_count": "0", "trimEdges": "0"}}],
-          "timeField": "timestamp"
+          "timeField": "@timestamp"
         }
       ],
       "options": {
@@ -665,7 +665,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "metrics": [{"type": "count", "id": "1"}],
         "bucketAggs": [{"type": "terms", "field": "rule.description.keyword", "id": "2",
           "settings": {"size": "10", "order": "desc", "orderBy": "1", "min_doc_count": "1"}}],
-        "timeField": "timestamp"
+        "timeField": "@timestamp"
       }],
       "options": {"showHeader": true, "footer": {"show": false}},
       "fieldConfig": {
@@ -696,7 +696,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "metrics": [{"type": "count", "id": "1"}],
         "bucketAggs": [{"type": "terms", "field": "agent.name.keyword", "id": "2",
           "settings": {"size": "10", "order": "desc", "orderBy": "1", "min_doc_count": "1"}}],
-        "timeField": "timestamp"
+        "timeField": "@timestamp"
       }],
       "options": {"showHeader": true, "footer": {"show": false}},
       "fieldConfig": {
@@ -734,7 +734,7 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "metrics": [{"type": "count", "id": "1"}],
         "bucketAggs": [{"type": "terms", "field": "rule.level", "id": "2",
           "settings": {"size": "15", "order": "desc", "orderBy": "1", "min_doc_count": "1"}}],
-        "timeField": "timestamp"
+        "timeField": "@timestamp"
       }],
       "options": {
         "pieType": "pie",
@@ -759,8 +759,8 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "query": "rule.level:[1 TO 3]",
           "alias": "Low (1-3)",
           "metrics": [{"type": "count", "id": "1"}],
-          "bucketAggs": [],
-          "timeField": "timestamp"
+          "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
+          "timeField": "@timestamp"
         },
         {
           "refId": "B",
@@ -768,8 +768,8 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "query": "rule.level:[4 TO 6]",
           "alias": "Medium (4-6)",
           "metrics": [{"type": "count", "id": "1"}],
-          "bucketAggs": [],
-          "timeField": "timestamp"
+          "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
+          "timeField": "@timestamp"
         },
         {
           "refId": "C",
@@ -777,8 +777,8 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "query": "rule.level:[7 TO 11]",
           "alias": "High (7-11)",
           "metrics": [{"type": "count", "id": "1"}],
-          "bucketAggs": [],
-          "timeField": "timestamp"
+          "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
+          "timeField": "@timestamp"
         },
         {
           "refId": "D",
@@ -786,8 +786,8 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
           "query": "rule.level:[12 TO *]",
           "alias": "Critical (12+)",
           "metrics": [{"type": "count", "id": "1"}],
-          "bucketAggs": [],
-          "timeField": "timestamp"
+          "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
+          "timeField": "@timestamp"
         }
       ],
       "options": {
@@ -844,8 +844,8 @@ cat > /opt/sentinel/conf/grafana/dashboards/wazuh-alerts.json << 'DASHBOARD_EOF'
         "datasource": {"type": "elasticsearch", "uid": "wazuh-es"},
         "query": "",
         "metrics": [{"type": "logs", "id": "1", "settings": {"limit": "100"}}],
-        "bucketAggs": [],
-        "timeField": "timestamp"
+        "bucketAggs": [{"type": "date_histogram", "field": "@timestamp", "id": "2", "settings": {"interval": "auto", "min_doc_count": "0"}}],
+        "timeField": "@timestamp"
       }],
       "options": {
         "dedupStrategy": "none",

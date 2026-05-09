@@ -24,16 +24,12 @@ terraform {
     }
   }
 
-  # ─────────────────────────────────────────────────────────────────────────
-  # Optional remote state backend.
-  # Uncomment and fill in bucket/table names to use S3 + DynamoDB locking.
-  # Create the bucket and table manually (or with a bootstrap config) first.
-  # ─────────────────────────────────────────────────────────────────────────
-  # backend "s3" {
-  #   bucket         = "sentinelnet-terraform-state-<account-id>"
-  #   key            = "sentinelnet/<environment>/terraform.tfstate"
-  #   region         = "us-east-1"
-  #   dynamodb_table = "sentinelnet-terraform-locks"
-  #   encrypt        = true
-  # }
+  # Remote state — bucket + lock table are provisioned by ./bootstrap
+  backend "s3" {
+    bucket         = "sentinelnet-terraform-state-639418629910"
+    key            = "sentinelnet/dev/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "sentinelnet-terraform-locks"
+    encrypt        = true
+  }
 }
